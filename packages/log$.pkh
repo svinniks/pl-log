@@ -20,4 +20,40 @@ CREATE OR REPLACE PACKAGE log$ IS
         ,p_arguments IN t_varchars := NULL)
     RETURN VARCHAR2;
 
+    FUNCTION format_message
+        (p_message IN VARCHAR2
+        ,p_argument1 IN VARCHAR2)
+    RETURN VARCHAR2;
+    
+    FUNCTION format_message
+        (p_message IN VARCHAR2
+        ,p_argument1 IN VARCHAR2
+        ,p_argument2 IN VARCHAR2)
+    RETURN VARCHAR2;
+    
+    FUNCTION format_message
+        (p_message IN VARCHAR2
+        ,p_argument1 IN VARCHAR2
+        ,p_argument2 IN VARCHAR2
+        ,p_argument3 IN VARCHAR2)
+    RETURN VARCHAR2;
+    
+    FUNCTION format_message
+        (p_message IN VARCHAR2
+        ,p_argument1 IN VARCHAR2
+        ,p_argument2 IN VARCHAR2
+        ,p_argument3 IN VARCHAR2
+        ,p_argument4 IN VARCHAR2)
+    RETURN VARCHAR2;
+    
+    FUNCTION format_message
+        (p_message IN VARCHAR2
+        ,p_argument1 IN VARCHAR2
+        ,p_argument2 IN VARCHAR2
+        ,p_argument3 IN VARCHAR2
+        ,p_argument4 IN VARCHAR2
+        ,p_argument5 IN VARCHAR2)
+    RETURN VARCHAR2;
+    
 END;
+

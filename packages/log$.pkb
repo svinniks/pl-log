@@ -92,6 +92,56 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
+    FUNCTION format_message
+        (p_message IN VARCHAR2
+        ,p_argument1 IN VARCHAR2)
+    RETURN VARCHAR2 IS
+    BEGIN
+        RETURN format_message(p_message, t_varchars(p_argument1));
+    END;
+    
+    FUNCTION format_message
+        (p_message IN VARCHAR2
+        ,p_argument1 IN VARCHAR2
+        ,p_argument2 IN VARCHAR2)
+    RETURN VARCHAR2 IS
+    BEGIN
+        RETURN format_message(p_message, t_varchars(p_argument1, p_argument2));
+    END;
+    
+    FUNCTION format_message
+        (p_message IN VARCHAR2
+        ,p_argument1 IN VARCHAR2
+        ,p_argument2 IN VARCHAR2
+        ,p_argument3 IN VARCHAR2)
+    RETURN VARCHAR2 IS
+    BEGIN
+        RETURN format_message(p_message, t_varchars(p_argument1, p_argument2, p_argument3));
+    END;
+    
+    FUNCTION format_message
+        (p_message IN VARCHAR2
+        ,p_argument1 IN VARCHAR2
+        ,p_argument2 IN VARCHAR2
+        ,p_argument3 IN VARCHAR2
+        ,p_argument4 IN VARCHAR2)
+    RETURN VARCHAR2 IS
+    BEGIN
+        RETURN format_message(p_message, t_varchars(p_argument1, p_argument2, p_argument3, p_argument4));
+    END;
+    
+    FUNCTION format_message
+        (p_message IN VARCHAR2
+        ,p_argument1 IN VARCHAR2
+        ,p_argument2 IN VARCHAR2
+        ,p_argument3 IN VARCHAR2
+        ,p_argument4 IN VARCHAR2
+        ,p_argument5 IN VARCHAR2)
+    RETURN VARCHAR2 IS
+    BEGIN
+        RETURN format_message(p_message, t_varchars(p_argument1, p_argument2, p_argument3, p_argument4, p_argument5));
+    END;
+    
 BEGIN
     v_default_message_resolver := t_default_message_resolver();
     v_message_resolver := v_default_message_resolver;
