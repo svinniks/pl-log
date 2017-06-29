@@ -52,15 +52,21 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
         -- If the message could be resolved and there are arguments, then replace 
         -- the placeholders for with the values:
-        IF v_message IS NOT NULL AND p_arguments IS NOT NULL THEN
+        IF v_message IS NOT NULL THEN
         
-            FOR v_i IN 1..p_arguments.COUNT LOOP
-                v_message := REPLACE(v_message, ':' || v_i, p_arguments(v_i));
-            END LOOP;
+            IF p_arguments IS NOT NULL THEN
+        
+                FOR v_i IN 1..p_arguments.COUNT LOOP
+                     v_message := REPLACE(v_message, ':' || v_i, p_arguments(v_i));
+                END LOOP;
+            
+            END IF;
+            
+            v_message := p_message || ': ' || v_message;
             
         -- If the message could not be resolved from the code, then the message 
         -- itself will be output followed by the arguments, if provided, in brackets.
-        ELSIF v_message IS NULL THEN
+        ELSE
         
             v_message := p_message;
             

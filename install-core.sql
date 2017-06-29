@@ -18,8 +18,13 @@ SET DEFINE OFF
 @@types/t_default_message_resolver.tpb
 /
 
-@@packages/log$.pkh
+@@packages/log$.pks
 /
 @@packages/log$.pkb
+/
+
+@@packages/error$.pks
+/
+@@packages/error$.pkb
 /
 

@@ -1,3 +1,6 @@
+DROP PACKAGE error$
+/
+
 DROP PACKAGE log$
 /
 
