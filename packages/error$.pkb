@@ -43,7 +43,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         ,p_argument1 IN VARCHAR2
         ,p_argument2 IN VARCHAR2) IS
     BEGIN
-        error$.raise(p_message, t_varchars(p_argument1));
+        error$.raise(p_message, t_varchars(p_argument1, p_argument2));
     END;
   
     PROCEDURE raise
@@ -52,7 +52,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         ,p_argument2 IN VARCHAR2
         ,p_argument3 IN VARCHAR2) IS
     BEGIN
-        error$.raise(p_message, t_varchars(p_argument1));
+        error$.raise(p_message, t_varchars(p_argument1, p_argument2, p_argument3));
     END;
         
     PROCEDURE raise
@@ -62,7 +62,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         ,p_argument3 IN VARCHAR2
         ,p_argument4 IN VARCHAR2) IS
     BEGIN
-        error$.raise(p_message, t_varchars(p_argument1));
+        error$.raise(p_message, t_varchars(p_argument1, p_argument2, p_argument3, p_argument4));
     END;
         
     PROCEDURE raise
@@ -70,9 +70,10 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         ,p_argument1 IN VARCHAR2
         ,p_argument2 IN VARCHAR2
         ,p_argument3 IN VARCHAR2
+        ,p_argument4 IN VARCHAR2
         ,p_argument5 IN VARCHAR2) IS
     BEGIN
-        error$.raise(p_message, t_varchars(p_argument1));
+        error$.raise(p_message, t_varchars(p_argument1, p_argument2, p_argument3, p_argument4, p_argument5));
     END;
 
 END;

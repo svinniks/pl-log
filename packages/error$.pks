@@ -50,6 +50,7 @@ CREATE OR REPLACE PACKAGE error$ IS
         ,p_argument1 IN VARCHAR2
         ,p_argument2 IN VARCHAR2
         ,p_argument3 IN VARCHAR2
+        ,p_argument4 IN VARCHAR2
         ,p_argument5 IN VARCHAR2);
 
 END;
