@@ -15,3 +15,6 @@ DROP TYPE t_log_message_resolver
 
 DROP TYPE t_varchars
 /
+
+DROP TYPE t_numbers
+/
