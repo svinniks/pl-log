@@ -19,6 +19,13 @@ CREATE OR REPLACE PACKAGE BODY default_message_store IS
     TYPE t_messages IS TABLE OF VARCHAR2(32000) INDEX BY VARCHAR2(32000);
     v_messages t_messages;
 
+    PROCEDURE reset IS
+    BEGIN
+    
+       v_messages.DELETE;
+    
+    END;
+
     PROCEDURE register_message
         (p_code IN VARCHAR2
         ,p_message IN VARCHAR2) IS

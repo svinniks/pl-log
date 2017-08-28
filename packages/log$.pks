@@ -16,8 +16,11 @@ CREATE OR REPLACE PACKAGE log$ IS
         limitations under the License.
     */
 
-    TYPE t IS TABLE OF NUMBER INDEX BY PLS_INTEGER;
-
+    c_debug CONSTANT PLS_INTEGER := 250;
+    c_info CONSTANT PLS_INTEGER := 500;
+    c_warning CONSTANT PLS_INTEGER := 750;
+    c_error CONSTANT PLS_INTEGER := 1000;
+    
     PROCEDURE set_message_resolver
         (p_message_resolver IN t_log_message_resolver);
         
@@ -70,6 +73,27 @@ CREATE OR REPLACE PACKAGE log$ IS
         ,p_argument4 IN VARCHAR2
         ,p_argument5 IN VARCHAR2)
     RETURN VARCHAR2;
+    
+    PROCEDURE message
+        (p_level IN PLS_INTEGER
+        ,p_message IN VARCHAR2
+        ,p_arguments IN t_varchars := NULL);
+        
+    PROCEDURE debug
+        (p_message IN VARCHAR2
+        ,p_arguments IN t_varchars := NULL);
+        
+    PROCEDURE info
+        (p_message IN VARCHAR2
+        ,p_arguments IN t_varchars := NULL);
+        
+    PROCEDURE warning
+        (p_message IN VARCHAR2
+        ,p_arguments IN t_varchars := NULL);
+        
+    PROCEDURE error
+        (p_message IN VARCHAR2
+        ,p_arguments IN t_varchars := NULL);
     
 END;
 /

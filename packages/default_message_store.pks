@@ -16,6 +16,8 @@ CREATE OR REPLACE PACKAGE default_message_store IS
         limitations under the License.
     */
 
+    PROCEDURE reset;
+
     PROCEDURE register_message
         (p_code IN VARCHAR2
         ,p_message IN VARCHAR2);

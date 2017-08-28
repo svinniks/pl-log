@@ -33,14 +33,18 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     PROCEDURE reset_message_resolver IS
     BEGIN
-        set_message_resolver(NULL);
+    
+        set_message_resolver(v_default_message_resolver);
+        
     END;
     
     PROCEDURE register_message
         (p_code IN VARCHAR2
         ,p_message IN VARCHAR2) IS
     BEGIN
+    
         default_message_store.register_message(p_code, p_message);
+        
     END;
 
     FUNCTION resolve_message
@@ -48,19 +52,17 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     RETURN VARCHAR2 IS
     BEGIN
     
-        IF v_message_resolver IS NULL THEN
-            RETURN NULL;
-        ELSE
-            RETURN v_message_resolver.resolve_message(p_code);
-        END IF;
-    
+        RETURN v_message_resolver.resolve_message(p_code);
+        
     END;
 
     FUNCTION format_message
         (p_message IN VARCHAR2
         ,p_arguments IN t_varchars := NULL)
     RETURN VARCHAR2 IS
+    
         v_message VARCHAR2(4000);
+        
     BEGIN
     
         -- First try to resolve the message as a code.
@@ -119,7 +121,9 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         ,p_argument1 IN VARCHAR2)
     RETURN VARCHAR2 IS
     BEGIN
+    
         RETURN format_message(p_message, t_varchars(p_argument1));
+        
     END;
     
     FUNCTION format_message
@@ -128,7 +132,9 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         ,p_argument2 IN VARCHAR2)
     RETURN VARCHAR2 IS
     BEGIN
+    
         RETURN format_message(p_message, t_varchars(p_argument1, p_argument2));
+        
     END;
     
     FUNCTION format_message
@@ -138,7 +144,9 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         ,p_argument3 IN VARCHAR2)
     RETURN VARCHAR2 IS
     BEGIN
+    
         RETURN format_message(p_message, t_varchars(p_argument1, p_argument2, p_argument3));
+        
     END;
     
     FUNCTION format_message
@@ -149,7 +157,9 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         ,p_argument4 IN VARCHAR2)
     RETURN VARCHAR2 IS
     BEGIN
+    
         RETURN format_message(p_message, t_varchars(p_argument1, p_argument2, p_argument3, p_argument4));
+        
     END;
     
     FUNCTION format_message
@@ -161,7 +171,60 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         ,p_argument5 IN VARCHAR2)
     RETURN VARCHAR2 IS
     BEGIN
+    
         RETURN format_message(p_message, t_varchars(p_argument1, p_argument2, p_argument3, p_argument4, p_argument5));
+        
+    END;
+    
+    PROCEDURE message
+        (p_level IN PLS_INTEGER
+        ,p_message IN VARCHAR2
+        ,p_arguments IN t_varchars := NULL) IS
+        
+        v_message VARCHAR2(4000);
+        
+    BEGIN
+        
+        v_message := format_message(p_message, p_arguments);
+        
+        
+    
+    END;
+        
+    PROCEDURE debug
+        (p_message IN VARCHAR2
+        ,p_arguments IN t_varchars := NULL) IS
+    BEGIN
+    
+        message(c_debug, p_message, p_arguments);
+        
+    END;
+        
+    PROCEDURE info
+        (p_message IN VARCHAR2
+        ,p_arguments IN t_varchars := NULL) IS
+    BEGIN
+    
+        message(c_info, p_message, p_arguments);
+        
+    END; 
+        
+    PROCEDURE warning
+        (p_message IN VARCHAR2
+        ,p_arguments IN t_varchars := NULL) IS
+    BEGIN
+    
+        message(c_warning, p_message, p_arguments);
+        
+    END;
+        
+    PROCEDURE error
+        (p_message IN VARCHAR2
+        ,p_arguments IN t_varchars := NULL) IS
+    BEGIN
+    
+        message(c_error, p_message, p_arguments);
+        
     END;
     
 BEGIN

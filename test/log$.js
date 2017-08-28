@@ -14,13 +14,12 @@
     limitations under the License.
 */
 
-suite("Log tests", function() {
+suite("Default message resolver tests", function() {
 
-    setup("Setup", function() {
+    setup("Reset default message resolver and store", function() {
     
-        var result = database.call("log$.reset_message_resolver", {
-            
-        });    
+        database.call("log$.reset_message_resolver");    
+        database.call("default_message_store.reset");    
     
     });
     
@@ -52,6 +51,10 @@ suite("Log tests", function() {
         expect(result).to.be.null;
     
     });
+
+});
+
+suite("Message formatting tests", function() {
 
     test("Format a resolvable message without arguments", function() {
     
@@ -106,4 +109,21 @@ suite("Log tests", function() {
     
     });
     
+});
+
+suite("Default message handler tests", function() {
+
+    setup("Reset default message resolver and store", function() {
+    
+        database.call("log$.reset_message_resolver");    
+        database.call("default_message_store.reset");    
+    
+    });
+
+    test("", function() {
+
+        
+
+    });
+
 });
