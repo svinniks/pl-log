@@ -1,4 +1,4 @@
-CREATE OR REPLACE PACKAGE default_message_store IS
+CREATE OR REPLACE TYPE t_default_message_handler UNDER t_log_message_handler(
 
     /* 
         Copyright 2017 Sergejs Vinniks
@@ -16,15 +16,16 @@ CREATE OR REPLACE PACKAGE default_message_store IS
         limitations under the License.
     */
 
-    PROCEDURE reset;
+    /**
+        Default RAM-based message handler which is "always there".<br>
+        This message handler stores messages in a FIFO buffer (array) of
+        limited size.
+    */
 
-    PROCEDURE register_message
-        (p_code IN VARCHAR2
-        ,p_message IN VARCHAR2);
-        
-    FUNCTION resolve_message
-        (p_code IN VARCHAR2)
-    RETURN VARCHAR2;
-
-END;
+    OVERRIDING FINAL MEMBER PROCEDURE handle_message
+        (p_level IN PLS_INTEGER
+        ,p_message IN VARCHAR2
+        ,p_call_stack IN VARCHAR2)
+    
+);
 /

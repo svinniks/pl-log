@@ -16,16 +16,15 @@
 
 suite("Default message resolver tests", function() {
 
-    setup("Reset default message resolver and store", function() {
-    
-        database.call("log$.reset_message_resolver");    
-        database.call("default_message_store.reset");    
+    setup("Reset default message resolver", function() {
+        
+        database.call("default_message_resolver.reset");    
     
     });
     
     test("Register a message in the default resolver", function() {
 
-        var result = database.call("log$.register_message", {
+        var result = database.call("default_message_resolver.register_message", {
             p_code: "MSG-00001",
             p_message: "Hello, :1!"
         });
@@ -113,16 +112,115 @@ suite("Message formatting tests", function() {
 
 suite("Default message handler tests", function() {
 
-    setup("Reset default message resolver and store", function() {
-    
-        database.call("log$.reset_message_resolver");    
-        database.call("default_message_store.reset");    
+    var DEBUG = 250, INFO = 500, WARNING = 750, ERROR = 1000;
+
+    setup("Reset default message resolver and hadler", function() {
+        
+        database.call("default_message_resolver.reset");    
+        database.call("default_message_handler.reset");    
     
     });
 
-    test("", function() {
+    test("Set handler level to NULL", function() {
 
-        
+        database.call("default_message_handler.set_log_level", {
+            p_level: null
+        });
+
+        var logLevel = database.call("default_message_handler.get_log_level");
+
+        expect(logLevel).to.be(null);
+
+    });
+
+    test("Set handler level to INFO", function() {
+
+        database.call("default_message_handler.set_log_level", {
+            p_level: INFO
+        });
+
+        var logLevel = database.call("default_message_handler.get_log_level");
+
+        expect(logLevel).to.be(INFO);
+
+    });
+
+    test("Log message of level DEBUG", function() {
+    
+        var result = database.call("log$.debug", {
+            p_message: "DEBUG message 1"
+        });
+    
+        var tail = database.selectRows(`*
+            FROM log$tail`);
+
+        expect(tail).to.eql([]);
+
+    });
+    
+    test("Log message of level INFO", function() {
+    
+        var result = database.call("log$.info", {
+            p_message: "INFO message 1"
+        });
+    
+        var tail = database.selectRows(`log_level, message_text
+            FROM log$tail`);
+
+        database.call("default_message_handler.aaa");
+
+        expect(tail).to.eql([
+            ["500", "INFO message 1"]
+        ]);
+
+    });
+
+    test("Log another message of level INFO", function() {
+    
+        var result = database.call("log$.info", {
+            p_message: "INFO message 2"
+        });
+    
+        var tail = database.selectRows(`log_level, message_text
+            FROM log$tail`);
+
+        expect(tail).to.eql([
+            ["INFO", "INFO message 2"],
+            ["INFO", "INFO message 1"]
+        ]);
+
+    });
+
+    test("Log another message of level DEBUG", function() {
+    
+        var result = database.call("log$.debug", {
+            p_message: "DEBUG message 2"
+        });
+    
+        var tail = database.selectRows(`log_level, message_text
+            FROM log$tail`);
+
+        expect(tail).to.eql([
+            ["INFO", "INFO message 2"],
+            ["INFO", "INFO message 1"]
+        ]);
+
+    });
+
+    test("Log message of level ERROR", function() {
+    
+        var result = database.call("log$.error", {
+            p_message: "ERROR message 1"
+        });
+    
+        var tail = database.selectRows(`log_level, message_text
+            FROM log$tail`);
+
+        expect(tail).to.eql([
+            ["ERROR", "ERROR message 1"],
+            ["INFO", "INFO message 2"],
+            ["INFO", "INFO message 1"]
+        ]);
 
     });
 

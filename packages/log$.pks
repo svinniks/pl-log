@@ -23,13 +23,10 @@ CREATE OR REPLACE PACKAGE log$ IS
     
     PROCEDURE set_message_resolver
         (p_message_resolver IN t_log_message_resolver);
+
+    PROCEDURE add_message_handler
+        (p_message_handler IN t_log_message_handler);
         
-    PROCEDURE reset_message_resolver;
-
-    PROCEDURE register_message
-        (p_code IN VARCHAR2
-        ,p_message IN VARCHAR2);
-
     FUNCTION resolve_message
         (p_code IN VARCHAR2)
     RETURN VARCHAR2;
@@ -94,6 +91,18 @@ CREATE OR REPLACE PACKAGE log$ IS
     PROCEDURE error
         (p_message IN VARCHAR2
         ,p_arguments IN t_varchars := NULL);
+        
+    FUNCTION get_system_log_level
+    RETURN PLS_INTEGER;
+    
+    PROCEDURE set_system_log_level
+        (p_level IN PLS_INTEGER);        
+        
+    FUNCTION get_session_log_level
+    RETURN PLS_INTEGER;
+    
+    PROCEDURE set_session_log_level
+        (p_level IN PLS_INTEGER);
     
 END;
 /

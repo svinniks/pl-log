@@ -18,7 +18,6 @@ SET DEFINE OFF
 
 @@types/t_numbers.tps
 /
-
 @@types/t_varchars.tps
 /
 
@@ -27,19 +26,34 @@ SET DEFINE OFF
 @@types/t_log_message_resolver.tpb
 /
 
-@@packages/default_message_store.pks
-/
-@@packages/default_message_store.pkb
-/
-
 @@types/t_default_message_resolver.tps
 /
+@@packages/default_message_resolver.pks
+/
+
 @@types/t_default_message_resolver.tpb
+/
+@@packages/default_message_resolver.pkb
+/
+
+@@types/t_log_message_handler.tps
+/
+@@types/t_default_message_handler.tps
+/
+@@packages/default_message_handler.pks
 /
 
 @@packages/log$.pks
 /
+
+@@types/t_default_message_handler.tpb
+/
+@@packages/default_message_handler.pkb
+/
 @@packages/log$.pkb
+/
+
+@@views/log$tail.vw
 /
 
 @@packages/error$.pks

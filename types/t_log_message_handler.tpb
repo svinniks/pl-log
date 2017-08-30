@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE t_default_message_resolver UNDER t_log_message_resolver(
+CREATE OR REPLACE TYPE BODY t_log_message_handler IS
 
     /* 
         Copyright 2017 Sergejs Vinniks
@@ -16,12 +16,5 @@ CREATE OR REPLACE TYPE t_default_message_resolver UNDER t_log_message_resolver(
         limitations under the License.
     */
 
-    CONSTRUCTOR FUNCTION t_default_message_resolver
-    RETURN SELF AS RESULT,
-
-    OVERRIDING MEMBER FUNCTION resolve_message
-        (p_code IN VARCHAR2)
-    RETURN VARCHAR2
-    
-);
+END;
 /

@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE t_default_message_resolver UNDER t_log_message_resolver(
+CREATE OR REPLACE TYPE t_log_message_handler IS OBJECT (
 
     /* 
         Copyright 2017 Sergejs Vinniks
@@ -15,13 +15,13 @@ CREATE OR REPLACE TYPE t_default_message_resolver UNDER t_log_message_resolver(
         See the License for the specific language governing permissions and
         limitations under the License.
     */
+  
+    log_level NUMBER,
 
-    CONSTRUCTOR FUNCTION t_default_message_resolver
-    RETURN SELF AS RESULT,
-
-    OVERRIDING MEMBER FUNCTION resolve_message
-        (p_code IN VARCHAR2)
-    RETURN VARCHAR2
+    NOT INSTANTIABLE MEMBER PROCEDURE handle_message
+        (p_level IN PLS_INTEGER
+        ,p_message IN VARCHAR2
+        ,p_call_stack IN VARCHAR2)
     
-);
+) NOT INSTANTIABLE NOT FINAL;
 /
