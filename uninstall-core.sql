@@ -21,6 +21,8 @@ DROP PACKAGE default_message_handler
 /
 DROP TYPE t_default_message_handler
 /
+DROP TABLE log$records
+/
 
 DROP TYPE t_log_message_handler
 /

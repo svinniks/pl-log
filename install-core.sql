@@ -36,6 +36,9 @@ SET DEFINE OFF
 @@packages/default_message_resolver.pkb
 /
 
+@@tables/log$records.tab
+/
+
 @@types/t_log_message_handler.tps
 /
 @@types/t_default_message_handler.tps

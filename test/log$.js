@@ -167,10 +167,8 @@ suite("Default message handler tests", function() {
         var tail = database.selectRows(`log_level, message_text
             FROM log$tail`);
 
-        database.call("default_message_handler.aaa");
-
         expect(tail).to.eql([
-            ["500", "INFO message 1"]
+            [INFO, "INFO message 1"]
         ]);
 
     });
@@ -185,8 +183,8 @@ suite("Default message handler tests", function() {
             FROM log$tail`);
 
         expect(tail).to.eql([
-            ["INFO", "INFO message 2"],
-            ["INFO", "INFO message 1"]
+            [INFO, "INFO message 2"],
+            [INFO, "INFO message 1"]
         ]);
 
     });
@@ -201,8 +199,8 @@ suite("Default message handler tests", function() {
             FROM log$tail`);
 
         expect(tail).to.eql([
-            ["INFO", "INFO message 2"],
-            ["INFO", "INFO message 1"]
+            [INFO, "INFO message 2"],
+            [INFO, "INFO message 1"]
         ]);
 
     });
@@ -217,9 +215,9 @@ suite("Default message handler tests", function() {
             FROM log$tail`);
 
         expect(tail).to.eql([
-            ["ERROR", "ERROR message 1"],
-            ["INFO", "INFO message 2"],
-            ["INFO", "INFO message 1"]
+            [ERROR, "ERROR message 1"],
+            [INFO, "INFO message 2"],
+            [INFO, "INFO message 1"]
         ]);
 
     });

@@ -16,36 +16,14 @@ CREATE OR REPLACE PACKAGE BODY default_message_handler IS
         limitations under the License.
     */
     
-    v_handler_instance t_default_message_handler;
-    
-    v_log_records t_log_records;
-    
-    v_size PLS_INTEGER;
-    v_first PLS_INTEGER;
-    v_last PLS_INTEGER;
-    
-    PROCEDURE init IS
-    BEGIN
-    
-        v_handler_instance := t_default_message_handler(NULL);
-        
-        set_size(1000);
-    
-    END;
-    
-    FUNCTION get_handler_instance
-    RETURN REF t_default_message_handler IS
-    BEGIN
-    
-        RETURN REF(v_handler_instance);
-        
-    END;
+    v_log_level PLS_INTEGER;
+    v_sequence NUMBER := 1;
     
     FUNCTION get_log_level
     RETURN PLS_INTEGER IS
     BEGIN
     
-        RETURN v_handler_instance.log_level;
+        RETURN v_log_level;
     
     END;
     
@@ -53,73 +31,38 @@ CREATE OR REPLACE PACKAGE BODY default_message_handler IS
         (p_level IN PLS_INTEGER) IS
     BEGIN
     
-        v_handler_instance.log_level := p_level;
+        v_log_level := p_level;
     
     END;
     
     PROCEDURE reset IS
     BEGIN
     
-        set_size(v_size);
+        NULL;
     
     END;
     
-    PROCEDURE set_size
-        (p_size IN PLS_INTEGER) IS
-    BEGIN
-    
-        v_size := p_size;
-    
-        v_log_records := t_log_records();
-        v_log_records.EXTEND(v_size);
-        
-        v_first := NULL;
-        v_last := NULL;
-    
-    END;
-    
-    PROCEDURE add_message
-        (p_level IN PLS_INTEGER
-        ,p_message IN VARCHAR2
+    PROCEDURE create_message
+        (p_log_level IN PLS_INTEGER
+        ,p_message_text IN VARCHAR2
         ,p_call_stack IN VARCHAR2) IS
     BEGIN
     
-        IF v_first IS NULL THEN
+        v_sequence := v_sequence + 1;
         
-            v_first := 1;
-            v_last := 1;
-        
-        END IF;
-        
-        v_log_records(v_first).log_level := p_level;
-        v_log_records(v_first).message_text := p_message;
-        v_log_records(v_first).call_stack := p_call_stack;
+        INSERT INTO log$records
+            (sequence
+            ,log_date
+            ,log_level
+            ,message_text
+            ,call_stack)
+        VALUES
+            (v_sequence
+            ,CURRENT_TIMESTAMP
+            ,p_log_level
+            ,p_message_text
+            ,p_call_stack);
     
     END;
-    
-    FUNCTION tail
-    RETURN t_log_records PIPELINED IS
-    BEGIN
-    
-        IF v_first IS NOT NULL THEN
-        
-            FOR v_i IN REVERSE v_last..v_first LOOP
-                PIPE ROW(v_log_records(v_i));
-            END LOOP;
-            
-        END IF;
-        
-        RETURN;
-    
-    END;
-    
-    FUNCTION aaa RETURN PLS_INTEGER IS
-    BEGIN
-        RETURN v_first;
-    END;
-    
-BEGIN
-
-    init;    
     
 END;

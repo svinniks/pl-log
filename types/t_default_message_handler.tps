@@ -22,6 +22,12 @@ CREATE OR REPLACE TYPE t_default_message_handler UNDER t_log_message_handler(
         limited size.
     */
 
+    CONSTRUCTOR FUNCTION t_default_message_handler
+    RETURN SELF AS RESULT,
+
+    OVERRIDING FINAL MEMBER FUNCTION get_log_level
+    RETURN PLS_INTEGER,
+
     OVERRIDING FINAL MEMBER PROCEDURE handle_message
         (p_level IN PLS_INTEGER
         ,p_message IN VARCHAR2

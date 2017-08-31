@@ -17,9 +17,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     */
 
     v_message_resolver t_log_message_resolver;
-    v_default_message_resolver t_default_message_resolver;
     
-    TYPE t_message_handlers IS TABLE OF REF t_log_message_handler;
+    TYPE t_message_handlers IS TABLE OF t_log_message_handler;
     v_message_handlers t_message_handlers;
     
     v_system_log_level PLS_INTEGER;
@@ -28,8 +27,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     PROCEDURE init IS
     BEGIN
     
-        v_message_resolver := default_message_resolver.get_resolver_instance;
-        v_message_handlers := t_message_handlers(default_message_handler.get_handler_instance);
+        v_message_resolver := t_default_message_resolver();
+        v_message_handlers := t_message_handlers(t_default_message_handler());
         
         BEGIN
         
@@ -205,9 +204,9 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
         FOR v_i IN 1..v_message_handlers.COUNT LOOP
         
-            --IF p_level >= COALESCE(v_message_handlers(v_i).log_level, get_session_log_level, get_system_log_level) THEN
-                v_message_handlers(v_i).handle_message(v_message_handlers(v_i).log_level, p_message, NULL);
-            --END IF;
+            IF p_level >= COALESCE(v_message_handlers(v_i).get_log_level, get_session_log_level, get_system_log_level) THEN
+                v_message_handlers(v_i).handle_message(p_level, p_message, NULL);
+            END IF;
         
         END LOOP;
     

@@ -16,17 +16,6 @@ CREATE OR REPLACE PACKAGE default_message_handler IS
         limitations under the License.
     */
     
-    TYPE t_log_record IS RECORD
-        (log_date TIMESTAMP
-        ,log_level VARCHAR2(30)
-        ,message_text VARCHAR2(32000)
-        ,call_stack VARCHAR2(32000));
-        
-    TYPE t_log_records IS TABLE OF t_log_record;
-    
-    FUNCTION get_handler_instance
-    RETURN REF t_default_message_handler;
-    
     FUNCTION get_log_level
     RETURN PLS_INTEGER;
     
@@ -35,17 +24,9 @@ CREATE OR REPLACE PACKAGE default_message_handler IS
     
     PROCEDURE reset;
     
-    PROCEDURE set_size
-        (p_size IN PLS_INTEGER);
-        
-    PROCEDURE add_message
-        (p_level IN PLS_INTEGER
-        ,p_message IN VARCHAR2
-        ,p_call_stack IN VARCHAR2);    
-        
-    FUNCTION tail
-    RETURN t_log_records PIPELINED;
-    
-    FUNCTION aaa RETURN PLS_INTEGER;
+    PROCEDURE create_message
+        (p_log_level IN PLS_INTEGER
+        ,p_message_text IN VARCHAR2
+        ,p_call_stack IN VARCHAR2);
     
 END;

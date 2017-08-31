@@ -15,6 +15,24 @@ CREATE OR REPLACE TYPE BODY t_default_message_handler IS
         See the License for the specific language governing permissions and
         limitations under the License.
     */
+    
+    CONSTRUCTOR FUNCTION t_default_message_handler
+    RETURN SELF AS RESULT IS
+    BEGIN
+    
+        SELF.dummy := 'X';
+        
+        RETURN;
+        
+    END;
+    
+    OVERRIDING FINAL MEMBER FUNCTION get_log_level
+    RETURN PLS_INTEGER IS
+    BEGIN
+    
+        RETURN default_message_handler.get_log_level;
+    
+    END;
 
     OVERRIDING FINAL MEMBER PROCEDURE handle_message
         (p_level IN PLS_INTEGER
@@ -22,7 +40,7 @@ CREATE OR REPLACE TYPE BODY t_default_message_handler IS
         ,p_call_stack IN VARCHAR2) IS
     BEGIN
     
-        default_message_handler.add_message(p_level, p_message, p_call_stack);
+        default_message_handler.create_message(p_level, p_message, p_call_stack);
     
     END;
 

@@ -1,0 +1,8 @@
+CREATE GLOBAL TEMPORARY TABLE log$records
+    (sequence NUMBER
+    ,log_date TIMESTAMP
+    ,log_level VARCHAR2(30)
+    ,message_text VARCHAR2(4000)
+    ,call_stack VARCHAR2(4000)
+    ,CONSTRAINT log$record_pk PRIMARY KEY(sequence))
+ON COMMIT PRESERVE ROWS    
