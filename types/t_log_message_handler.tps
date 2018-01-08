@@ -17,7 +17,7 @@ CREATE OR REPLACE TYPE t_log_message_handler IS OBJECT (
     */
   
     dummy CHAR,
-    
+        
     NOT INSTANTIABLE MEMBER FUNCTION get_log_level
     RETURN PLS_INTEGER,
 

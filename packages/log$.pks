@@ -21,7 +21,7 @@ CREATE OR REPLACE PACKAGE log$ IS
     c_warning CONSTANT PLS_INTEGER := 750;
     c_error CONSTANT PLS_INTEGER := 1000;
     
-    PROCEDURE set_message_resolver
+    PROCEDURE add_message_resolver
         (p_message_resolver IN t_log_message_resolver);
 
     PROCEDURE add_message_handler
@@ -96,7 +96,10 @@ CREATE OR REPLACE PACKAGE log$ IS
     RETURN PLS_INTEGER;
     
     PROCEDURE set_system_log_level
-        (p_level IN PLS_INTEGER);        
+        (p_level IN PLS_INTEGER);  
+        
+    PROCEDURE init_system_log_level
+        (p_level IN PLS_INTEGER);      
         
     FUNCTION get_session_log_level
     RETURN PLS_INTEGER;

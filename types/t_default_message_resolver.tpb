@@ -19,11 +19,8 @@ CREATE OR REPLACE TYPE BODY t_default_message_resolver IS
     CONSTRUCTOR FUNCTION t_default_message_resolver
     RETURN SELF AS RESULT IS
     BEGIN
-    
         SELF.dummy := 'X';
-        
         RETURN;
-        
     END;
 
     OVERRIDING MEMBER FUNCTION resolve_message

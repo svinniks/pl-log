@@ -19,11 +19,8 @@ CREATE OR REPLACE TYPE BODY t_default_message_handler IS
     CONSTRUCTOR FUNCTION t_default_message_handler
     RETURN SELF AS RESULT IS
     BEGIN
-    
         SELF.dummy := 'X';
-        
         RETURN;
-        
     END;
     
     OVERRIDING FINAL MEMBER FUNCTION get_log_level
@@ -40,7 +37,7 @@ CREATE OR REPLACE TYPE BODY t_default_message_handler IS
         ,p_call_stack IN VARCHAR2) IS
     BEGIN
     
-        default_message_handler.create_message(p_level, p_message, p_call_stack);
+        default_message_handler.save_message(p_level, p_message, p_call_stack);
     
     END;
 

@@ -18,14 +18,14 @@ suite("Error tests", function() {
 
     setup("Setup", function() {
 
-        database.call("log$.reset_message_resolver");
+        database.call("default_message_resolver.reset");
 
-        database.call("log$.register_message", {
+        database.call("default_message_resolver.register_message", {
             p_code: "MSG-00001",
             p_message: "Hello, :1!"
         });
 
-        database.call("log$.register_message", {
+        database.call("default_message_resolver.register_message", {
             p_code: "MSG-00002",
             p_message: "Good bye, World!"
         });

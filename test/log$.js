@@ -222,4 +222,165 @@ suite("Default message handler tests", function() {
 
     });
 
+    test("Reset message tail", function() {
+    
+        database.call("default_message_handler.reset");
+
+        var tailSize = database.selectValue(`COUNT(*)
+            FROM log$tail`);
+
+        expect(tailSize).to.be(0);
+    
+    });
+    
+    test("Set capacity of empty tail", function() {
+    
+        database.call("default_message_handler.set_capacity", {
+            p_capacity: 5
+        });
+
+        var size = database.call("default_message_handler.get_capacity");
+
+        expect(size).to.be(5);
+    
+    });
+    
+    test("Add more messages than tail capacity", function() {
+    
+        for (var i = 1; i <= 7; i++)
+            database.call("log$.info", {
+                p_message: `INFO ${i}`
+            });
+
+        var tail = database.selectRows(`message_text
+            FROM log$tail`);
+
+        expect(tail).to.eql([
+            ["INFO 7"],
+            ["INFO 6"],
+            ["INFO 5"],
+            ["INFO 4"],
+            ["INFO 3"]
+        ]);
+    
+    });
+    
+    setup("Reset and fill log tail", function() {
+    
+        database.call("default_message_handler.reset");
+
+        for (var i = 1; i <= 5; i++)
+            database.call("log$.info", {
+                p_message: `INFO ${i}`
+            });
+    
+    });
+    
+    test("Increase capacity and fill the tail", function() {
+    
+        database.call("default_message_handler.set_capacity", {
+            p_capacity: 8
+        });
+
+        for (var i = 6; i <= 8; i++)
+            database.call("log$.info", {
+                p_message: `INFO ${i}`
+            });
+
+        var tail = database.selectRows(`message_text
+            FROM log$tail`);
+
+        expect(tail).to.eql([
+            ["INFO 8"],
+            ["INFO 7"],
+            ["INFO 6"],
+            ["INFO 5"],
+            ["INFO 4"],
+            ["INFO 3"],
+            ["INFO 2"],
+            ["INFO 1"]
+        ]);
+    
+    });
+
+    test("Increase capacity when the first message pointer is > 1", function() {
+        
+        database.call("default_message_handler.reset");
+
+        database.call("default_message_handler.set_capacity", {
+            p_capacity: 5
+        });
+
+        for (var i = 1; i <= 7; i++)
+            database.call("log$.info", {
+                p_message: `INFO ${i}`
+            });
+
+        var tail = database.selectRows(`message_text
+            FROM log$tail`);
+
+        expect(tail).to.eql([
+            ["INFO 7"],
+            ["INFO 6"],
+            ["INFO 5"],
+            ["INFO 4"],
+            ["INFO 3"]
+        ]);
+
+        var result = database.call("default_message_handler.set_capacity", {
+            p_capacity: 7
+        });
+
+        database.call("log$.info", {
+            p_message: `INFO 8`
+        });
+
+        database.call("log$.info", {
+            p_message: `INFO 9`
+        });
+
+        tail = database.selectRows(`message_text
+            FROM log$tail`);
+
+        expect(tail).to.eql([
+            ["INFO 9"],
+            ["INFO 8"],
+            ["INFO 7"],
+            ["INFO 6"],
+            ["INFO 5"],
+            ["INFO 4"],
+            ["INFO 3"]
+        ]);
+    
+    });
+    
+    test("Decrease capacity when the tail is fully filled", function() {
+    
+        database.call("default_message_handler.reset");
+
+        database.call("default_message_handler.set_capacity", {
+            p_capacity: 5
+        });
+
+        for (var i = 1; i <= 8; i++)
+            database.call("log$.info", {
+                p_message: `INFO ${i}`
+            });
+
+        database.call("default_message_handler.set_capacity", {
+            p_capacity: 3
+        });
+
+        var tail = database.selectRows(`message_text
+            FROM log$tail`);
+
+        expect(tail).to.eql([
+            ["INFO 8"],
+            ["INFO 7"],
+            ["INFO 6"]
+        ]);
+    
+    });
+    
+
 });

@@ -14,17 +14,15 @@
     limitations under the License.
 */
 
+DROP CONTEXT log$context
+/
+
 DROP VIEW log$tail
 /
 
-DROP PACKAGE default_message_handler
-/
 DROP TYPE t_default_message_handler
 /
-DROP TABLE log$records
-/
-
-DROP TYPE t_log_message_handler
+DROP PACKAGE default_message_handler
 /
 
 DROP PACKAGE default_message_resolver
@@ -32,12 +30,15 @@ DROP PACKAGE default_message_resolver
 DROP TYPE t_default_message_resolver
 /
 
-DROP TYPE t_log_message_resolver
-/
-
 DROP PACKAGE error$
 /
 DROP PACKAGE log$
+/
+
+DROP TYPE t_log_message_handler
+/
+
+DROP TYPE t_log_message_resolver
 /
 
 DROP TYPE t_varchars

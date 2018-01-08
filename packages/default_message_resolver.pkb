@@ -16,18 +16,8 @@ CREATE OR REPLACE PACKAGE BODY default_message_resolver IS
         limitations under the License.
     */
     
-    v_resolver_instance t_default_message_resolver := t_default_message_resolver();
-
     TYPE t_messages IS TABLE OF VARCHAR2(32000) INDEX BY VARCHAR2(32000);
     v_messages t_messages;
-
-    FUNCTION get_resolver_instance
-    RETURN t_default_message_resolver IS
-    BEGIN
-    
-        RETURN v_resolver_instance;
-    
-    END;
 
     PROCEDURE reset IS
     BEGIN

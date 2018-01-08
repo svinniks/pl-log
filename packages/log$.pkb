@@ -16,29 +16,38 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         limitations under the License.
     */
 
-    v_message_resolver t_log_message_resolver;
+    TYPE t_message_resolvers IS TABLE OF t_log_message_resolver;
+    v_message_resolvers t_message_resolvers;
     
     TYPE t_message_handlers IS TABLE OF t_log_message_handler;
     v_message_handlers t_message_handlers;
     
-    v_system_log_level PLS_INTEGER;
     v_session_log_level PLS_INTEGER;
 
     PROCEDURE init IS
     BEGIN
     
-        v_message_resolver := t_default_message_resolver();
-        v_message_handlers := t_message_handlers(t_default_message_handler());
+        v_message_resolvers := t_message_resolvers();
+        v_message_handlers := t_message_handlers();
         
         BEGIN
         
-            EXECUTE IMMEDIATE 'BEGIN log$init; END;';
+            EXECUTE IMMEDIATE 'BEGIN log$_init; END;';
         
         EXCEPTION
             WHEN OTHERS THEN
                 NULL;
         END;
     
+    END;
+    
+    PROCEDURE add_message_resolver
+        (p_message_resolver IN t_log_message_resolver) IS
+    BEGIN
+    
+        v_message_resolvers.EXTEND(1);
+        v_message_resolvers(v_message_resolvers.COUNT) := p_message_resolver;
+          
     END;
     
     PROCEDURE add_message_handler
@@ -50,24 +59,25 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
-    PROCEDURE set_message_resolver
-        (p_message_resolver IN t_log_message_resolver) IS
-    BEGIN
-    
-        v_message_resolver := p_message_resolver;
-          
-    END;
-    
     FUNCTION resolve_message
         (p_code IN VARCHAR2)
     RETURN VARCHAR2 IS
-    BEGIN
     
-        IF v_message_resolver IS NULL THEN
-            RETURN NULL;
-        ELSE
-            RETURN v_message_resolver.resolve_message(p_code);
-        END IF;
+        v_message VARCHAR2(32000);
+    
+    BEGIN
+     
+        FOR v_i IN 1..v_message_resolvers.COUNT LOOP
+        
+            v_message := v_message_resolvers(v_i).resolve_message(p_code);
+            
+            IF v_message IS NOT NULL THEN
+                RETURN v_message;
+            END IF;
+        
+        END LOOP;
+    
+        RETURN NULL;
         
     END;
 
@@ -197,15 +207,23 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         ,p_arguments IN t_varchars := NULL) IS
         
         v_message VARCHAR2(4000);
+        v_message_formatted BOOLEAN;
         
     BEGIN
-        
-        v_message := format_message(p_message, p_arguments);
+    
+        v_message_formatted := FALSE;
         
         FOR v_i IN 1..v_message_handlers.COUNT LOOP
         
             IF p_level >= COALESCE(v_message_handlers(v_i).get_log_level, get_session_log_level, get_system_log_level) THEN
+            
+                IF NOT v_message_formatted THEN
+                    v_message := format_message(p_message, p_arguments);
+                    v_message_formatted := TRUE;
+                END IF;
+              
                 v_message_handlers(v_i).handle_message(p_level, p_message, NULL);
+                
             END IF;
         
         END LOOP;
@@ -252,7 +270,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     RETURN PLS_INTEGER IS
     BEGIN
     
-        RETURN v_system_log_level;
+        RETURN SYS_CONTEXT('log$context', 'log_level'); 
     
     END;
     
@@ -260,9 +278,35 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         (p_level IN PLS_INTEGER) IS
     BEGIN
     
-        v_system_log_level := p_level;
+        DBMS_SESSION.SET_CONTEXT('log$context', 'log_level', p_level);
     
     END;       
+    
+    PROCEDURE init_system_log_level
+        (p_level IN PLS_INTEGER) IS
+         
+        v_dummy NUMBER;
+        
+        CURSOR c_context_variable IS
+            SELECT 1
+            FROM global_context
+            WHERE namespace = 'LOG$CONTEXT'
+                  AND attribute = 'LOG_LEVEL';
+        
+    BEGIN
+    
+        OPEN c_context_variable;
+        
+        FETCH c_context_variable
+        INTO v_dummy;
+        
+        IF c_context_variable%NOTFOUND THEN
+            set_system_log_level(p_level);
+        END IF;
+        
+        CLOSE c_context_variable;
+    
+    END;
         
     FUNCTION get_session_log_level
     RETURN PLS_INTEGER IS

@@ -1,4 +1,3 @@
 CREATE OR REPLACE VIEW log$tail AS
 SELECT *
-FROM log$records
-ORDER BY sequence DESC
+FROM TABLE(default_message_handler.tail)

@@ -16,9 +16,6 @@ CREATE OR REPLACE PACKAGE default_message_resolver IS
         limitations under the License.
     */
 
-    FUNCTION get_resolver_instance
-    RETURN t_default_message_resolver;
-
     PROCEDURE reset;
 
     PROCEDURE register_message
