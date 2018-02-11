@@ -29,7 +29,7 @@ CREATE OR REPLACE PACKAGE default_message_handler IS
     T_DEFAULT_MESSAGE_HANDLER are configured for LOG$, each message will appear in LOG$TAIL 
     as many times as handler instances there are!
             
-    @change 14.11.2017 S.Vinniks Initial release.
+   %change 14.11.2017 S.Vinniks Initial release.
         
     */
     
