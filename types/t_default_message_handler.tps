@@ -34,4 +34,3 @@ CREATE OR REPLACE TYPE t_default_message_handler UNDER t_log_message_handler(
         ,p_call_stack IN VARCHAR2)
     
 );
-/

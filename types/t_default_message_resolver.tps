@@ -24,4 +24,3 @@ CREATE OR REPLACE TYPE t_default_message_resolver UNDER t_log_message_resolver(
     RETURN VARCHAR2
     
 );
-/

@@ -27,4 +27,3 @@ CREATE OR REPLACE PACKAGE default_message_resolver IS
     RETURN VARCHAR2;
 
 END;
-/

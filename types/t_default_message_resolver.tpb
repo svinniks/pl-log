@@ -33,4 +33,3 @@ CREATE OR REPLACE TYPE BODY t_default_message_resolver IS
     END;
 
 END;
-/

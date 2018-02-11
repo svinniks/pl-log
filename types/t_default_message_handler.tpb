@@ -42,4 +42,3 @@ CREATE OR REPLACE TYPE BODY t_default_message_handler IS
     END;
 
 END;
-/

@@ -15,5 +15,3 @@
 */
 
 CREATE OR REPLACE TYPE t_numbers IS TABLE OF NUMBER
-/
-

@@ -27,4 +27,3 @@ CREATE OR REPLACE TYPE t_log_message_handler IS OBJECT (
         ,p_call_stack IN VARCHAR2)
     
 ) NOT INSTANTIABLE NOT FINAL;
-/

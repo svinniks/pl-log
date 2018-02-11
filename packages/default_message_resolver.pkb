@@ -59,4 +59,3 @@ CREATE OR REPLACE PACKAGE BODY default_message_resolver IS
     END;
 
 END;
-/
