@@ -260,6 +260,66 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         message(c_DEBUG, p_message, p_arguments);
         
     END;
+    
+    PROCEDURE debug (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        debug(p_message, t_varchars(p_argument_1));
+    
+    END;
+    
+    PROCEDURE debug (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        debug(p_message, t_varchars(p_argument_1, p_argument_2));
+    
+    END;
+    
+    PROCEDURE debug (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        debug(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3));
+    
+    END;
+    
+    PROCEDURE debug (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        debug(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4));
+    
+    END;
+    
+    PROCEDURE debug (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2,
+        p_argument_5 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        debug(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4, p_argument_5));
+    
+    END;
         
     PROCEDURE info (
         p_message IN VARCHAR2,
@@ -271,6 +331,66 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
     END; 
         
+    PROCEDURE info (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        info(p_message, t_varchars(p_argument_1));
+    
+    END;
+    
+    PROCEDURE info (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        info(p_message, t_varchars(p_argument_1, p_argument_2));
+    
+    END;
+    
+    PROCEDURE info (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        info(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3));
+    
+    END;
+    
+    PROCEDURE info (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        info(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4));
+    
+    END;
+    
+    PROCEDURE info (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2,
+        p_argument_5 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        info(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4, p_argument_5));
+    
+    END;
+    
     PROCEDURE warning (
         p_message IN VARCHAR2,
         p_arguments IN t_varchars := NULL
@@ -279,6 +399,66 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
         message(c_WARNING, p_message, p_arguments);
         
+    END;
+    
+    PROCEDURE warning (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        warning(p_message, t_varchars(p_argument_1));
+    
+    END;
+    
+    PROCEDURE warning (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        warning(p_message, t_varchars(p_argument_1, p_argument_2));
+    
+    END;
+    
+    PROCEDURE warning (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        warning(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3));
+    
+    END;
+    
+    PROCEDURE warning (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        warning(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4));
+    
+    END;
+    
+    PROCEDURE warning (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2,
+        p_argument_5 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        warning(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4, p_argument_5));
+    
     END;
         
     PROCEDURE error (
@@ -289,6 +469,66 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
         message(c_ERROR, p_message, p_arguments);
         
+    END;
+    
+    PROCEDURE error (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        error(p_message, t_varchars(p_argument_1));
+    
+    END;
+    
+    PROCEDURE error (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        error(p_message, t_varchars(p_argument_1, p_argument_2));
+    
+    END;
+    
+    PROCEDURE error (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        error(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3));
+    
+    END;
+    
+    PROCEDURE error (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        error(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4));
+    
+    END;
+    
+    PROCEDURE error (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2,
+        p_argument_5 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        error(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4, p_argument_5));
+    
     END;
     
     FUNCTION get_system_log_level

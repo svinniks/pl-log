@@ -134,6 +134,14 @@ CREATE OR REPLACE PACKAGE BODY default_message_handler IS
     
         v_log_record.log_date := CURRENT_TIMESTAMP;
         v_log_record.log_level := p_level;
+        
+        v_log_record.log_level_name := CASE p_level
+            WHEN log$.C_DEBUG THEN 'DEBUG'
+            WHEN log$.C_INFO THEN 'INFO'
+            WHEN log$.C_WARNING THEN 'WARNING'
+            WHEN log$.C_ERROR THEN 'ERROR'
+        END;
+        
         v_log_record.message := p_message;
   
         save_record(v_log_record);

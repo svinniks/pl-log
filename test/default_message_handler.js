@@ -1,7 +1,7 @@
-const ERROR = 1000;
-const WARNING = 750;
-const INFO = 500;
-const DEBUG = 250;
+const ERROR = 800;
+const WARNING = 600;
+const INFO = 400;
+const DEBUG = 200;
 
 suite("Default message handler tests", function() {
 
@@ -71,13 +71,18 @@ suite("Default message handler tests", function() {
 
     });
 
-    test("Add some log messages", function() {
+    test("Add log messages of all predefined levels + one custom level", function() {
     
         database.call("default_message_handler.reset");
 
         database.call("default_message_handler.handle_message", {
             p_level: ERROR,
             p_message: "Error message"
+        });
+
+        database.call("default_message_handler.handle_message", {
+            p_level: WARNING,
+            p_message: "Warning message"
         });
 
         database.call("default_message_handler.handle_message", {
@@ -104,9 +109,10 @@ suite("Default message handler tests", function() {
     
         expect(messages).to.eql([
             [123, null, "Level 123 message"],
-            [DEBUG, null, "Debug message"],
-            [INFO, null, "Info message"],
-            [ERROR, null, "Error message"],
+            [DEBUG, 'DEBUG', "Debug message"],
+            [INFO, 'INFO', "Info message"],
+            [WARNING, 'WARNING', "Warning message"],
+            [ERROR, 'ERROR', "Error message"],
         ]);
     
     });
@@ -168,9 +174,9 @@ suite("Default message handler tests", function() {
     
         expect(messages).to.eql([
             [123, null, "Level 123 message"],
-            [DEBUG, null, "Debug message"],
-            [INFO, null, "Info message"],
-            [ERROR, null, "Error message"],
+            [DEBUG, 'DEBUG', "Debug message"],
+            [INFO, 'INFO', "Info message"],
+            [ERROR, 'ERROR', "Error message"],
         ]);
     
     });
