@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE BODY t_default_message_resolver IS
+CREATE OR REPLACE TYPE t_log_message_formatter IS OBJECT (
 
     /* 
         Copyright 2017 Sergejs Vinniks
@@ -15,22 +15,14 @@ CREATE OR REPLACE TYPE BODY t_default_message_resolver IS
         See the License for the specific language governing permissions and
         limitations under the License.
     */
-
-    CONSTRUCTOR FUNCTION t_default_message_resolver
-    RETURN self AS RESULT IS
-    BEGIN
-        dummy := 'X';
-        RETURN;
-    END;
-
-    OVERRIDING MEMBER FUNCTION resolve_message (
-        p_message IN VARCHAR2
-    )
-    RETURN VARCHAR2 IS
-    BEGIN
-    
-        RETURN default_message_resolver.resolve_message(p_message);
+  
+    dummy CHAR,
         
-    END;
-
-END;
+    NOT INSTANTIABLE MEMBER FUNCTION format_message (
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars
+    )
+    RETURN VARCHAR2
+    
+) 
+NOT INSTANTIABLE NOT FINAL

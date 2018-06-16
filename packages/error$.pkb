@@ -28,7 +28,8 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         (p_message IN VARCHAR2
         ,p_arguments IN t_varchars := NULL) IS
     BEGIN
-        raise_application_error(v_error_code, log$.format_message(p_message, p_arguments));
+        log$.error(p_message, p_arguments);
+        raise_application_error(v_error_code, log$.format_message(log$.c_ERROR, p_message, p_arguments));
     END;
         
     PROCEDURE raise

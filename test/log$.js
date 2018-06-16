@@ -1,386 +1,1249 @@
-/* 
-    Copyright 2017 Sergejs Vinniks
+const NONE = 1001;
+const ERROR = 800;
+const WARNING = 600;
+const INFO = 400;
+const DEBUG = 200;
+const ALL = 0;
 
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
- 
-      http://www.apache.org/licenses/LICENSE-2.0
+suite("Log level management", function() {
 
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-*/
-
-suite("Default message resolver tests", function() {
-
-    setup("Reset default message resolver", function() {
-        
-        database.call("default_message_resolver.reset");    
+    test("Set and get session level", function() {
     
-    });
-    
-    test("Register a message in the default resolver", function() {
-
-        var result = database.call("default_message_resolver.register_message", {
-            p_code: "MSG-00001",
-            p_message: "Hello, :1!"
+        database.call("log$.set_session_log_level", {
+            p_level: 123
         });
 
-    });
+        let level = database.call("log$.get_session_log_level");
 
-    test("Resolve registered message", function() {
-    
-        var result = database.call("log$.resolve_message", {
-            p_code: "MSG-00001"
-        });
-
-        expect(result).to.be("Hello, :1!");
+        expect(level).to.be(123);
     
     });
 
-    test("Resolve an unexisting message", function() {
+    test("Reset system level", function() {
     
-        var result = database.call("log$.resolve_message", {
-            p_code: "MSG-00002"
-        });
+        database.call("log$.reset_system_log_level");
 
-        expect(result).to.be.null;
-    
-    });
+        let level = database.call("log$.get_system_log_level");
 
-});
-
-suite("Message formatting tests", function() {
-
-    test("Format a resolvable message without arguments", function() {
-    
-        var result = database.call("log$.format_message", {
-            p_message: "MSG-00001"
-        });
-
-        expect(result).to.be("MSG-00001: Hello, :1!");
+        expect(level).to.be(null);
     
     });
 
-    test("Format a resolvable message with argument array", function() {
+    test("Initialize system level", function() {
     
-        var result = database.call("log$.format_message", {
-            p_message: "MSG-00001",
-            p_arguments: ["World"]
+        database.call("log$.reset_system_log_level");
+
+        database.call("log$.init_system_log_level", {
+            p_level: 123
         });
 
-        expect(result).to.be("MSG-00001: Hello, World!");
+        let level = database.call("log$.get_system_log_level");
+
+        expect(level).to.be(123);
     
     });
 
-    test("Format a resolvable message with a one argument overloaded function", function() {
+    test("Initialize already initialized system level", function() {
     
-        var result = database.call2("log$.format_message", {
-            p_message: "MSG-00001",
-            p_argument1: "World"
+        database.call("log$.reset_system_log_level");
+
+        database.call("log$.init_system_log_level", {
+            p_level: 123
         });
 
-        expect(result).to.be("MSG-00001: Hello, World!");
+        database.call("log$.init_system_log_level", {
+            p_level: 321
+        });
+
+        let level = database.call("log$.get_system_log_level");
+
+        expect(level).to.be(123);
     
     });
 
-    test("Format an unresolvable message argument array", function() {
+    test("Set system level, get from another (proxy) session", function() {
     
-        var result = database.call("log$.format_message", {
-            p_message: "MSG-00002",
-            p_arguments: ["World"]
+        database.call("log$.set_system_log_level", {
+            p_level: 777
         });
 
-        expect(result).to.be("MSG-00002 (World)");
-    
-    });
+        database.commit();
 
-    test("Format an unresolvable message without arguments", function() {
-    
-        var result = database.call("log$.format_message", {
-            p_message: "MSG-00002"
-        });
+        let level = database.call("log$.get_system_log_level");
 
-        expect(result).to.be("MSG-00002");
+        expect(level).to.be(777);
     
     });
     
 });
 
-suite("Default message handler tests", function() {
+suite("Message resolving and formatting", function() {
 
-    var DEBUG = 250, INFO = 500, WARNING = 750, ERROR = 1000;
-
-    setup("Reset default message resolver and hadler", function() {
+    suite("Concatenation formatter", function() {
+    
+        test("NULL message, NULL arguments", function() {
         
-        database.call("default_message_resolver.reset");    
-        database.call("default_message_handler.reset");    
-    
-    });
+            database.call("log$.reset");
 
-    test("Set handler level to NULL", function() {
-
-        database.call("default_message_handler.set_log_level", {
-            p_level: null
-        });
-
-        var logLevel = database.call("default_message_handler.get_log_level");
-
-        expect(logLevel).to.be(null);
-
-    });
-
-    test("Set handler level to INFO", function() {
-
-        database.call("default_message_handler.set_log_level", {
-            p_level: INFO
-        });
-
-        var logLevel = database.call("default_message_handler.get_log_level");
-
-        expect(logLevel).to.be(INFO);
-
-    });
-
-    test("Log message of level DEBUG", function() {
-    
-        var result = database.call("log$.debug", {
-            p_message: "DEBUG message 1"
-        });
-    
-        var tail = database.selectRows(`*
-            FROM log$tail`);
-
-        expect(tail).to.eql([]);
-
-    });
-    
-    test("Log message of level INFO", function() {
-    
-        var result = database.call("log$.info", {
-            p_message: "INFO message 1"
-        });
-    
-        var tail = database.selectRows(`log_level, message_text
-            FROM log$tail`);
-
-        expect(tail).to.eql([
-            [INFO, "INFO message 1"]
-        ]);
-
-    });
-
-    test("Log another message of level INFO", function() {
-    
-        var result = database.call("log$.info", {
-            p_message: "INFO message 2"
-        });
-    
-        var tail = database.selectRows(`log_level, message_text
-            FROM log$tail`);
-
-        expect(tail).to.eql([
-            [INFO, "INFO message 2"],
-            [INFO, "INFO message 1"]
-        ]);
-
-    });
-
-    test("Log another message of level DEBUG", function() {
-    
-        var result = database.call("log$.debug", {
-            p_message: "DEBUG message 2"
-        });
-    
-        var tail = database.selectRows(`log_level, message_text
-            FROM log$tail`);
-
-        expect(tail).to.eql([
-            [INFO, "INFO message 2"],
-            [INFO, "INFO message 1"]
-        ]);
-
-    });
-
-    test("Log message of level ERROR", function() {
-    
-        var result = database.call("log$.error", {
-            p_message: "ERROR message 1"
-        });
-    
-        var tail = database.selectRows(`log_level, message_text
-            FROM log$tail`);
-
-        expect(tail).to.eql([
-            [ERROR, "ERROR message 1"],
-            [INFO, "INFO message 2"],
-            [INFO, "INFO message 1"]
-        ]);
-
-    });
-
-    test("Reset message tail", function() {
-    
-        database.call("default_message_handler.reset");
-
-        var tailSize = database.selectValue(`COUNT(*)
-            FROM log$tail`);
-
-        expect(tailSize).to.be(0);
-    
-    });
-    
-    test("Set capacity of empty tail", function() {
-    
-        database.call("default_message_handler.set_capacity", {
-            p_capacity: 5
-        });
-
-        var size = database.call("default_message_handler.get_capacity");
-
-        expect(size).to.be(5);
-    
-    });
-    
-    test("Add more messages than tail capacity", function() {
-    
-        for (var i = 1; i <= 7; i++)
-            database.call("log$.info", {
-                p_message: `INFO ${i}`
+            let message = database.call("log$.format_message", {
+                p_level: INFO,
+                p_message: null,
+                p_arguments: null
             });
 
-        var tail = database.selectRows(`message_text
-            FROM log$tail`);
-
-        expect(tail).to.eql([
-            ["INFO 7"],
-            ["INFO 6"],
-            ["INFO 5"],
-            ["INFO 4"],
-            ["INFO 3"]
-        ]);
-    
-    });
-    
-    setup("Reset and fill log tail", function() {
-    
-        database.call("default_message_handler.reset");
-
-        for (var i = 1; i <= 5; i++)
-            database.call("log$.info", {
-                p_message: `INFO ${i}`
-            });
-    
-    });
-    
-    test("Increase capacity and fill the tail", function() {
-    
-        database.call("default_message_handler.set_capacity", {
-            p_capacity: 8
-        });
-
-        for (var i = 6; i <= 8; i++)
-            database.call("log$.info", {
-                p_message: `INFO ${i}`
-            });
-
-        var tail = database.selectRows(`message_text
-            FROM log$tail`);
-
-        expect(tail).to.eql([
-            ["INFO 8"],
-            ["INFO 7"],
-            ["INFO 6"],
-            ["INFO 5"],
-            ["INFO 4"],
-            ["INFO 3"],
-            ["INFO 2"],
-            ["INFO 1"]
-        ]);
-    
-    });
-
-    test("Increase capacity when the first message pointer is > 1", function() {
+            expect(message).to.be(null);
         
-        database.call("default_message_handler.reset");
-
-        database.call("default_message_handler.set_capacity", {
-            p_capacity: 5
         });
+        
+        test("NULL message, empty arguments", function() {
+        
+            database.call("log$.reset");
 
-        for (var i = 1; i <= 7; i++)
-            database.call("log$.info", {
-                p_message: `INFO ${i}`
+            let message = database.call("log$.format_message", {
+                p_level: INFO,
+                p_message: null,
+                p_arguments: []
             });
 
-        var tail = database.selectRows(`message_text
-            FROM log$tail`);
-
-        expect(tail).to.eql([
-            ["INFO 7"],
-            ["INFO 6"],
-            ["INFO 5"],
-            ["INFO 4"],
-            ["INFO 3"]
-        ]);
-
-        var result = database.call("default_message_handler.set_capacity", {
-            p_capacity: 7
+            expect(message).to.be(null);
+        
         });
 
-        database.call("log$.info", {
-            p_message: `INFO 8`
+        test("NULL message, one argument", function() {
+        
+            database.call("log$.reset");
+
+            let message = database.call("log$.format_message", {
+                p_level: INFO,
+                p_message: null,
+                p_arguments: ["hello"]
+            });
+
+            expect(message).to.be("(hello)");
+        
         });
 
-        database.call("log$.info", {
-            p_message: `INFO 9`
+        test("NULL message, multiple arguments", function() {
+        
+            database.call("log$.reset");
+
+            let message = database.call("log$.format_message", {
+                p_level: INFO,
+                p_message: null,
+                p_arguments: ["hello", "world", "!"]
+            });
+
+            expect(message).to.be("(hello, world, !)");
+        
         });
 
-        tail = database.selectRows(`message_text
-            FROM log$tail`);
+        test("Non-NULL message, multiple arguments", function() {
+        
+            database.call("log$.reset");
 
-        expect(tail).to.eql([
-            ["INFO 9"],
-            ["INFO 8"],
-            ["INFO 7"],
-            ["INFO 6"],
-            ["INFO 5"],
-            ["INFO 4"],
-            ["INFO 3"]
-        ]);
+            let message = database.call("log$.format_message", {
+                p_level: INFO,
+                p_message: "Hello, World!",
+                p_arguments: ["hello", "world", "!"]
+            });
+
+            expect(message).to.be("Hello, World! (hello, world, !)");
+        
+        });
+    
+    });
+
+    suite("Resolvers", function() {
+    
+        let dummyResolverName;
+
+        setup("Create a dummy resolver", function() {
+        
+            dummyResolverName = randomString(30);
+
+            database.run(`
+                BEGIN
+
+                    EXECUTE IMMEDIATE '
+                        CREATE OR REPLACE TYPE "${dummyResolverName}" UNDER t_log_message_resolver (
+                            
+                            CONSTRUCTOR FUNCTION "${dummyResolverName}"
+                            RETURN self AS RESULT,
+
+                            OVERRIDING MEMBER FUNCTION resolve_message (
+                                p_message IN VARCHAR2
+                            )
+                            RETURN VARCHAR2
+
+                        );
+                    ';
+
+                    EXECUTE IMMEDIATE '
+                        CREATE OR REPLACE TYPE BODY "${dummyResolverName}" IS
+                            
+                            CONSTRUCTOR FUNCTION "${dummyResolverName}"
+                            RETURN self AS RESULT IS
+                            BEGIN
+                                RETURN;
+                            END;
+
+                            OVERRIDING MEMBER FUNCTION resolve_message (
+                                p_message IN VARCHAR2
+                            )
+                            RETURN VARCHAR2 IS
+                            BEGIN
+                                RETURN UPPER(p_message);
+                            END;
+
+                        END;
+                    ';
+
+                END;
+            `);
+        
+        });
+
+        test("Add resolver with no level (defaults to ALL), resolve a message", function() {
+        
+            database.call("log$.reset");
+
+            database.run(`
+                BEGIN
+                    log$.add_resolver("${dummyResolverName}"());    
+                END;
+            `);
+
+            let message = database.call("log$.format_message", {
+                p_level: INFO,
+                p_message: "hello, world!",
+                p_arguments: null
+            });
+
+            expect(message).to.be("HELLO, WORLD!");
+        
+        });
+        
+        test("Add resolver with INFO level, resolve a DEBUG message", function() {
+        
+            database.call("log$.reset");
+
+            database.run(`
+                BEGIN
+                    log$.add_resolver("${dummyResolverName}"(), p_level => log$.c_INFO);    
+                END;
+            `);
+
+            let message = database.call("log$.format_message", {
+                p_level: DEBUG,
+                p_message: "hello, world!",
+                p_arguments: null
+            });
+
+            expect(message).to.be("hello, world!");
+        
+        });
+
+        test("Add resolver with INFO level, resolve an ERROR message", function() {
+        
+            database.call("log$.reset");
+
+            database.run(`
+                BEGIN
+                    log$.add_resolver("${dummyResolverName}"(), p_level => log$.c_INFO);    
+                END;
+            `);
+
+            let message = database.call("log$.format_message", {
+                p_level: ERROR,
+                p_message: "hello, world!",
+                p_arguments: null
+            });
+
+            expect(message).to.be("HELLO, WORLD!");
+        
+        });
+
+        test("Resolver, which can't resolve the message", function() {
+        
+            database.call("log$.reset");
+
+            database.run(`
+                BEGIN
+                    log$.add_resolver(t_default_message_resolver());    
+                END;
+            `);
+
+            let message = database.call("log$.format_message", {
+                p_level: ERROR,
+                p_message: "hello, world!",
+                p_arguments: null
+            });
+
+            expect(message).to.be("hello, world!");
+        
+        });
+
+        test("Two resolvers, the first can't resolve, the second resolves", function() {
+        
+            database.call("log$.reset");
+
+            database.run(`
+                BEGIN
+                    log$.add_resolver(t_default_message_resolver()); 
+                    log$.add_resolver("${dummyResolverName}"());       
+                END;
+            `);
+
+            let message = database.call("log$.format_message", {
+                p_level: ERROR,
+                p_message: "hello, world!",
+                p_arguments: null
+            });
+
+            expect(message).to.be("HELLO, WORLD!");
+        
+        });
+
+        test("Two resolvers, the first resolves", function() {
+        
+            database.call("log$.reset");
+
+            database.run(`
+                BEGIN
+                    log$.add_resolver("${dummyResolverName}"());       
+                    log$.add_resolver(t_default_message_resolver()); 
+                END;
+            `);
+
+            let message = database.call("log$.format_message", {
+                p_level: ERROR,
+                p_message: "hello, world!",
+                p_arguments: null
+            });
+
+            expect(message).to.be("HELLO, WORLD!");
+        
+        });
+
+        teardown("Drop the dummy resolver", function() {
+        
+            database.run(`
+                BEGIN
+                    EXECUTE IMMEDIATE '
+                        DROP TYPE "${dummyResolverName}"
+                    ';
+                END;
+            `);
+
+            database.commit();
+        
+        });
+        
+    
+    });
+
+    suite("Custom formatters", function() {
+    
+        test("No resolver, default formatter", function() {
+        
+            database.call("log$.reset");
+
+            database.run(`
+                BEGIN
+                    log$.set_default_formatter(
+                        t_default_message_formatter(':')
+                    );    
+                END;
+            `);
+        
+            let message = database.call("log$.format_message", {
+                p_level: INFO,
+                p_message: "Hello, :1!",
+                p_arguments: ["World"]
+            });
+
+            expect(message).to.be("Hello, World!");
+
+        });
+
+        test("Resolver with no formatter, default formatter", function() {
+        
+            database.call("log$.reset");
+            
+            database.call("default_message_resolver.reset");
+            database.call("default_message_resolver.register_message", {
+                p_code: "MSG-00001",
+                p_message: "Hello, :1!"
+            });
+
+            database.run(`
+                BEGIN
+
+                    log$.add_resolver(
+                        t_default_message_resolver()
+                    );
+
+                    log$.set_default_formatter(
+                        t_default_message_formatter(':')
+                    );    
+                    
+                END;
+            `);
+        
+            let message = database.call("log$.format_message", {
+                p_level: INFO,
+                p_message: "MSG-00001",
+                p_arguments: ["World"]
+            });
+
+            expect(message).to.be("Hello, World!");
+        
+        });
+
+        test("Resolver with formatter, default formatter", function() {
+        
+            database.call("log$.reset");
+            
+            database.call("default_message_resolver.reset");
+            database.call("default_message_resolver.register_message", {
+                p_code: "MSG-00001",
+                p_message: "Hello, :1!"
+            });
+
+            database.run(`
+                BEGIN
+
+                    log$.add_resolver(
+                        t_default_message_resolver(),
+                        t_default_message_formatter(':')
+                    );
+
+                    log$.set_default_formatter(
+                        t_default_message_formatter('#')
+                    );    
+                    
+                END;
+            `);
+        
+            let message = database.call("log$.format_message", {
+                p_level: INFO,
+                p_message: "MSG-00001",
+                p_arguments: ["World"]
+            });
+
+            expect(message).to.be("Hello, World!");
+        
+        });
+
+        test("Resolver, no formatter, no default formatter", function() {
+        
+            database.call("log$.reset");
+            
+            database.call("default_message_resolver.reset");
+            database.call("default_message_resolver.register_message", {
+                p_code: "MSG-00001",
+                p_message: "Hello, :1!"
+            });
+
+            database.run(`
+                BEGIN
+                    log$.add_resolver(
+                        t_default_message_resolver()
+                    );
+                END;
+            `);
+        
+            let message = database.call("log$.format_message", {
+                p_level: INFO,
+                p_message: "MSG-00001",
+                p_arguments: ["World"]
+            });
+
+            expect(message).to.be("Hello, :1! (World)");
+        
+        });
+        
+        
+        
+    });
+
+});
+
+suite("Message handling", function() {
+
+    suite("Raw message handlers", function() {
+    
+        let handlerTypeName = randomString(30);
+        let handlerPackageName = randomString(30);
+
+        setup("Create a dummy raw message handler", function() {
+        
+            database.run(`
+                BEGIN
+
+                    EXECUTE IMMEDIATE '
+                        CREATE OR REPLACE PACKAGE "${handlerPackageName}" IS
+                            
+                            v_messages t_varchars;
+
+                            PROCEDURE reset;
+
+                            PROCEDURE handle_message (
+                                p_level IN log$.t_message_log_level,
+                                p_message IN VARCHAR2,
+                                p_arguments IN t_varchars
+                            );
+
+                            FUNCTION get_messages
+                            RETURN t_varchars;
+
+                        END;
+                    ';
+
+                    EXECUTE IMMEDIATE '
+                        CREATE OR REPLACE PACKAGE BODY "${handlerPackageName}" IS
+
+                            PROCEDURE reset IS
+                            BEGIN
+                                v_messages := t_varchars();
+                            END;
+
+                            PROCEDURE handle_message (
+                                p_level IN log$.t_message_log_level,
+                                p_message IN VARCHAR2,
+                                p_arguments IN t_varchars
+                            ) IS
+                            BEGIN
+
+                                v_messages.EXTEND(1);
+                                v_messages(v_messages.COUNT) := p_level || '': '' || t_default_message_formatter('':'').format_message(
+                                    p_message,
+                                    p_arguments
+                                );
+
+                            END;
+
+                            FUNCTION get_messages
+                            RETURN t_varchars IS
+                            BEGIN
+                                RETURN v_messages;
+                            END;
+
+                        END;
+                    ';
+
+                    EXECUTE IMMEDIATE '
+                        CREATE OR REPLACE TYPE "${handlerTypeName}" UNDER t_raw_message_handler (
+
+                            log_level NUMBER,
+
+                            OVERRIDING MEMBER FUNCTION get_log_level
+                            RETURN PLS_INTEGER,
+                            
+                            OVERRIDING MEMBER PROCEDURE handle_message (
+                                p_level IN PLS_INTEGER,
+                                p_message IN VARCHAR2,
+                                p_arguments IN t_varchars
+                            )
+
+                        );
+                    ';
+
+                    EXECUTE IMMEDIATE '
+                        CREATE OR REPLACE TYPE BODY "${handlerTypeName}" IS
+
+                            OVERRIDING MEMBER FUNCTION get_log_level
+                            RETURN PLS_INTEGER IS
+                            BEGIN
+                                RETURN log_level;
+                            END;
+                            
+                            OVERRIDING MEMBER PROCEDURE handle_message (
+                                p_level IN PLS_INTEGER,
+                                p_message IN VARCHAR2,
+                                p_arguments IN t_varchars
+                            ) IS
+                            BEGIN
+
+                                "${handlerPackageName}".handle_message(p_level, p_message, p_arguments);
+
+                            END;
+                            
+                        END;
+                    ';
+
+                END;
+            `);
+        
+        });
+
+        test("INFO message to one handler with NULL handler, session and system level", function() {
+        
+            database.call("log$.reset");
+            database.call("log$.reset_system_log_level");
+
+            database.run(`
+                BEGIN
+                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
+                END;
+            `);
+
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.call("log$.message", {
+                p_level: INFO,
+                p_message: "Hello, :1!",
+                p_arguments: ["World"]
+            });
+
+            let messages = database.call(`"${handlerPackageName}".get_messages`);
+
+            expect(messages).to.eql([]);
+        
+        });
+
+        test("INFO message to one handler with NULL handler and session level, ERROR system level", function() {
+        
+            database.call("log$.reset");
+            database.call("log$.set_system_log_level", {
+                p_level: ERROR
+            });
+
+            database.run(`
+                BEGIN
+                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
+                END;
+            `);
+
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.call("log$.message", {
+                p_level: INFO,
+                p_message: "Hello, :1!",
+                p_arguments: ["World"]
+            });
+
+            let messages = database.call(`"${handlerPackageName}".get_messages`);
+
+            expect(messages).to.eql([]);
+        
+        });
+
+        test("INFO message to one handler with NULL handler and session level, INFO system level", function() {
+        
+            database.call("log$.reset");
+            database.call("log$.set_system_log_level", {
+                p_level: INFO
+            });
+
+            database.run(`
+                BEGIN
+                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
+                END;
+            `);
+
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.call("log$.message", {
+                p_level: INFO,
+                p_message: "Hello, :1!",
+                p_arguments: ["World"]
+            });
+
+            let messages = database.call(`"${handlerPackageName}".get_messages`);
+
+            expect(messages).to.eql([
+                "400: Hello, World!"
+            ]);
+        
+        });
+
+        test("INFO message to one handler with NULL handler level, ERROR session level, INFO system level", function() {
+        
+            database.call("log$.reset");
+
+            database.call("log$.set_session_log_level", {
+                p_level: ERROR
+            });
+
+            database.call("log$.set_system_log_level", {
+                p_level: INFO
+            });
+
+            database.run(`
+                BEGIN
+                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
+                END;
+            `);
+
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.call("log$.message", {
+                p_level: INFO,
+                p_message: "Hello, :1!",
+                p_arguments: ["World"]
+            });
+
+            let messages = database.call(`"${handlerPackageName}".get_messages`);
+
+            expect(messages).to.eql([]);
+        
+        });
+
+        test("INFO message to one handler with ALL handler level, ERROR session level, INFO system level", function() {
+        
+            database.call("log$.reset");
+
+            database.call("log$.set_session_log_level", {
+                p_level: ERROR
+            });
+
+            database.call("log$.set_system_log_level", {
+                p_level: INFO
+            });
+
+            database.run(`
+                BEGIN
+                    log$.add_handler("${handlerTypeName}"(NULL, 0));    
+                END;
+            `);
+
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.call("log$.message", {
+                p_level: INFO,
+                p_message: "Hello, :1!",
+                p_arguments: ["World"]
+            });
+
+            let messages = database.call(`"${handlerPackageName}".get_messages`);
+
+            expect(messages).to.eql([
+                "400: Hello, World!"
+            ]);
+        
+        });
+
+        test("INFO message to two handlers, both handle", function() {
+        
+            database.call("log$.reset");
+
+            database.call("log$.set_system_log_level", {
+                p_level: INFO
+            });
+
+            database.run(`
+                BEGIN
+                    log$.add_handler("${handlerTypeName}"(NULL, 0));    
+                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
+                END;
+            `);
+
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.call("log$.message", {
+                p_level: INFO,
+                p_message: "Hello, :1!",
+                p_arguments: ["World"]
+            });
+
+            let messages = database.call(`"${handlerPackageName}".get_messages`);
+
+            expect(messages).to.eql([
+                "400: Hello, World!",
+                "400: Hello, World!"
+            ]);
+        
+        });
+        
+        teardown("Drop the dummy raw message handler", function() {
+        
+            database.run(`
+                BEGIN
+                    EXECUTE IMMEDIATE '
+                        DROP TYPE "${handlerTypeName}"
+                    ';
+                    EXECUTE IMMEDIATE '
+                        DROP PACKAGE "${handlerPackageName}"
+                    ';
+                END;
+            `);
+
+            database.commit();
+        
+        });
+        
+    });
+
+    suite("Formatted message handlers", function() {
+    
+        let handlerTypeName = randomString(30);
+        let handlerPackageName = randomString(30);
+
+        setup("Create a dummy formatted message handler", function() {
+        
+            database.run(`
+                BEGIN
+
+                    EXECUTE IMMEDIATE '
+                        CREATE OR REPLACE PACKAGE "${handlerPackageName}" IS
+                            
+                            v_messages t_varchars;
+
+                            PROCEDURE reset;
+
+                            PROCEDURE handle_message (
+                                p_level IN log$.t_message_log_level,
+                                p_message IN VARCHAR2
+                            );
+
+                            FUNCTION get_messages
+                            RETURN t_varchars;
+
+                        END;
+                    ';
+
+                    EXECUTE IMMEDIATE '
+                        CREATE OR REPLACE PACKAGE BODY "${handlerPackageName}" IS
+
+                            PROCEDURE reset IS
+                            BEGIN
+                                v_messages := t_varchars();
+                            END;
+
+                            PROCEDURE handle_message (
+                                p_level IN log$.t_message_log_level,
+                                p_message IN VARCHAR2
+                            ) IS
+                            BEGIN
+
+                                v_messages.EXTEND(1);
+                                v_messages(v_messages.COUNT) := p_level || '': '' || p_message;
+
+                            END;
+
+                            FUNCTION get_messages
+                            RETURN t_varchars IS
+                            BEGIN
+                                RETURN v_messages;
+                            END;
+
+                        END;
+                    ';
+
+                    EXECUTE IMMEDIATE '
+                        CREATE OR REPLACE TYPE "${handlerTypeName}" UNDER t_formatted_message_handler (
+
+                            log_level NUMBER,
+
+                            OVERRIDING MEMBER FUNCTION get_log_level
+                            RETURN PLS_INTEGER,
+                            
+                            OVERRIDING MEMBER PROCEDURE handle_message (
+                                p_level IN PLS_INTEGER,
+                                p_message IN VARCHAR2
+                            )
+
+                        );
+                    ';
+
+                    EXECUTE IMMEDIATE '
+                        CREATE OR REPLACE TYPE BODY "${handlerTypeName}" IS
+
+                            OVERRIDING MEMBER FUNCTION get_log_level
+                            RETURN PLS_INTEGER IS
+                            BEGIN
+                                RETURN log_level;
+                            END;
+                            
+                            OVERRIDING MEMBER PROCEDURE handle_message (
+                                p_level IN PLS_INTEGER,
+                                p_message IN VARCHAR2
+                            ) IS
+                            BEGIN
+
+                                "${handlerPackageName}".handle_message(p_level, p_message);
+
+                            END;
+                            
+                        END;
+                    ';
+
+                END;
+            `);
+        
+        });
+
+        test("INFO message to one handler with NULL handler, session and system level", function() {
+        
+            database.call("log$.reset");
+            database.call("log$.reset_system_log_level");
+
+            database.run(`
+                BEGIN
+                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
+                END;
+            `);
+
+            database.run(`
+                BEGIN
+                    log$.set_default_formatter(t_default_message_formatter(':'));
+                END;
+            `);
+
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.call("log$.message", {
+                p_level: INFO,
+                p_message: "Hello, :1!",
+                p_arguments: ["World"]
+            });
+
+            let messages = database.call(`"${handlerPackageName}".get_messages`);
+
+            expect(messages).to.eql([]);
+        
+        });
+
+        test("INFO message to one handler with NULL handler and session level, ERROR system level", function() {
+        
+            database.call("log$.reset");
+            database.call("log$.set_system_log_level", {
+                p_level: ERROR
+            });
+
+            database.run(`
+                BEGIN
+                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
+                END;
+            `);
+
+            database.run(`
+                BEGIN
+                    log$.set_default_formatter(t_default_message_formatter(':'));
+                END;
+            `);
+
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.call("log$.message", {
+                p_level: INFO,
+                p_message: "Hello, :1!",
+                p_arguments: ["World"]
+            });
+
+            let messages = database.call(`"${handlerPackageName}".get_messages`);
+
+            expect(messages).to.eql([]);
+        
+        });
+
+        test("INFO message to one handler with NULL handler and session level, INFO system level", function() {
+        
+            database.call("log$.reset");
+            database.call("log$.set_system_log_level", {
+                p_level: INFO
+            });
+
+            database.run(`
+                BEGIN
+                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
+                END;
+            `);
+
+            database.run(`
+                BEGIN
+                    log$.set_default_formatter(t_default_message_formatter(':'));
+                END;
+            `);
+
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.call("log$.message", {
+                p_level: INFO,
+                p_message: "Hello, :1!",
+                p_arguments: ["World"]
+            });
+
+            let messages = database.call(`"${handlerPackageName}".get_messages`);
+
+            expect(messages).to.eql([
+                "400: Hello, World!"
+            ]);
+        
+        });
+
+        test("INFO message to one handler with NULL handler level, ERROR session level, INFO system level", function() {
+        
+            database.call("log$.reset");
+
+            database.call("log$.set_session_log_level", {
+                p_level: ERROR
+            });
+
+            database.call("log$.set_system_log_level", {
+                p_level: INFO
+            });
+
+            database.run(`
+                BEGIN
+                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
+                END;
+            `);
+
+            database.run(`
+                BEGIN
+                    log$.set_default_formatter(t_default_message_formatter(':'));
+                END;
+            `);
+
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.call("log$.message", {
+                p_level: INFO,
+                p_message: "Hello, :1!",
+                p_arguments: ["World"]
+            });
+
+            let messages = database.call(`"${handlerPackageName}".get_messages`);
+
+            expect(messages).to.eql([]);
+        
+        });
+
+        test("INFO message to one handler with ALL handler level, ERROR session level, INFO system level", function() {
+        
+            database.call("log$.reset");
+
+            database.call("log$.set_session_log_level", {
+                p_level: ERROR
+            });
+
+            database.call("log$.set_system_log_level", {
+                p_level: INFO
+            });
+
+            database.run(`
+                BEGIN
+                    log$.add_handler("${handlerTypeName}"(NULL, 0));    
+                END;
+            `);
+
+            database.run(`
+                BEGIN
+                    log$.set_default_formatter(t_default_message_formatter(':'));
+                END;
+            `);
+
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.call("log$.message", {
+                p_level: INFO,
+                p_message: "Hello, :1!",
+                p_arguments: ["World"]
+            });
+
+            let messages = database.call(`"${handlerPackageName}".get_messages`);
+
+            expect(messages).to.eql([
+                "400: Hello, World!"
+            ]);
+        
+        });
+
+        test("INFO message to two handlers, both handle", function() {
+        
+            database.call("log$.reset");
+
+            database.call("log$.set_system_log_level", {
+                p_level: INFO
+            });
+
+            database.run(`
+                BEGIN
+                    log$.add_handler("${handlerTypeName}"(NULL, 0));    
+                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
+                END;
+            `);
+
+            database.run(`
+                BEGIN
+                    log$.set_default_formatter(t_default_message_formatter(':'));
+                END;
+            `);
+
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.call("log$.message", {
+                p_level: INFO,
+                p_message: "Hello, :1!",
+                p_arguments: ["World"]
+            });
+
+            let messages = database.call(`"${handlerPackageName}".get_messages`);
+
+            expect(messages).to.eql([
+                "400: Hello, World!",
+                "400: Hello, World!"
+            ]);
+        
+        });
+        
+        teardown("Drop the dummy formatted message handler", function() {
+        
+            database.run(`
+                BEGIN
+                    EXECUTE IMMEDIATE '
+                        DROP TYPE "${handlerTypeName}"
+                    ';
+                    EXECUTE IMMEDIATE '
+                        DROP PACKAGE "${handlerPackageName}"
+                    ';
+                END;
+            `);
+
+            database.commit();
+        
+        });
+    
+    });
+
+});
+
+suite("Log level data type constraints", function() {
+
+    test("Try to add resolver with NULL level", function() {
+    
+        database.call("log$.reset");
+
+        expect(function() {
+        
+            database.run(`
+                BEGIN
+                    log$.add_resolver(t_default_message_resolver(), p_level => NULL);
+                END;
+            `);
+        
+        }).to.throw(/PLS-00567/);
     
     });
     
-    test("Decrease capacity when the tail is fully filled", function() {
+    test("Try to add resolver with NONE level", function() {
     
-        database.call("default_message_handler.reset");
+        database.call("log$.reset");
 
-        database.call("default_message_handler.set_capacity", {
-            p_capacity: 5
-        });
+        expect(function() {
+        
+            database.run(`
+                BEGIN
+                    log$.add_resolver(t_default_message_resolver(), p_level => ${NONE});
+                END;
+            `);
+        
+        }).to.throw(/ORA-06502/);
+    
+    });
 
-        for (var i = 1; i <= 8; i++)
-            database.call("log$.info", {
-                p_message: `INFO ${i}`
-            });
+    test("Add resolver with ALL level", function() {
+    
+        database.call("log$.reset");
 
-        database.call("default_message_handler.set_capacity", {
-            p_capacity: 3
-        });
-
-        var tail = database.selectRows(`message_text
-            FROM log$tail`);
-
-        expect(tail).to.eql([
-            ["INFO 8"],
-            ["INFO 7"],
-            ["INFO 6"]
-        ]);
+        database.run(`
+            BEGIN
+                log$.add_resolver(t_default_message_resolver(), p_level => ${ALL});
+            END;
+        `);
     
     });
     
+    test("Try to format message with NULL level", function() {
+    
+        database.call("log$.reset");
+
+        expect(function() {
+        
+            database.call("log$.format_message", {
+               p_level: null,
+               p_message: "Hello, World!"
+            });
+        
+        }).to.throw(/ORA-06502/);
+    
+    });
+    
+    test("Try to format message with ALL level", function() {
+    
+        database.call("log$.reset");
+
+        expect(function() {
+        
+            database.call("log$.format_message", {
+               p_level: ALL,
+               p_message: "Hello, World!"
+            });
+        
+        }).to.throw(/ORA-06502/);
+    
+    });
+
+    test("Try to format message with NONE level", function() {
+    
+        database.call("log$.reset");
+
+        expect(function() {
+        
+            database.call("log$.format_message", {
+               p_level: NONE,
+               p_message: "Hello, World!"
+            });
+        
+        }).to.throw(/ORA-06502/);
+    
+    });
+
+    test("Try to dispatch message with NULL level", function() {
+    
+        database.call("log$.reset");
+
+        expect(function() {
+        
+            database.call("log$.message", {
+               p_level: null,
+               p_message: "Hello, World!"
+            });
+        
+        }).to.throw(/ORA-06502/);
+    
+    });
+
+    test("Try to dispatch message with NONE level", function() {
+    
+        database.call("log$.reset");
+
+        expect(function() {
+        
+            database.call("log$.message", {
+               p_level: NONE,
+               p_message: "Hello, World!"
+            });
+        
+        }).to.throw(/ORA-06502/);
+    
+    });
+
+    test("Try to dispatch message with ALL level", function() {
+    
+        database.call("log$.reset");
+
+        expect(function() {
+        
+            database.call("log$.message", {
+               p_level: ALL,
+               p_message: "Hello, World!"
+            });
+        
+        }).to.throw(/ORA-06502/);
+    
+    });
 
 });

@@ -30,15 +30,25 @@ DROP PACKAGE default_message_resolver
 DROP TYPE t_default_message_resolver
 /
 
+DROP TYPE t_default_message_formatter
+/
+
 DROP PACKAGE error$
 /
 DROP PACKAGE log$
 /
 
+DROP TYPE t_formatted_message_handler
+/
+DROP TYPE t_raw_message_handler
+/
 DROP TYPE t_log_message_handler
 /
 
 DROP TYPE t_log_message_resolver
+/
+
+DROP TYPE t_log_message_formatter
 /
 
 DROP TYPE t_varchars

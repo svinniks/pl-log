@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE BODY t_default_message_resolver IS
+CREATE OR REPLACE TYPE t_formatted_message_handler UNDER t_log_message_handler (
 
     /* 
         Copyright 2017 Sergejs Vinniks
@@ -15,22 +15,11 @@ CREATE OR REPLACE TYPE BODY t_default_message_resolver IS
         See the License for the specific language governing permissions and
         limitations under the License.
     */
-
-    CONSTRUCTOR FUNCTION t_default_message_resolver
-    RETURN self AS RESULT IS
-    BEGIN
-        dummy := 'X';
-        RETURN;
-    END;
-
-    OVERRIDING MEMBER FUNCTION resolve_message (
+          
+    NOT INSTANTIABLE MEMBER PROCEDURE handle_message (
+        p_level IN PLS_INTEGER,
         p_message IN VARCHAR2
     )
-    RETURN VARCHAR2 IS
-    BEGIN
     
-        RETURN default_message_resolver.resolve_message(p_message);
-        
-    END;
-
-END;
+) 
+NOT INSTANTIABLE NOT FINAL

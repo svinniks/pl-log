@@ -16,7 +16,10 @@ CREATE OR REPLACE PACKAGE BODY default_message_resolver IS
         limitations under the License.
     */
     
-    TYPE t_messages IS TABLE OF VARCHAR2(32000) INDEX BY VARCHAR2(32000);
+    TYPE t_messages IS 
+        TABLE OF VARCHAR2(32000) 
+        INDEX BY VARCHAR2(32000);
+        
     v_messages t_messages;
 
     PROCEDURE reset IS

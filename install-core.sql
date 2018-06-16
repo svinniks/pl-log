@@ -21,9 +21,17 @@ SET DEFINE OFF
 @@types/t_varchars.tps
 /
 
+@@types/t_log_message_formatter.tps
+/
+
 @@types/t_log_message_resolver.tps
 /
+
 @@types/t_log_message_handler.tps
+/
+@@types/t_raw_message_handler.tps
+/
+@@types/t_formatted_message_handler.tps
 /
 
 @@packages/log$.pks
@@ -54,6 +62,11 @@ SET DEFINE OFF
 @@types/t_default_message_handler.tps
 /
 @@types/t_default_message_handler.tpb
+/
+
+@@types/t_default_message_formatter.tps
+/
+@@types/t_default_message_formatter.tpb
 /
 
 @@views/log$tail.vw

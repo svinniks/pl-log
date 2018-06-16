@@ -27,12 +27,16 @@ CREATE OR REPLACE PACKAGE BODY default_message_handler IS
     -- 
     -- The next two types declare the list record and the heap, accordingly.
     
-    TYPE t_log_item IS RECORD
-        (log_record t_log_record
-        ,next_item_i PLS_INTEGER
-        ,prev_item_i PLS_INTEGER);
+    TYPE t_log_item IS 
+        RECORD (
+            log_record t_log_record,
+            next_item_i PLS_INTEGER,
+            prev_item_i PLS_INTEGER
+        );
     
-    TYPE t_log_items IS TABLE OF t_log_item INDEX BY PLS_INTEGER;
+    TYPE t_log_items IS 
+        TABLE OF t_log_item 
+        INDEX BY PLS_INTEGER;
         
     v_log_items t_log_items;        -- log record buffer
     v_capacity PLS_INTEGER := 1000; -- current capacity
@@ -42,15 +46,16 @@ CREATE OR REPLACE PACKAGE BODY default_message_handler IS
     
         
     FUNCTION get_log_level
-    RETURN PLS_INTEGER IS
+    RETURN log$.t_handler_log_level IS
     BEGIN
     
         RETURN v_log_level;
     
     END;
     
-    PROCEDURE set_log_level
-        (p_level IN PLS_INTEGER) IS
+    PROCEDURE set_log_level (
+        p_level IN log$.t_handler_log_level
+    ) IS
     BEGIN
     
         v_log_level := p_level;
@@ -63,7 +68,7 @@ CREATE OR REPLACE PACKAGE BODY default_message_handler IS
         v_log_items.DELETE;
         v_size := 0;
         v_first_item_i := NULL;
-        v_first_item_i := NULL;
+        v_last_item_i := NULL;
     
     END;
     
@@ -72,8 +77,9 @@ CREATE OR REPLACE PACKAGE BODY default_message_handler IS
     Saves a constructed record in the log record buffer.
     
     */
-    PROCEDURE save_record
-        (p_log_record t_log_record) IS
+    PROCEDURE save_record (
+        p_log_record t_log_record
+    ) IS
     BEGIN
         
         -- In case when the buffer is empty, initialize the first item,
@@ -115,10 +121,10 @@ CREATE OR REPLACE PACKAGE BODY default_message_handler IS
     
     END;
     
-    PROCEDURE save_message
-        (p_log_level IN PLS_INTEGER
-        ,p_message_text IN VARCHAR2
-        ,p_call_stack IN VARCHAR2) IS
+    PROCEDURE handle_message (
+        p_level IN log$.t_message_log_level,
+        p_message IN VARCHAR2
+    ) IS
         
         v_log_record t_log_record;
         
@@ -127,10 +133,9 @@ CREATE OR REPLACE PACKAGE BODY default_message_handler IS
         -- Construct the message record and save it into the buffer.
     
         v_log_record.log_date := CURRENT_TIMESTAMP;
-        v_log_record.log_level := p_log_level;
-        v_log_record.message_text := p_message_text;
-        v_log_record.call_stack := p_call_stack;
-    
+        v_log_record.log_level := p_level;
+        v_log_record.message := p_message;
+  
         save_record(v_log_record);
     
     END;
@@ -165,8 +170,9 @@ CREATE OR REPLACE PACKAGE BODY default_message_handler IS
     
     END;
     
-    PROCEDURE set_capacity
-        (p_capacity IN PLS_INTEGER) IS
+    PROCEDURE set_capacity (
+        p_capacity IN PLS_INTEGER
+    ) IS
         
         v_old_log_items t_log_items;
         v_old_item_i PLS_INTEGER;

@@ -31,13 +31,13 @@ CREATE OR REPLACE TYPE BODY t_default_message_handler IS
     
     END;
 
-    OVERRIDING FINAL MEMBER PROCEDURE handle_message
-        (p_level IN PLS_INTEGER
-        ,p_message IN VARCHAR2
-        ,p_call_stack IN VARCHAR2) IS
+    OVERRIDING FINAL MEMBER PROCEDURE handle_message (
+        p_level IN PLS_INTEGER,
+        p_message IN VARCHAR2
+    ) IS
     BEGIN
     
-        default_message_handler.save_message(p_level, p_message, p_call_stack);
+        default_message_handler.handle_message(p_level, p_message);
     
     END;
 

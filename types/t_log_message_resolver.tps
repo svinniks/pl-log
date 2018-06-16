@@ -18,8 +18,9 @@ CREATE OR REPLACE TYPE t_log_message_resolver IS OBJECT (
   
     dummy CHAR,
 
-    NOT INSTANTIABLE MEMBER FUNCTION resolve_message
-        (p_code IN VARCHAR2)
+    NOT INSTANTIABLE MEMBER FUNCTION resolve_message (
+        p_message IN VARCHAR2
+    )
     RETURN VARCHAR2
     
 ) NOT INSTANTIABLE NOT FINAL;

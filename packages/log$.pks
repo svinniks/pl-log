@@ -15,97 +15,109 @@ CREATE OR REPLACE PACKAGE log$ IS
         See the License for the specific language governing permissions and
         limitations under the License.
     */
+ 
+    SUBTYPE t_message_log_level IS 
+        PLS_INTEGER 
+            RANGE 1..1000
+            NOT NULL;
+    
+    c_DEBUG CONSTANT t_message_log_level := 200;
+    c_INFO CONSTANT t_message_log_level := 400;
+    c_WARNING CONSTANT t_message_log_level := 600;
+    c_ERROR CONSTANT t_message_log_level := 800;
+            
+    SUBTYPE t_resolver_log_level IS 
+        PLS_INTEGER 
+            RANGE 0..1000
+            NOT NULL;            
 
-    c_debug CONSTANT PLS_INTEGER := 250;
-    c_info CONSTANT PLS_INTEGER := 500;
-    c_warning CONSTANT PLS_INTEGER := 750;
-    c_error CONSTANT PLS_INTEGER := 1000;
+    c_ALL CONSTANT t_resolver_log_level := 0;
     
-    PROCEDURE add_message_resolver
-        (p_message_resolver IN t_log_message_resolver);
+    SUBTYPE t_handler_log_level IS 
+        PLS_INTEGER 
+            RANGE 0..1001;            
 
-    PROCEDURE add_message_handler
-        (p_message_handler IN t_log_message_handler);
-        
-    FUNCTION resolve_message
-        (p_code IN VARCHAR2)
-    RETURN VARCHAR2;
+    c_NONE CONSTANT t_handler_log_level := 1001;
 
-    FUNCTION format_message
-        (p_message IN VARCHAR2
-        ,p_arguments IN t_varchars := NULL)
-    RETURN VARCHAR2;
+    PROCEDURE reset;
+    
+    PROCEDURE init;
+    
+    PROCEDURE add_resolver (
+        p_resolver IN t_log_message_resolver,
+        p_formatter IN t_log_message_formatter := NULL
+    );
+    
+    PROCEDURE add_resolver (
+        p_resolver IN t_log_message_resolver,
+        p_level IN t_resolver_log_level,
+        p_formatter IN t_log_message_formatter := NULL
+    );
+    
+    PROCEDURE set_default_formatter (
+        p_formatter IN t_log_message_formatter
+    );
 
-    FUNCTION format_message
-        (p_message IN VARCHAR2
-        ,p_argument1 IN VARCHAR2)
+    PROCEDURE add_handler (
+        p_handler IN t_raw_message_handler
+    );
+    
+    PROCEDURE add_handler (
+        p_handler IN t_formatted_message_handler
+    );
+     
+    FUNCTION format_message (
+        p_level IN t_message_log_level,
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL
+    )
     RETURN VARCHAR2;
     
-    FUNCTION format_message
-        (p_message IN VARCHAR2
-        ,p_argument1 IN VARCHAR2
-        ,p_argument2 IN VARCHAR2)
-    RETURN VARCHAR2;
-    
-    FUNCTION format_message
-        (p_message IN VARCHAR2
-        ,p_argument1 IN VARCHAR2
-        ,p_argument2 IN VARCHAR2
-        ,p_argument3 IN VARCHAR2)
-    RETURN VARCHAR2;
-    
-    FUNCTION format_message
-        (p_message IN VARCHAR2
-        ,p_argument1 IN VARCHAR2
-        ,p_argument2 IN VARCHAR2
-        ,p_argument3 IN VARCHAR2
-        ,p_argument4 IN VARCHAR2)
-    RETURN VARCHAR2;
-    
-    FUNCTION format_message
-        (p_message IN VARCHAR2
-        ,p_argument1 IN VARCHAR2
-        ,p_argument2 IN VARCHAR2
-        ,p_argument3 IN VARCHAR2
-        ,p_argument4 IN VARCHAR2
-        ,p_argument5 IN VARCHAR2)
-    RETURN VARCHAR2;
-    
-    PROCEDURE message
-        (p_level IN PLS_INTEGER
-        ,p_message IN VARCHAR2
-        ,p_arguments IN t_varchars := NULL);
+    PROCEDURE message (
+        p_level IN t_message_log_level,
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL
+    );
         
-    PROCEDURE debug
-        (p_message IN VARCHAR2
-        ,p_arguments IN t_varchars := NULL);
+    PROCEDURE debug (
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL
+    );
         
-    PROCEDURE info
-        (p_message IN VARCHAR2
-        ,p_arguments IN t_varchars := NULL);
+    PROCEDURE info (
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL
+    );
         
-    PROCEDURE warning
-        (p_message IN VARCHAR2
-        ,p_arguments IN t_varchars := NULL);
+    PROCEDURE warning (
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL
+    );
         
-    PROCEDURE error
-        (p_message IN VARCHAR2
-        ,p_arguments IN t_varchars := NULL);
+    PROCEDURE error (
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL
+    );
         
     FUNCTION get_system_log_level
-    RETURN PLS_INTEGER;
+    RETURN t_handler_log_level;
     
-    PROCEDURE set_system_log_level
-        (p_level IN PLS_INTEGER);  
+    PROCEDURE set_system_log_level (
+        p_level IN t_handler_log_level
+    );  
         
-    PROCEDURE init_system_log_level
-        (p_level IN PLS_INTEGER);      
+    PROCEDURE init_system_log_level (
+        p_level IN t_handler_log_level
+    );      
+    
+    PROCEDURE reset_system_log_level;
         
     FUNCTION get_session_log_level
-    RETURN PLS_INTEGER;
+    RETURN t_handler_log_level;
     
-    PROCEDURE set_session_log_level
-        (p_level IN PLS_INTEGER);
+    PROCEDURE set_session_log_level (
+        p_level IN t_handler_log_level
+    );
     
 END;
 
