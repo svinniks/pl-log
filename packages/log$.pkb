@@ -41,6 +41,18 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     v_formatted_message_handlers t_formatted_message_handlers;
     
     v_session_log_level t_handler_log_level;
+    
+    v_service_units t_varchars := t_varchars(
+        utl_call_stack.owner(1) || '.LOG$', 
+        utl_call_stack.owner(1) || '.ERROR$'
+    );
+    
+    v_call_id NUMBER(30) := 0;    
+    v_call_stack t_call_stack := t_call_stack();
+    
+    v_call_stack_values t_call_stack_values := t_call_stack_values();   
+
+    /* Initialization methods */
 
     PROCEDURE reset IS
     BEGIN
@@ -73,6 +85,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         END;
     
     END;
+    
+    /* Resolver and handler management */
     
     PROCEDURE add_resolver (
         p_resolver IN t_log_message_resolver,
@@ -134,6 +148,293 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_formatted_message_handlers(v_formatted_message_handlers.COUNT) := p_handler;
     
     END;
+    
+    FUNCTION get_system_log_level
+    RETURN t_handler_log_level IS
+    BEGIN
+    
+        RETURN SYS_CONTEXT('LOG$CONTEXT', 'LOG_LEVEL'); 
+    
+    END;
+    
+    PROCEDURE set_system_log_level (
+        p_level IN t_handler_log_level
+    ) IS
+    BEGIN
+    
+        DBMS_SESSION.SET_CONTEXT('LOG$CONTEXT', 'LOG_LEVEL', p_level);
+    
+    END;       
+    
+    PROCEDURE init_system_log_level (
+        p_level IN t_handler_log_level
+    ) IS
+         
+        v_dummy NUMBER;
+        
+        CURSOR c_context_variable IS
+            SELECT 1
+            FROM global_context
+            WHERE namespace = 'LOG$CONTEXT'
+                  AND attribute = 'LOG_LEVEL';
+        
+    BEGIN
+    
+        OPEN c_context_variable;
+        
+        FETCH c_context_variable
+        INTO v_dummy;
+        
+        IF c_context_variable%NOTFOUND THEN
+            set_system_log_level(p_level);
+        END IF;
+        
+        CLOSE c_context_variable;
+    
+    END;
+    
+    PROCEDURE reset_system_log_level IS
+    BEGIN
+    
+        DBMS_SESSION.CLEAR_CONTEXT('LOG$CONTEXT', NULL, 'LOG_LEVEL');
+    
+    END;
+        
+    FUNCTION get_session_log_level
+    RETURN t_handler_log_level IS
+    BEGIN
+    
+        RETURN v_session_log_level;
+    
+    END;
+    
+    PROCEDURE set_session_log_level (
+        p_level IN t_handler_log_level
+    ) IS
+    BEGIN
+    
+        v_session_log_level := p_level;
+    
+    END;
+    
+    /* Call stack management */
+    
+    FUNCTION get_service_depth
+    RETURN PLS_INTEGER IS
+    
+        v_unit VARCHAR2(4000);
+    
+    BEGIN
+    
+        FOR v_i IN 1..utl_call_stack.dynamic_depth LOOP
+        
+            IF utl_call_stack.owner(v_i) IS NOT NULL THEN
+                v_unit := utl_call_stack.owner(v_i) || '.' || utl_call_stack.subprogram(v_i)(1);
+            ELSE
+                v_unit := utl_call_stack.subprogram(v_i)(1);
+            END IF;
+            
+            IF v_unit NOT MEMBER OF v_service_units THEN
+                RETURN v_i - 2;
+            END IF;
+        
+        END LOOP;
+        
+        RETURN utl_call_stack.dynamic_depth;
+    
+    END;
+    
+    PROCEDURE call (
+        p_reset_top IN BOOLEAN := TRUE
+    ) IS
+    
+        v_dynamic_depth PLS_INTEGER;
+        v_actual_height PLS_INTEGER;
+    
+        v_matching_height PLS_INTEGER;
+        
+        v_depth PLS_INTEGER;
+        v_actual_call t_call;
+        v_stack_call t_call;
+        
+        FUNCTION unit_matches
+        RETURN BOOLEAN IS
+        BEGIN
+        
+            RETURN (
+                (
+                    v_stack_call.owner IS NULL 
+                    AND v_actual_call.owner IS NULL
+                )
+                OR v_stack_call.owner = v_actual_call.owner  
+            )
+            AND v_stack_call.unit = v_actual_call.unit;
+        
+        END;
+            
+    BEGIN
+    
+        v_matching_height := 0;
+    
+        v_dynamic_depth := utl_call_stack.dynamic_depth;
+        v_actual_height := v_dynamic_depth - get_service_depth; 
+        
+        FOR v_height IN 1..LEAST(v_call_stack.COUNT, v_actual_height) LOOP
+            
+            v_depth := v_dynamic_depth - v_height + 1;
+        
+            v_actual_call.owner := utl_call_stack.owner(v_depth);
+            v_actual_call.unit := utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(v_depth));
+            v_actual_call.line := utl_call_stack.unit_line(v_depth);
+            
+            v_stack_call := v_call_stack(v_height);
+            
+            EXIT WHEN NOT unit_matches;
+            EXIT WHEN v_height = v_actual_height 
+                      AND v_actual_call.line <= v_stack_call.first_line
+                      AND NVL(p_reset_top, FALSE);
+                    
+            IF v_stack_call.line != v_actual_call.line THEN 
+                                   
+                v_stack_call.line := v_actual_call.line;
+                v_call_stack(v_height) := v_stack_call;
+                    
+                v_matching_height := v_height;
+                EXIT;
+                    
+            END IF;
+
+            v_matching_height := v_height;
+            
+        END LOOP;
+        
+        v_call_stack.TRIM(v_call_stack.COUNT - v_matching_height);
+        v_call_stack_values.TRIM(v_call_stack_values.COUNT - v_matching_height);
+        
+        FOR v_height IN v_call_stack.COUNT + 1..v_actual_height LOOP 
+        
+            v_depth := v_dynamic_depth - v_height + 1;
+        
+            v_actual_call.owner := utl_call_stack.owner(v_depth);
+            v_actual_call.unit := utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(v_depth));
+            v_actual_call.line := utl_call_stack.unit_line(v_depth);
+            v_actual_call.first_line := v_actual_call.line;
+        
+            v_call_id := v_call_id + 1;
+            v_actual_call.id := v_call_id;
+            
+            v_call_stack.EXTEND(1);
+            v_call_stack(v_call_stack.COUNT) := v_actual_call;
+            
+            v_call_stack_values.EXTEND(1);
+        
+        END LOOP;
+    
+    END;
+    
+    PROCEDURE value (
+        p_name IN VARCHAR2,
+        p_value IN VARCHAR2,
+        p_reset_top IN BOOLEAN := TRUE
+    ) IS
+    BEGIN
+    
+        call(p_reset_top);
+        
+        v_call_stack_values(v_call_stack_values.COUNT)(NVL(p_name, 'NULL')) := p_value;
+    
+    END;
+    
+    PROCEDURE fill_error_stack IS
+    
+        v_dynamic_depth PLS_INTEGER;
+        v_actual_height PLS_INTEGER;
+        
+        v_matching_height PLS_INTEGER;
+        
+        v_depth PLS_INTEGER;
+        v_actual_call t_call;
+        v_stack_call t_call;
+        
+        v_backtrace_depth PLS_INTEGER;
+        v_call_stack_height PLS_INTEGER;
+        
+        FUNCTION unit_matches
+        RETURN BOOLEAN IS
+        BEGIN
+        
+            RETURN (
+                (
+                    v_stack_call.owner IS NULL 
+                    AND v_actual_call.owner IS NULL
+                )
+                OR v_stack_call.owner = v_actual_call.owner  
+            )
+            AND v_stack_call.unit = v_actual_call.unit;
+        
+        END;
+    
+    BEGIN
+    
+        v_matching_height := 0;
+    
+        v_dynamic_depth := utl_call_stack.dynamic_depth;
+        v_actual_height := v_dynamic_depth - get_service_depth;
+    
+        FOR v_height IN 1..LEAST(v_call_stack.COUNT, v_actual_height) LOOP
+            
+            v_depth := v_dynamic_depth - v_height + 1;
+        
+            v_actual_call.owner := utl_call_stack.owner(v_depth);
+            v_actual_call.unit := utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(v_depth));
+            v_actual_call.line := utl_call_stack.unit_line(v_depth);
+            
+            v_stack_call := v_call_stack(v_height);
+            
+            EXIT WHEN NOT unit_matches;
+            EXIT WHEN v_actual_call.line != v_stack_call.first_line;
+
+            v_matching_height := v_height;
+            
+        END LOOP;
+        
+        IF v_matching_height < v_actual_height - 1 THEN
+            call;
+            v_matching_height := v_call_stack.COUNT - 1;
+        END IF;
+        
+        v_backtrace_depth := utl_call_stack.backtrace_depth;
+        v_call_stack_height := v_matching_height + 1;
+        
+        WHILE v_backtrace_depth >= 1 AND v_call_stack_height <= v_call_stack.COUNT LOOP
+        
+            IF v_call_stack(v_call_stack_height).unit LIKE utl_call_stack.backtrace_unit(v_backtrace_depth) || '%' THEN
+                IF v_call_stack_height = v_call_stack.COUNT THEN
+                    v_call_stack(v_call_stack_height).line := utl_call_stack.backtrace_line(v_backtrace_depth);
+                ELSIF v_call_stack(v_call_stack_height).line != utl_call_stack.backtrace_line(v_backtrace_depth) THEN
+                    EXIT;
+                END IF;
+            ELSE
+                EXIT;
+            END IF;
+            
+            v_backtrace_depth := v_backtrace_depth - 1;
+            v_call_stack_height := v_call_stack_height + 1;
+        
+        END LOOP; 
+    
+    END;
+    
+    PROCEDURE get_call_stack (
+        p_calls OUT t_call_stack,
+        p_values OUT t_call_stack_values
+    ) IS
+    BEGIN
+        p_calls := v_call_stack;
+        p_values := v_call_stack_values;
+    END;
+    
+    /* Generic log message methods */
     
     FUNCTION format_message (
         p_level IN t_message_log_level,
@@ -212,6 +513,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
     BEGIN
     
+        call;
+    
         FOR v_i IN 1..v_raw_message_handlers.COUNT LOOP
         
             IF p_level >= COALESCE(
@@ -250,6 +553,39 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         END LOOP;
     
     END;
+    
+    PROCEDURE oracle_error (
+        p_level IN t_message_log_level := c_ERROR
+    ) IS
+    BEGIN
+    
+        IF utl_call_stack.error_depth > 0 THEN
+    
+            fill_error_stack;
+            
+            FOR v_i IN 1..v_formatted_message_handlers.COUNT LOOP
+            
+                IF p_level >= COALESCE(
+                    v_formatted_message_handlers(v_i).get_log_level, 
+                    get_session_log_level, 
+                    get_system_log_level,
+                    c_NONE
+                ) THEN
+                
+                    v_formatted_message_handlers(v_i).handle_message(
+                        p_level, 
+                        'ORA-' || utl_call_stack.error_number(1) || ': ' || utl_call_stack.error_msg(1) 
+                    );
+                    
+                END IF;
+            
+            END LOOP;
+            
+        END IF;
+    
+    END;
+    
+    /* Shortcut message methods */
         
     PROCEDURE debug (
         p_message IN VARCHAR2,
@@ -528,74 +864,6 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     BEGIN
     
         error(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4, p_argument_5));
-    
-    END;
-    
-    FUNCTION get_system_log_level
-    RETURN t_handler_log_level IS
-    BEGIN
-    
-        RETURN SYS_CONTEXT('LOG$CONTEXT', 'LOG_LEVEL'); 
-    
-    END;
-    
-    PROCEDURE set_system_log_level (
-        p_level IN t_handler_log_level
-    ) IS
-    BEGIN
-    
-        DBMS_SESSION.SET_CONTEXT('LOG$CONTEXT', 'LOG_LEVEL', p_level);
-    
-    END;       
-    
-    PROCEDURE init_system_log_level (
-        p_level IN t_handler_log_level
-    ) IS
-         
-        v_dummy NUMBER;
-        
-        CURSOR c_context_variable IS
-            SELECT 1
-            FROM global_context
-            WHERE namespace = 'LOG$CONTEXT'
-                  AND attribute = 'LOG_LEVEL';
-        
-    BEGIN
-    
-        OPEN c_context_variable;
-        
-        FETCH c_context_variable
-        INTO v_dummy;
-        
-        IF c_context_variable%NOTFOUND THEN
-            set_system_log_level(p_level);
-        END IF;
-        
-        CLOSE c_context_variable;
-    
-    END;
-    
-    PROCEDURE reset_system_log_level IS
-    BEGIN
-    
-        DBMS_SESSION.CLEAR_CONTEXT('LOG$CONTEXT', NULL, 'LOG_LEVEL');
-    
-    END;
-        
-    FUNCTION get_session_log_level
-    RETURN t_handler_log_level IS
-    BEGIN
-    
-        RETURN v_session_log_level;
-    
-    END;
-    
-    PROCEDURE set_session_log_level (
-        p_level IN t_handler_log_level
-    ) IS
-    BEGIN
-    
-        v_session_log_level := p_level;
     
     END;
     

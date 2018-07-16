@@ -51,7 +51,7 @@ CREATE OR REPLACE PACKAGE BODY default_message_resolver IS
             
         ELSIF v_messages.EXISTS(p_code) THEN
         
-            RETURN v_messages(p_code);
+            RETURN p_code || ': ' || v_messages(p_code);
             
         ELSE
         

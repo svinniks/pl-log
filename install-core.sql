@@ -64,6 +64,16 @@ SET DEFINE OFF
 @@types/t_default_message_handler.tpb
 /
 
+@@packages/dbms_output_handler.pks
+/
+@@packages/dbms_output_handler.pkb
+/
+
+@@types/t_dbms_output_handler.tps
+/
+@@types/t_dbms_output_handler.tpb
+/
+
 @@types/t_default_message_formatter.tps
 /
 @@types/t_default_message_formatter.tpb

@@ -16,6 +16,8 @@ CREATE OR REPLACE PACKAGE log$ IS
         limitations under the License.
     */
  
+    SUBTYPE STRING IS VARCHAR2(32767);
+
     SUBTYPE t_message_log_level IS 
         PLS_INTEGER 
             RANGE 1..1000
@@ -39,9 +41,32 @@ CREATE OR REPLACE PACKAGE log$ IS
 
     c_NONE CONSTANT t_handler_log_level := 1001;
 
+    TYPE t_call IS
+        RECORD (
+            id NUMBER(30),
+            owner VARCHAR2(30),
+            unit STRING,
+            line PLS_INTEGER,
+            first_line PLS_INTEGER
+        );
+        
+    TYPE t_call_stack IS
+        TABLE OF t_call;
+    
+    TYPE t_call_values IS
+        TABLE OF STRING
+        INDEX BY STRING;
+    
+    TYPE t_call_stack_values IS
+        TABLE OF t_call_values;
+    
+    /* Initilalization methods */
+    
     PROCEDURE reset;
     
     PROCEDURE init;
+    
+    /* Resolver and handler management */
     
     PROCEDURE add_resolver (
         p_resolver IN t_log_message_resolver,
@@ -65,179 +90,8 @@ CREATE OR REPLACE PACKAGE log$ IS
     PROCEDURE add_handler (
         p_handler IN t_formatted_message_handler
     );
-     
-    FUNCTION format_message (
-        p_level IN t_message_log_level,
-        p_message IN VARCHAR2,
-        p_arguments IN t_varchars := NULL
-    )
-    RETURN VARCHAR2;
     
-    PROCEDURE message (
-        p_level IN t_message_log_level,
-        p_message IN VARCHAR2,
-        p_arguments IN t_varchars := NULL
-    );
-        
-    PROCEDURE debug (
-        p_message IN VARCHAR2,
-        p_arguments IN t_varchars := NULL
-    );
-    
-    PROCEDURE debug (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2
-    );
-    
-    PROCEDURE debug (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2
-    );
-    
-    PROCEDURE debug (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2
-    );
-    
-    PROCEDURE debug (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2
-    );
-    
-    PROCEDURE debug (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2,
-        p_argument_5 IN VARCHAR2
-    );
-        
-    PROCEDURE info (
-        p_message IN VARCHAR2,
-        p_arguments IN t_varchars := NULL
-    );
-    
-    PROCEDURE info (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2
-    );
-    
-    PROCEDURE info (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2
-    );
-    
-    PROCEDURE info (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2
-    );
-    
-    PROCEDURE info (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2
-    );
-    
-    PROCEDURE info (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2,
-        p_argument_5 IN VARCHAR2
-    );
-        
-    PROCEDURE warning (
-        p_message IN VARCHAR2,
-        p_arguments IN t_varchars := NULL
-    );
-      
-    PROCEDURE warning (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2
-    );
-    
-    PROCEDURE warning (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2
-    );
-    
-    PROCEDURE warning (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2
-    );
-    
-    PROCEDURE warning (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2
-    );
-    
-    PROCEDURE warning (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2,
-        p_argument_5 IN VARCHAR2
-    );
-      
-    PROCEDURE error (
-        p_message IN VARCHAR2,
-        p_arguments IN t_varchars := NULL
-    );
-        
-    PROCEDURE error (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2
-    );
-    
-    PROCEDURE error (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2
-    );
-    
-    PROCEDURE error (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2
-    );
-    
-    PROCEDURE error (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2
-    );
-    
-    PROCEDURE error (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2,
-        p_argument_5 IN VARCHAR2
-    );
+    /* Log level management */
     
     FUNCTION get_system_log_level
     RETURN t_handler_log_level;
@@ -257,6 +111,206 @@ CREATE OR REPLACE PACKAGE log$ IS
     
     PROCEDURE set_session_log_level (
         p_level IN t_handler_log_level
+    );
+    
+    /* Call stack management */ 
+     
+    PROCEDURE call (
+        p_reset_top IN BOOLEAN := TRUE
+    );
+    
+    PROCEDURE value (
+        p_name IN VARCHAR2,
+        p_value IN VARCHAR2,
+        p_reset_top IN BOOLEAN := TRUE
+    );
+    
+    PROCEDURE fill_error_stack;
+    
+    PROCEDURE get_call_stack (
+        p_calls OUT t_call_stack,
+        p_values OUT t_call_stack_values 
+    );
+    
+    /* Generic log message methods */
+    
+    FUNCTION format_message (
+        p_level IN t_message_log_level,
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL
+    )
+    RETURN VARCHAR2;
+    
+    PROCEDURE message (
+        p_level IN t_message_log_level,
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL
+    );
+    
+    PROCEDURE oracle_error (
+        p_level IN t_message_log_level := c_ERROR
+    );
+    
+    /* Shortcut message methods */
+        
+    PROCEDURE debug (
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL
+    );
+    
+    PROCEDURE debug (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2
+    );
+    
+    PROCEDURE debug (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2
+    );
+    
+    PROCEDURE debug (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2
+    );
+    
+    PROCEDURE debug (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2
+    );
+    
+    PROCEDURE debug (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2,
+        p_argument_5 IN VARCHAR2
+    );
+        
+    PROCEDURE info (
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL
+    );
+    
+    PROCEDURE info (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2
+    );
+    
+    PROCEDURE info (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2
+    );
+    
+    PROCEDURE info (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2
+    );
+    
+    PROCEDURE info (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2
+    );
+    
+    PROCEDURE info (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2,
+        p_argument_5 IN VARCHAR2
+    );
+        
+    PROCEDURE warning (
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL
+    );
+      
+    PROCEDURE warning (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2
+    );
+    
+    PROCEDURE warning (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2
+    );
+    
+    PROCEDURE warning (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2
+    );
+    
+    PROCEDURE warning (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2
+    );
+    
+    PROCEDURE warning (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2,
+        p_argument_5 IN VARCHAR2
+    );
+      
+    PROCEDURE error (
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL
+    );
+        
+    PROCEDURE error (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2
+    );
+    
+    PROCEDURE error (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2
+    );
+    
+    PROCEDURE error (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2
+    );
+    
+    PROCEDURE error (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2
+    );
+    
+    PROCEDURE error (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2,
+        p_argument_5 IN VARCHAR2
     );
     
 END;

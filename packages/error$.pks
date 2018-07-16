@@ -52,6 +52,11 @@ CREATE OR REPLACE PACKAGE error$ IS
         ,p_argument3 IN VARCHAR2
         ,p_argument4 IN VARCHAR2
         ,p_argument5 IN VARCHAR2);
-
+        
+    PROCEDURE raise;    
+        
+    FUNCTION handled
+    RETURN BOOLEAN;
+    
 END;
 

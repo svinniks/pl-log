@@ -20,6 +20,11 @@ DROP CONTEXT log$context
 DROP VIEW log$tail
 /
 
+DROP TYPE t_dbms_output_handler
+/
+DROP PACKAGE dbms_output_handler
+/
+
 DROP TYPE t_default_message_handler
 /
 DROP PACKAGE default_message_handler
