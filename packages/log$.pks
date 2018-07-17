@@ -17,6 +17,7 @@ CREATE OR REPLACE PACKAGE log$ IS
     */
  
     SUBTYPE STRING IS VARCHAR2(32767);
+    SUBTYPE STRINGN IS STRING NOT NULL;
 
     SUBTYPE t_message_log_level IS 
         PLS_INTEGER 
@@ -53,12 +54,18 @@ CREATE OR REPLACE PACKAGE log$ IS
     TYPE t_call_stack IS
         TABLE OF t_call;
     
-    TYPE t_call_values IS
-        TABLE OF STRING
+    TYPE t_value IS
+        RECORD (
+            type CHAR,
+            value STRING
+        );
+    
+    TYPE t_values IS
+        TABLE OF t_value
         INDEX BY STRING;
     
-    TYPE t_call_stack_values IS
-        TABLE OF t_call_values;
+    TYPE t_call_values IS
+        TABLE OF t_values;
     
     /* Initilalization methods */
     
@@ -116,20 +123,73 @@ CREATE OR REPLACE PACKAGE log$ IS
     /* Call stack management */ 
      
     PROCEDURE call (
-        p_reset_top IN BOOLEAN := TRUE
+        p_reset_top IN BOOLEAN := TRUE,
+        p_service_depth IN NATURALN := 0
+    );
+    
+    PROCEDURE call (
+        p_service_depth IN NATURALN
     );
     
     PROCEDURE value (
-        p_name IN VARCHAR2,
+        p_name IN STRINGN,
         p_value IN VARCHAR2,
-        p_reset_top IN BOOLEAN := TRUE
+        p_reset_top IN BOOLEAN := TRUE,
+        p_service_depth IN NATURALN := 0
     );
     
-    PROCEDURE fill_error_stack;
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN VARCHAR2,
+        p_service_depth IN NATURALN
+    );
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN NUMBER,
+        p_reset_top IN BOOLEAN := TRUE,
+        p_service_depth IN NATURALN := 0
+    );
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN NUMBER,
+        p_service_depth IN NATURALN
+    );
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN BOOLEAN,
+        p_reset_top IN BOOLEAN := TRUE,
+        p_service_depth IN NATURALN := 0
+    );
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN BOOLEAN,
+        p_service_depth IN NATURALN
+    );
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN DATE,
+        p_reset_top IN BOOLEAN := TRUE,
+        p_service_depth IN NATURALN := 0
+    );
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN DATE,
+        p_service_depth IN NATURALN
+    );
+    
+    PROCEDURE fill_error_stack (
+        p_service_depth IN NATURAL := 0
+    );
     
     PROCEDURE get_call_stack (
         p_calls OUT t_call_stack,
-        p_values OUT t_call_stack_values 
+        p_values OUT t_call_values 
     );
     
     /* Generic log message methods */
@@ -144,8 +204,15 @@ CREATE OR REPLACE PACKAGE log$ IS
     PROCEDURE message (
         p_level IN t_message_log_level,
         p_message IN VARCHAR2,
-        p_arguments IN t_varchars := NULL
+        p_arguments IN t_varchars := NULL,
+        p_service_depth IN NATURALN := 0
     );
+    
+    PROCEDURE message (
+        p_level IN t_message_log_level,
+        p_message IN VARCHAR2,
+        p_service_depth IN NATURALN
+    ); 
     
     PROCEDURE oracle_error (
         p_level IN t_message_log_level := c_ERROR
@@ -155,162 +222,58 @@ CREATE OR REPLACE PACKAGE log$ IS
         
     PROCEDURE debug (
         p_message IN VARCHAR2,
-        p_arguments IN t_varchars := NULL
+        p_arguments IN t_varchars
     );
     
     PROCEDURE debug (
         p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2
-    );
-    
-    PROCEDURE debug (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2
-    );
-    
-    PROCEDURE debug (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2
-    );
-    
-    PROCEDURE debug (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2
-    );
-    
-    PROCEDURE debug (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2,
-        p_argument_5 IN VARCHAR2
+        p_argument_1 IN VARCHAR2 := NULL,
+        p_argument_2 IN VARCHAR2 := NULL,
+        p_argument_3 IN VARCHAR2 := NULL,
+        p_argument_4 IN VARCHAR2 := NULL,
+        p_argument_5 IN VARCHAR2 := NULL
     );
         
     PROCEDURE info (
         p_message IN VARCHAR2,
-        p_arguments IN t_varchars := NULL
+        p_arguments IN t_varchars
     );
     
     PROCEDURE info (
         p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2
-    );
-    
-    PROCEDURE info (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2
-    );
-    
-    PROCEDURE info (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2
-    );
-    
-    PROCEDURE info (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2
-    );
-    
-    PROCEDURE info (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2,
-        p_argument_5 IN VARCHAR2
+        p_argument_1 IN VARCHAR2 := NULL,
+        p_argument_2 IN VARCHAR2 := NULL,
+        p_argument_3 IN VARCHAR2 := NULL,
+        p_argument_4 IN VARCHAR2 := NULL,
+        p_argument_5 IN VARCHAR2 := NULL
     );
         
     PROCEDURE warning (
         p_message IN VARCHAR2,
-        p_arguments IN t_varchars := NULL
-    );
-      
-    PROCEDURE warning (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2
+        p_arguments IN t_varchars
     );
     
     PROCEDURE warning (
         p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2
-    );
-    
-    PROCEDURE warning (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2
-    );
-    
-    PROCEDURE warning (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2
-    );
-    
-    PROCEDURE warning (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2,
-        p_argument_5 IN VARCHAR2
+        p_argument_1 IN VARCHAR2 := NULL,
+        p_argument_2 IN VARCHAR2 := NULL,
+        p_argument_3 IN VARCHAR2 := NULL,
+        p_argument_4 IN VARCHAR2 := NULL,
+        p_argument_5 IN VARCHAR2 := NULL
     );
       
     PROCEDURE error (
         p_message IN VARCHAR2,
-        p_arguments IN t_varchars := NULL
-    );
-        
-    PROCEDURE error (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2
+        p_arguments IN t_varchars
     );
     
     PROCEDURE error (
         p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2
-    );
-    
-    PROCEDURE error (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2
-    );
-    
-    PROCEDURE error (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2
-    );
-    
-    PROCEDURE error (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2,
-        p_argument_5 IN VARCHAR2
+        p_argument_1 IN VARCHAR2 := NULL,
+        p_argument_2 IN VARCHAR2 := NULL,
+        p_argument_3 IN VARCHAR2 := NULL,
+        p_argument_4 IN VARCHAR2 := NULL,
+        p_argument_5 IN VARCHAR2 := NULL
     );
     
 END;

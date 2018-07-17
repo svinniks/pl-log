@@ -4,7 +4,7 @@ CREATE OR REPLACE PROCEDURE "${getCallStackJsonProcedureName}" (
     p_values OUT VARCHAR2
 ) IS
 
-    v_values log$.t_call_stack_values;
+    v_values log$.t_call_values;
     v_values_json VARCHAR2(32000);
     v_name VARCHAR2(4000);
 
@@ -55,9 +55,11 @@ BEGIN
             v_values_json := v_values_json
                 || '"'
                 || escape_string(v_name)
-                || '":"'
-                || escape_string(v_values(v_i)(v_name))
-                || '"';
+                || '":{"type":"'
+                || v_values(v_i)(v_name).type
+                || '","value":"'
+                || escape_string(v_values(v_i)(v_name).value)
+                || '"}';
                 
             v_name := v_values(v_i).NEXT(v_name);    
         

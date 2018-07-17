@@ -42,15 +42,10 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     v_session_log_level t_handler_log_level;
     
-    v_service_units t_varchars := t_varchars(
-        utl_call_stack.owner(1) || '.LOG$', 
-        utl_call_stack.owner(1) || '.ERROR$'
-    );
-    
     v_call_id NUMBER(30) := 0;    
     v_call_stack t_call_stack := t_call_stack();
     
-    v_call_stack_values t_call_stack_values := t_call_stack_values();   
+    v_call_values t_call_values := t_call_values();   
 
     /* Initialization methods */
 
@@ -219,33 +214,9 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     /* Call stack management */
     
-    FUNCTION get_service_depth
-    RETURN PLS_INTEGER IS
-    
-        v_unit VARCHAR2(4000);
-    
-    BEGIN
-    
-        FOR v_i IN 1..utl_call_stack.dynamic_depth LOOP
-        
-            IF utl_call_stack.owner(v_i) IS NOT NULL THEN
-                v_unit := utl_call_stack.owner(v_i) || '.' || utl_call_stack.subprogram(v_i)(1);
-            ELSE
-                v_unit := utl_call_stack.subprogram(v_i)(1);
-            END IF;
-            
-            IF v_unit NOT MEMBER OF v_service_units THEN
-                RETURN v_i - 2;
-            END IF;
-        
-        END LOOP;
-        
-        RETURN utl_call_stack.dynamic_depth;
-    
-    END;
-    
     PROCEDURE call (
-        p_reset_top IN BOOLEAN := TRUE
+        p_reset_top IN BOOLEAN := TRUE,
+        p_service_depth IN NATURALN := 0
     ) IS
     
         v_dynamic_depth PLS_INTEGER;
@@ -277,7 +248,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_matching_height := 0;
     
         v_dynamic_depth := utl_call_stack.dynamic_depth;
-        v_actual_height := v_dynamic_depth - get_service_depth; 
+        v_actual_height := v_dynamic_depth - p_service_depth - 1; 
         
         FOR v_height IN 1..LEAST(v_call_stack.COUNT, v_actual_height) LOOP
             
@@ -309,7 +280,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         END LOOP;
         
         v_call_stack.TRIM(v_call_stack.COUNT - v_matching_height);
-        v_call_stack_values.TRIM(v_call_stack_values.COUNT - v_matching_height);
+        v_call_values.TRIM(v_call_values.COUNT - v_matching_height);
         
         FOR v_height IN v_call_stack.COUNT + 1..v_actual_height LOOP 
         
@@ -326,26 +297,189 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             v_call_stack.EXTEND(1);
             v_call_stack(v_call_stack.COUNT) := v_actual_call;
             
-            v_call_stack_values.EXTEND(1);
+            v_call_values.EXTEND(1);
         
         END LOOP;
     
     END;
     
-    PROCEDURE value (
-        p_name IN VARCHAR2,
-        p_value IN VARCHAR2,
-        p_reset_top IN BOOLEAN := TRUE
+    PROCEDURE call (
+        p_service_depth IN NATURALN
     ) IS
     BEGIN
+        call(TRUE, p_service_depth + 1);
+    END;
     
-        call(p_reset_top);
+    PROCEDURE value (
+        p_name IN VARCHAR2,
+        p_type IN CHAR,
+        p_value IN VARCHAR2,
+        p_reset_top IN BOOLEAN,
+        p_service_depth IN PLS_INTEGER
+    ) IS
+        v_value t_value;
+    BEGIN
+    
+        call(p_reset_top, p_service_depth + 1);
         
-        v_call_stack_values(v_call_stack_values.COUNT)(NVL(p_name, 'NULL')) := p_value;
+        v_value.type := p_type;
+        v_value.value := p_value;
+        
+        v_call_values(v_call_values.COUNT)(p_name) := v_value;
     
     END;
     
-    PROCEDURE fill_error_stack IS
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN VARCHAR2,
+        p_reset_top IN BOOLEAN := TRUE,
+        p_service_depth IN NATURALN := 0
+    ) IS
+    BEGIN
+    
+        value(
+            p_name, 
+            'S', 
+            p_value, 
+            p_reset_top, 
+            p_service_depth + 1
+        );
+    
+    END;
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN VARCHAR2,
+        p_service_depth IN NATURALN 
+    ) IS
+    BEGIN
+    
+        value(
+            p_name, 
+            'S', 
+            p_value, 
+            TRUE, 
+            p_service_depth + 1
+        );
+    
+    END;
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN NUMBER,
+        p_reset_top IN BOOLEAN := TRUE,
+        p_service_depth IN NATURALN := 0
+    ) IS
+    BEGIN
+    
+        value(
+            p_name, 
+            'N', 
+            TO_CHAR(p_value, 'TM', 'NLS_NUMERIC_CHARACTERS=''.,'''), 
+            p_reset_top, 
+            p_service_depth + 1
+        );
+    
+    END;
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN NUMBER,
+        p_service_depth IN NATURALN 
+    ) IS
+    BEGIN
+    
+        value(
+            p_name, 
+            'N', 
+            TO_CHAR(p_value, 'TM', 'NLS_NUMERIC_CHARACTERS=''.,'''), 
+            TRUE, 
+            p_service_depth + 1
+        );
+    
+    END;
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN BOOLEAN,
+        p_reset_top IN BOOLEAN := TRUE,
+        p_service_depth IN NATURALN := 0
+    ) IS
+    BEGIN
+    
+        value(
+            p_name, 
+            'B', 
+            CASE p_value
+                WHEN TRUE THEN 'TRUE'
+                WHEN FALSE THEN 'FALSE'
+                ELSE NULL
+            END, 
+            p_reset_top, 
+            p_service_depth + 1
+        );
+    
+    END;
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN BOOLEAN,
+        p_service_depth IN NATURALN 
+    ) IS
+    BEGIN
+    
+        value(
+            p_name, 
+            'B', 
+            CASE p_value
+                WHEN TRUE THEN 'TRUE'
+                WHEN FALSE THEN 'FALSE'
+                ELSE NULL
+            END,
+            TRUE, 
+            p_service_depth + 1
+        );
+    
+    END;
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN DATE,
+        p_reset_top IN BOOLEAN := TRUE,
+        p_service_depth IN NATURALN := 0
+    ) IS
+    BEGIN
+    
+        value(
+            p_name, 
+            'D', 
+            TO_CHAR(p_value, 'YYYY-MM-DD HH24:MI:SS'), 
+            p_reset_top, 
+            p_service_depth + 1
+        );
+    
+    END;
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN DATE,
+        p_service_depth IN NATURALN 
+    ) IS
+    BEGIN
+    
+        value(
+            p_name, 
+            'D', 
+            TO_CHAR(p_value, 'YYYY-MM-DD HH24:MI:SS'),
+            TRUE, 
+            p_service_depth + 1
+        );
+    
+    END;
+    
+    PROCEDURE fill_error_stack (
+        p_service_depth IN NATURAL := 0
+    ) IS
     
         v_dynamic_depth PLS_INTEGER;
         v_actual_height PLS_INTEGER;
@@ -379,7 +513,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_matching_height := 0;
     
         v_dynamic_depth := utl_call_stack.dynamic_depth;
-        v_actual_height := v_dynamic_depth - get_service_depth;
+        v_actual_height := v_dynamic_depth - NVL(p_service_depth, 0) - 1;
     
         FOR v_height IN 1..LEAST(v_call_stack.COUNT, v_actual_height) LOOP
             
@@ -427,11 +561,11 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     PROCEDURE get_call_stack (
         p_calls OUT t_call_stack,
-        p_values OUT t_call_stack_values
+        p_values OUT t_call_values
     ) IS
     BEGIN
         p_calls := v_call_stack;
-        p_values := v_call_stack_values;
+        p_values := v_call_values;
     END;
     
     /* Generic log message methods */
@@ -503,17 +637,19 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
     END;
 
-    PROCEDURE message
-        (p_level IN t_message_log_level
-        ,p_message IN VARCHAR2
-        ,p_arguments IN t_varchars := NULL) IS
+    PROCEDURE message (
+        p_level IN t_message_log_level,
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL,
+        p_service_depth IN NATURALN := 0
+    ) IS
         
         v_message VARCHAR2(4000);
         v_message_formatted BOOLEAN;
         
     BEGIN
     
-        call;
+        call(TRUE, p_service_depth + 1);
     
         FOR v_i IN 1..v_raw_message_handlers.COUNT LOOP
         
@@ -554,6 +690,15 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
+    PROCEDURE message (
+        p_level IN t_message_log_level,
+        p_message IN VARCHAR2,
+        p_service_depth IN NATURALN
+    ) IS
+    BEGIN
+        message(p_level, p_message, p_service_depth + 1);
+    END;
+    
     PROCEDURE oracle_error (
         p_level IN t_message_log_level := c_ERROR
     ) IS
@@ -589,129 +734,42 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
     PROCEDURE debug (
         p_message IN VARCHAR2,
-        p_arguments IN t_varchars := NULL
+        p_arguments IN t_varchars
     ) IS
     BEGIN
     
-        message(c_DEBUG, p_message, p_arguments);
+        message(c_DEBUG, p_message, p_arguments, 1);
         
     END;
     
     PROCEDURE debug (
         p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2
+        p_argument_1 IN VARCHAR2 := NULL,
+        p_argument_2 IN VARCHAR2 := NULL,
+        p_argument_3 IN VARCHAR2 := NULL,
+        p_argument_4 IN VARCHAR2 := NULL,
+        p_argument_5 IN VARCHAR2 := NULL
     ) IS
     BEGIN
     
-        debug(p_message, t_varchars(p_argument_1));
-    
-    END;
-    
-    PROCEDURE debug (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2
-    ) IS
-    BEGIN
-    
-        debug(p_message, t_varchars(p_argument_1, p_argument_2));
-    
-    END;
-    
-    PROCEDURE debug (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2
-    ) IS
-    BEGIN
-    
-        debug(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3));
-    
-    END;
-    
-    PROCEDURE debug (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2
-    ) IS
-    BEGIN
-    
-        debug(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4));
-    
-    END;
-    
-    PROCEDURE debug (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2,
-        p_argument_5 IN VARCHAR2
-    ) IS
-    BEGIN
-    
-        debug(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4, p_argument_5));
+        message(
+            c_DEBUG,
+            p_message, 
+            t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4, p_argument_5),
+            1
+        );
     
     END;
         
     PROCEDURE info (
         p_message IN VARCHAR2,
-        p_arguments IN t_varchars := NULL
+        p_arguments IN t_varchars
     ) IS
     BEGIN
     
-        message(c_INFO, p_message, p_arguments);
+        message(c_INFO, p_message, p_arguments, 1);
         
     END; 
-        
-    PROCEDURE info (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2
-    ) IS
-    BEGIN
-    
-        info(p_message, t_varchars(p_argument_1));
-    
-    END;
-    
-    PROCEDURE info (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2
-    ) IS
-    BEGIN
-    
-        info(p_message, t_varchars(p_argument_1, p_argument_2));
-    
-    END;
-    
-    PROCEDURE info (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2
-    ) IS
-    BEGIN
-    
-        info(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3));
-    
-    END;
-    
-    PROCEDURE info (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2
-    ) IS
-    BEGIN
-    
-        info(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4));
-    
-    END;
     
     PROCEDURE info (
         p_message IN VARCHAR2,
@@ -723,147 +781,70 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     ) IS
     BEGIN
     
-        info(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4, p_argument_5));
+        message(
+            c_INFO,
+            p_message, 
+            t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4, p_argument_5),
+            1
+        );
     
     END;
     
     PROCEDURE warning (
         p_message IN VARCHAR2,
-        p_arguments IN t_varchars := NULL
+        p_arguments IN t_varchars
     ) IS
     BEGIN
     
-        message(c_WARNING, p_message, p_arguments);
+        message(c_WARNING, p_message, p_arguments, 1);
         
     END;
     
     PROCEDURE warning (
         p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2
+        p_argument_1 IN VARCHAR2 := NULL,
+        p_argument_2 IN VARCHAR2 := NULL,
+        p_argument_3 IN VARCHAR2 := NULL,
+        p_argument_4 IN VARCHAR2 := NULL,
+        p_argument_5 IN VARCHAR2 := NULL
     ) IS
     BEGIN
     
-        warning(p_message, t_varchars(p_argument_1));
-    
-    END;
-    
-    PROCEDURE warning (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2
-    ) IS
-    BEGIN
-    
-        warning(p_message, t_varchars(p_argument_1, p_argument_2));
-    
-    END;
-    
-    PROCEDURE warning (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2
-    ) IS
-    BEGIN
-    
-        warning(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3));
-    
-    END;
-    
-    PROCEDURE warning (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2
-    ) IS
-    BEGIN
-    
-        warning(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4));
-    
-    END;
-    
-    PROCEDURE warning (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2,
-        p_argument_5 IN VARCHAR2
-    ) IS
-    BEGIN
-    
-        warning(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4, p_argument_5));
+        message(
+            c_WARNING,
+            p_message, 
+            t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4, p_argument_5),
+            1
+        );
     
     END;
         
     PROCEDURE error (
         p_message IN VARCHAR2,
-        p_arguments IN t_varchars := NULL
+        p_arguments IN t_varchars
     ) IS
     BEGIN
     
-        message(c_ERROR, p_message, p_arguments);
+        message(c_ERROR, p_message, p_arguments, 1);
         
     END;
     
     PROCEDURE error (
         p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2
+        p_argument_1 IN VARCHAR2 := NULL,
+        p_argument_2 IN VARCHAR2 := NULL,
+        p_argument_3 IN VARCHAR2 := NULL,
+        p_argument_4 IN VARCHAR2 := NULL,
+        p_argument_5 IN VARCHAR2 := NULL
     ) IS
     BEGIN
     
-        error(p_message, t_varchars(p_argument_1));
-    
-    END;
-    
-    PROCEDURE error (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2
-    ) IS
-    BEGIN
-    
-        error(p_message, t_varchars(p_argument_1, p_argument_2));
-    
-    END;
-    
-    PROCEDURE error (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2
-    ) IS
-    BEGIN
-    
-        error(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3));
-    
-    END;
-    
-    PROCEDURE error (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2
-    ) IS
-    BEGIN
-    
-        error(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4));
-    
-    END;
-    
-    PROCEDURE error (
-        p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2,
-        p_argument_2 IN VARCHAR2,
-        p_argument_3 IN VARCHAR2,
-        p_argument_4 IN VARCHAR2,
-        p_argument_5 IN VARCHAR2
-    ) IS
-    BEGIN
-    
-        error(p_message, t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4, p_argument_5));
+        message(
+            c_ERROR,
+            p_message, 
+            t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4, p_argument_5),
+            1
+        );
     
     END;
     

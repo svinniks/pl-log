@@ -2250,35 +2250,20 @@ suite("Call stack management", function() {
         
         });
 
-        test("Single anonymous block with one VALUE, NULL name", function() {
+        test("Try to run single anonymous block with one VALUE, NULL name", function() {
     
             resetPackage();
     
-            database.run(`
-                DECLARE
-                BEGIN
-                    log$.value(NULL, 'world');
-                END;
-            `);
-    
-            let callStack = getCallStack();
-    
-            expect(callStack).to.eql({
-                p_calls: [
-                    {
-                        id: 1,
-                        owner: null,
-                        unit: "__anonymous_block",
-                        line: 4,
-                        first_line: 4
-                    }
-                ],
-                p_values: [
-                    {
-                        NULL: "world"
-                    }
-                ]
-            });
+            expect(function() {
+            
+                database.run(`
+                    DECLARE
+                    BEGIN
+                        log$.value(NULL, 'world');
+                    END;
+                `);
+            
+            }).to.throw(/PLS-00567/);
         
         });
 
