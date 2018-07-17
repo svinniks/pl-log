@@ -2218,52 +2218,1731 @@ suite("Call stack management", function() {
 
     suite("VALUE", function() {
     
-        test("Single anonymous block with one VALUE", function() {
+        suite("VARCHAR2 versions of VALUE", function() {
+        
+            test("Try to pass NULL name to the VARCHAR2 version of VALUE, overload 1", function() {
     
-            resetPackage();
+                resetPackage();
     
-            database.run(`
-                DECLARE
-                BEGIN
-                    log$.value('hello', 'world');
-                END;
-            `);
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value(NULL, 'world');
+                        END;
+                    `);
+                
+                }).to.throw(/PLS-00567/);
     
-            let callStack = getCallStack();
+            });
     
-            expect(callStack).to.eql({
-                p_calls: [
-                    {
-                        id: 1,
-                        owner: null,
-                        unit: "__anonymous_block",
-                        line: 4,
-                        first_line: 4
-                    }
-                ],
-                p_values: [
-                    {
-                        hello: "world"
-                    }
-                ]
+            test("Try to pass NULL service depth to the VARCHAR2 version of VALUE, overload 1", function() {
+        
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value('hello', 'world', TRUE, NULL);
+                        END;
+                    `);
+                
+                }).to.throw(/PLS-00567/);
+    
+            });
+    
+            test("Try to pass negative service depth to the VARCHAR2 version of VALUE, overload 1", function() {
+        
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value('hello', 'world', TRUE, -1);
+                        END;
+                    `);
+                
+                }).to.throw(/ORA-06512/);
+    
+            });
+    
+            test("Try to pass NULL name to the VARCHAR2 version of VALUE, overload 2", function() {
+        
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value(NULL, 'world', 0);
+                        END;
+                    `);
+                
+                }).to.throw(/PLS-00567/);
+    
+            });
+    
+            test("Try to pass NULL service depth to the VARCHAR2 version of VALUE, overload 2", function() {
+        
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value('hello', 'world', TO_NUMBER(NULL));
+                        END;
+                    `);
+                
+                }).to.throw(/ORA-06502/);
+    
+            });
+    
+            test("Try to pass NULL negative depth to the VARCHAR2 version of VALUE, overload 2", function() {
+        
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value('hello', 'world', -1);
+                        END;
+                    `);
+                
+                }).to.throw(/ORA-06502/);
+    
+            });
+    
+            test("Call VARCHAR2 version of VALUE, overload 1, default arguments", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', 'world');
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "VARCHAR2",
+                                varchar2_value: "world",
+                                number_value: null,
+                                boolean_value: null,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+    
+            test("Call VARCHAR2 version of VALUE, overload 1, check if the top is being reset by default", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', 'world', FALSE); log$.value('hello', 'world');
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 2,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "VARCHAR2",
+                                varchar2_value: "world",
+                                number_value: null,
+                                boolean_value: null,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+    
+            test("Call VARCHAR2 version of VALUE, overload 1, reset top FALSE", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', 'world', FALSE); log$.value('hello', 'world', FALSE);
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "VARCHAR2",
+                                varchar2_value: "world",
+                                number_value: null,
+                                boolean_value: null,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+    
+            test("Call VARCHAR2 version of VALUE, overload 1, reset top NULL", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', 'world', FALSE); log$.value('hello', 'world', NULL, 0);
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "VARCHAR2",
+                                varchar2_value: "world",
+                                number_value: null,
+                                boolean_value: null,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+
+            test("Call VARCHAR2 version of VALUE, overload 1, hide one level of the stack", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    DECLARE
+                        PROCEDURE proc IS
+                        BEGIN
+                            log$.value('hello', 'world', TRUE, 1);
+                        END;
+                    BEGIN
+                        proc;
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 8,
+                            first_line: 8
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "VARCHAR2",
+                                varchar2_value: "world",
+                                number_value: null,
+                                boolean_value: null,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+
+            test("Call VARCHAR2 version of VALUE, overload 1, hide more levels, than there are in the stack", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    DECLARE
+                        PROCEDURE proc IS
+                        BEGIN
+                            log$.value('hello', 'world', TRUE, 10);
+                        END;
+                    BEGIN
+                        proc;
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                    ],
+                    p_values: [
+                    ]
+                });
+            
+            });
+            
+            test("Call VARCHAR2 version of VALUE, overload 2", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', 'world', 0);
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "VARCHAR2",
+                                varchar2_value: "world",
+                                number_value: null,
+                                boolean_value: null,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+
+            test("Call VARCHAR2 version of VALUE, overload 2, check if the top is being reset", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', 'world', 0); log$.value('hello', 'world', 0);
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 2,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "VARCHAR2",
+                                varchar2_value: "world",
+                                number_value: null,
+                                boolean_value: null,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+
+            test("Call VARCHAR2 version of VALUE, overload 2, hide one level of the stack", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    DECLARE
+                        PROCEDURE proc IS
+                        BEGIN
+                            log$.value('hello', 'world', 1);
+                        END;
+                    BEGIN
+                        proc;
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 8,
+                            first_line: 8
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "VARCHAR2",
+                                varchar2_value: "world",
+                                number_value: null,
+                                boolean_value: null,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
             });
         
         });
 
-        test("Try to run single anonymous block with one VALUE, NULL name", function() {
+        suite("NUMBER versions of VALUE", function() {
+        
+            test("Try to pass NULL name to the NUMBER version of VALUE, overload 1", function() {
     
-            resetPackage();
+                resetPackage();
     
-            expect(function() {
-            
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value(NULL, 123);
+                        END;
+                    `);
+                
+                }).to.throw(/PLS-00567/);
+    
+            });
+    
+            test("Try to pass NULL service depth to the NUMBER version of VALUE, overload 1", function() {
+        
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value('hello', 123, TRUE, NULL);
+                        END;
+                    `);
+                
+                }).to.throw(/PLS-00567/);
+    
+            });
+    
+            test("Try to pass negative service depth to the NUMBER version of VALUE, overload 1", function() {
+        
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value('hello', 123, TRUE, -1);
+                        END;
+                    `);
+                
+                }).to.throw(/ORA-06512/);
+    
+            });
+    
+            test("Try to pass NULL name to the NUMBER version of VALUE, overload 2", function() {
+        
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value(NULL, 123, 0);
+                        END;
+                    `);
+                
+                }).to.throw(/PLS-00567/);
+    
+            });
+    
+            test("Try to pass NULL service depth to the NUMBER version of VALUE, overload 2", function() {
+        
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value('hello', 123, TO_NUMBER(NULL));
+                        END;
+                    `);
+                
+                }).to.throw(/ORA-06502/);
+    
+            });
+    
+            test("Try to pass NULL negative depth to the NUMBER version of VALUE, overload 2", function() {
+        
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value('hello', 123, -1);
+                        END;
+                    `);
+                
+                }).to.throw(/ORA-06502/);
+    
+            });
+    
+            test("Call NUMBER version of VALUE, overload 1, default arguments", function() {
+        
+                resetPackage();
+        
                 database.run(`
-                    DECLARE
                     BEGIN
-                        log$.value(NULL, 'world');
+                        log$.value('hello', 123);
                     END;
                 `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "NUMBER",
+                                varchar2_value: null,
+                                number_value: 123,
+                                boolean_value: null,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
             
-            }).to.throw(/PLS-00567/);
+            });
+    
+            test("Call NUMBER version of VALUE, overload 1, check if the top is being reset by default", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', 123, FALSE); log$.value('hello', 123);
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 2,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "NUMBER",
+                                varchar2_value: null,
+                                number_value: 123,
+                                boolean_value: null,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+    
+            test("Call NUMBER version of VALUE, overload 1, reset top FALSE", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', 123, FALSE); log$.value('hello', 123, FALSE);
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "NUMBER",
+                                varchar2_value: null,
+                                number_value: 123,
+                                boolean_value: null,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+    
+            test("Call NUMBER version of VALUE, overload 1, reset top NULL", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', 123, FALSE); log$.value('hello', 123, NULL, 0);
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "NUMBER",
+                                varchar2_value: null,
+                                number_value: 123,
+                                boolean_value: null,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+
+            test("Call NUMBER version of VALUE, overload 1, hide one level of the stack", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    DECLARE
+                        PROCEDURE proc IS
+                        BEGIN
+                            log$.value('hello', 123, TRUE, 1);
+                        END;
+                    BEGIN
+                        proc;
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 8,
+                            first_line: 8
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "NUMBER",
+                                varchar2_value: null,
+                                number_value: 123,
+                                boolean_value: null,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+
+            test("Call NUMBER version of VALUE, overload 1, hide more levels, than there are in the stack", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    DECLARE
+                        PROCEDURE proc IS
+                        BEGIN
+                            log$.value('hello', 123, TRUE, 10);
+                        END;
+                    BEGIN
+                        proc;
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                    ],
+                    p_values: [
+                    ]
+                });
+            
+            });
+            
+            test("Call NUMBER version of VALUE, overload 2", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', 123, 0);
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "NUMBER",
+                                varchar2_value: null,
+                                number_value: 123,
+                                boolean_value: null,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+
+            test("Call NUMBER version of VALUE, overload 2, check if the top is being reset", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', 123, 0); log$.value('hello', 123, 0);
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 2,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "NUMBER",
+                                varchar2_value: null,
+                                number_value: 123,
+                                boolean_value: null,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+
+            test("Call NUMBER version of VALUE, overload 2, hide one level of the stack", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    DECLARE
+                        PROCEDURE proc IS
+                        BEGIN
+                            log$.value('hello', 123, 1);
+                        END;
+                    BEGIN
+                        proc;
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 8,
+                            first_line: 8
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "NUMBER",
+                                varchar2_value: null,
+                                number_value: 123,
+                                boolean_value: null,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+        
+        });
+
+        suite("BOOLEAN versions of VALUE", function() {
+        
+            test("Try to pass NULL name to the BOOLEAN version of VALUE, overload 1", function() {
+    
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value(NULL, TRUE);
+                        END;
+                    `);
+                
+                }).to.throw(/PLS-00567/);
+    
+            });
+    
+            test("Try to pass NULL service depth to the BOOLEAN version of VALUE, overload 1", function() {
+        
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value('hello', TRUE, TRUE, NULL);
+                        END;
+                    `);
+                
+                }).to.throw(/PLS-00567/);
+    
+            });
+    
+            test("Try to pass negative service depth to the BOOLEAN version of VALUE, overload 1", function() {
+        
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value('hello', TRUE, TRUE, -1);
+                        END;
+                    `);
+                
+                }).to.throw(/ORA-06512/);
+    
+            });
+    
+            test("Try to pass NULL name to the BOOLEAN version of VALUE, overload 2", function() {
+        
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value(NULL, TRUE, 0);
+                        END;
+                    `);
+                
+                }).to.throw(/PLS-00567/);
+    
+            });
+    
+            test("Try to pass NULL service depth to the BOOLEAN version of VALUE, overload 2", function() {
+        
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value('hello', TRUE, TO_NUMBER(NULL));
+                        END;
+                    `);
+                
+                }).to.throw(/ORA-06502/);
+    
+            });
+    
+            test("Try to pass NULL negative depth to the BOOLEAN version of VALUE, overload 2", function() {
+        
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value('hello', TRUE, -1);
+                        END;
+                    `);
+                
+                }).to.throw(/ORA-06502/);
+    
+            });
+    
+            test("Call BOOLEAN version of VALUE, overload 1, default arguments", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', TRUE);
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "BOOLEAN",
+                                varchar2_value: null,
+                                number_value: null,
+                                boolean_value: true,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+    
+            test("Call BOOLEAN version of VALUE, overload 1, check if the top is being reset by default", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', TRUE); log$.value('hello', TRUE);
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 2,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "BOOLEAN",
+                                varchar2_value: null,
+                                number_value: null,
+                                boolean_value: true,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+    
+            test("Call BOOLEAN version of VALUE, overload 1, reset top FALSE", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', TRUE); log$.value('hello', TRUE, FALSE);
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "BOOLEAN",
+                                varchar2_value: null,
+                                number_value: null,
+                                boolean_value: true,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+    
+            test("Call BOOLEAN version of VALUE, overload 1, reset top NULL", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', TRUE); log$.value('hello', TRUE, NULL, 0);
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "BOOLEAN",
+                                varchar2_value: null,
+                                number_value: null,
+                                boolean_value: true,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+
+            test("Call BOOLEAN version of VALUE, overload 1, hide one level of the stack", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    DECLARE
+                        PROCEDURE proc IS
+                        BEGIN
+                            log$.value('hello', TRUE, TRUE, 1);
+                        END;
+                    BEGIN
+                        proc;
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 8,
+                            first_line: 8
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "BOOLEAN",
+                                varchar2_value: null,
+                                number_value: null,
+                                boolean_value: true,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+
+            test("Call BOOLEAN version of VALUE, overload 1, hide more levels, than there are in the stack", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    DECLARE
+                        PROCEDURE proc IS
+                        BEGIN
+                            log$.value('hello', TRUE, TRUE, 10);
+                        END;
+                    BEGIN
+                        proc;
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                    ],
+                    p_values: [
+                    ]
+                });
+            
+            });
+            
+            test("Call BOOLEAN version of VALUE, overload 2", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', TRUE, 0);
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "BOOLEAN",
+                                varchar2_value: null,
+                                number_value: null,
+                                boolean_value: true,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+
+            test("Call BOOLEAN version of VALUE, overload 2, check if the top is being reset", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', TRUE, 0); log$.value('hello', TRUE, 0);
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 2,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "BOOLEAN",
+                                varchar2_value: null,
+                                number_value: null,
+                                boolean_value: true,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+
+            test("Call BOOLEAN version of VALUE, overload 2, hide one level of the stack", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    DECLARE
+                        PROCEDURE proc IS
+                        BEGIN
+                            log$.value('hello', TRUE, 1);
+                        END;
+                    BEGIN
+                        proc;
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 8,
+                            first_line: 8
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "BOOLEAN",
+                                varchar2_value: null,
+                                number_value: null,
+                                boolean_value: true,
+                                date_value: null
+                            }
+                        }
+                    ]
+                });
+            
+            });
+        
+        });
+
+        suite("DATE versions of VALUE", function() {
+        
+            test("Try to pass NULL name to the DATE version of VALUE, overload 1", function() {
+    
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value(NULL, CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE));
+                        END;
+                    `);
+                
+                }).to.throw(/PLS-00567/);
+    
+            });
+    
+            test("Try to pass NULL service depth to the DATE version of VALUE, overload 1", function() {
+        
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE), TRUE, NULL);
+                        END;
+                    `);
+                
+                }).to.throw(/PLS-00567/);
+    
+            });
+    
+            test("Try to pass negative service depth to the DATE version of VALUE, overload 1", function() {
+        
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE), TRUE, -1);
+                        END;
+                    `);
+                
+                }).to.throw(/ORA-06512/);
+    
+            });
+    
+            test("Try to pass NULL name to the DATE version of VALUE, overload 2", function() {
+        
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value(NULL, CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE), 0);
+                        END;
+                    `);
+                
+                }).to.throw(/PLS-00567/);
+    
+            });
+    
+            test("Try to pass NULL service depth to the DATE version of VALUE, overload 2", function() {
+        
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE), TO_NUMBER(NULL));
+                        END;
+                    `);
+                
+                }).to.throw(/ORA-06502/);
+    
+            });
+    
+            test("Try to pass NULL negative depth to the DATE version of VALUE, overload 2", function() {
+        
+                resetPackage();
+    
+                expect(function() {
+                
+                    database.run(`
+                        BEGIN
+                            log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE), -1);
+                        END;
+                    `);
+                
+                }).to.throw(/ORA-06502/);
+    
+            });
+    
+            test("Call DATE version of VALUE, overload 1, default arguments", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE));
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "DATE",
+                                varchar2_value: null,
+                                number_value: null,
+                                boolean_value: null,
+                                date_value: "1913-08-25 13:49:03"
+                            }
+                        }
+                    ]
+                });
+            
+            });
+    
+            test("Call DATE version of VALUE, overload 1, check if the top is being reset by default", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE)); log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE));
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 2,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "DATE",
+                                varchar2_value: null,
+                                number_value: null,
+                                boolean_value: null,
+                                date_value: "1913-08-25 13:49:03"
+                            }
+                        }
+                    ]
+                });
+            
+            });
+    
+            test("Call DATE version of VALUE, overload 1, reset top FALSE", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE)); log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE), FALSE);
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "DATE",
+                                varchar2_value: null,
+                                number_value: null,
+                                boolean_value: null,
+                                date_value: "1913-08-25 13:49:03"
+                            }
+                        }
+                    ]
+                });
+            
+            });
+    
+            test("Call DATE version of VALUE, overload 1, reset top NULL", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE)); log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE), NULL, 0);
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "DATE",
+                                varchar2_value: null,
+                                number_value: null,
+                                boolean_value: null,
+                                date_value: "1913-08-25 13:49:03"
+                            }
+                        }
+                    ]
+                });
+            
+            });
+
+            test("Call DATE version of VALUE, overload 1, hide one level of the stack", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    DECLARE
+                        PROCEDURE proc IS
+                        BEGIN
+                            log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE), TRUE, 1);
+                        END;
+                    BEGIN
+                        proc;
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 8,
+                            first_line: 8
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "DATE",
+                                varchar2_value: null,
+                                number_value: null,
+                                boolean_value: null,
+                                date_value: "1913-08-25 13:49:03"
+                            }
+                        }
+                    ]
+                });
+            
+            });
+
+            test("Call DATE version of VALUE, overload 1, hide more levels, than there are in the stack", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    DECLARE
+                        PROCEDURE proc IS
+                        BEGIN
+                            log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE), TRUE, 10);
+                        END;
+                    BEGIN
+                        proc;
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                    ],
+                    p_values: [
+                    ]
+                });
+            
+            });
+            
+            test("Call DATE version of VALUE, overload 2", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE), 0);
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "DATE",
+                                varchar2_value: null,
+                                number_value: null,
+                                boolean_value: null,
+                                date_value: "1913-08-25 13:49:03"
+                            }
+                        }
+                    ]
+                });
+            
+            });
+
+            test("Call DATE version of VALUE, overload 2, check if the top is being reset", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    BEGIN
+                        log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE), 0); log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE), 0);
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 2,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 3,
+                            first_line: 3
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "DATE",
+                                varchar2_value: null,
+                                number_value: null,
+                                boolean_value: null,
+                                date_value: "1913-08-25 13:49:03"
+                            }
+                        }
+                    ]
+                });
+            
+            });
+
+            test("Call DATE version of VALUE, overload 2, hide one level of the stack", function() {
+        
+                resetPackage();
+        
+                database.run(`
+                    DECLARE
+                        PROCEDURE proc IS
+                        BEGIN
+                            log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE), 1);
+                        END;
+                    BEGIN
+                        proc;
+                    END;
+                `);
+        
+                let callStack = getCallStack();
+        
+                expect(callStack).to.eql({
+                    p_calls: [
+                        {
+                            id: 1,
+                            owner: null,
+                            unit: "__anonymous_block",
+                            line: 8,
+                            first_line: 8
+                        }
+                    ],
+                    p_values: [
+                        {
+                            hello: {
+                                type: "DATE",
+                                varchar2_value: null,
+                                number_value: null,
+                                boolean_value: null,
+                                date_value: "1913-08-25 13:49:03"
+                            }
+                        }
+                    ]
+                });
+            
+            });
         
         });
 
@@ -2275,8 +3954,8 @@ suite("Call stack management", function() {
                 DECLARE
                 BEGIN
                     log$.value('hello', 'world');
-                    log$.value('sveiki', 'pasaule');
-                    log$.value('good bye', 'people');
+                    log$.value('sveiki', 123);
+                    log$.value('good bye', TRUE);
                 END;
             `);
     
@@ -2294,9 +3973,27 @@ suite("Call stack management", function() {
                 ],
                 p_values: [
                     {
-                        hello: "world",
-                        sveiki: "pasaule",
-                        "good bye": "people"
+                        hello: {
+                            type: "VARCHAR2",
+                            varchar2_value: "world",
+                            number_value: null,
+                            boolean_value: null,
+                            date_value: null
+                        },
+                        sveiki: {
+                            type: "NUMBER",
+                            varchar2_value: null,
+                            number_value: 123,
+                            boolean_value: null,
+                            date_value: null
+                        },
+                        "good bye": {
+                            type: "BOOLEAN",
+                            varchar2_value: null,
+                            number_value: null,
+                            boolean_value: true,
+                            date_value: null
+                        }
                     }
                 ]
             });
@@ -2311,7 +4008,7 @@ suite("Call stack management", function() {
                 DECLARE
                 BEGIN
                     log$.value('hello', 'world');
-                    log$.value('hello', 'people');
+                    log$.value('hello', 123);
                 END;
             `);
     
@@ -2329,72 +4026,13 @@ suite("Call stack management", function() {
                 ],
                 p_values: [
                     {
-                        hello: "people"
-                    }
-                ]
-            });
-        
-        });
-
-        test("Single anonymous block, two VALUEs on one line", function() {
-    
-            resetPackage();
-    
-            database.run(`
-                DECLARE
-                BEGIN
-                    log$.value('hello', 'world'); log$.value('sveiki', 'pasaule');
-                END;
-            `);
-    
-            let callStack = getCallStack();
-    
-            expect(callStack).to.eql({
-                p_calls: [
-                    {
-                        id: 2,
-                        owner: null,
-                        unit: "__anonymous_block",
-                        line: 4,
-                        first_line: 4
-                    }
-                ],
-                p_values: [
-                    {
-                        sveiki: "pasaule"
-                    }
-                ]
-            });
-        
-        });
-
-        test("Single anonymous block, two VALUEs on one line, reset top FALSE", function() {
-    
-            resetPackage();
-    
-            database.run(`
-                DECLARE
-                BEGIN
-                    log$.value('hello', 'world'); log$.value('sveiki', 'pasaule', FALSE);
-                END;
-            `);
-    
-            let callStack = getCallStack();
-    
-            expect(callStack).to.eql({
-                p_calls: [
-                    {
-                        id: 1,
-                        owner: null,
-                        unit: "__anonymous_block",
-                        line: 4,
-                        first_line: 4
-                    }
-                ],
-                p_values: [
-                    {
-                        hello: "world",
-                        sveiki: "pasaule"
+                        hello: {
+                            type: "NUMBER",
+                            varchar2_value: null,
+                            number_value: 123,
+                            boolean_value: null,
+                            date_value: null
+                        }
                     }
                 ]
             });
@@ -2410,17 +4048,17 @@ suite("Call stack management", function() {
 
                     PROCEDURE proc2 IS
                     BEGIN
-                        log$.value('level 3 name', 'level 3 value');
+                        log$.value('good bye', TRUE);
                     END;
 
                     PROCEDURE proc1 IS
                     BEGIN
-                        log$.value('level 2 name', 'level 2 value');
+                        log$.value('sveiki', 123);
                         proc2;
                     END;
 
                 BEGIN
-                    log$.value('level 1 name', 'level 1 value');
+                    log$.value('hello', 'world');
                     proc1;
                 END;
             `);
@@ -2429,13 +4067,31 @@ suite("Call stack management", function() {
     
             expect(callStack.p_values).to.eql([
                 {
-                    "level 1 name": "level 1 value"
+                    "hello": {
+                        type: "VARCHAR2",
+                        varchar2_value: "world",
+                        number_value: null,
+                        boolean_value: null,
+                        date_value: null
+                    }
                 },
                 {
-                    "level 2 name": "level 2 value"
+                    "sveiki": {
+                        type: "NUMBER",
+                        varchar2_value: null,
+                        number_value: 123,
+                        boolean_value: null,
+                        date_value: null
+                    }
                 },
                 {
-                    "level 3 name": "level 3 value"
+                    "good bye": {
+                        type: "BOOLEAN",
+                        varchar2_value: null,
+                        number_value: null,
+                        boolean_value: true,
+                        date_value: null
+                    }
                 }
             ]);
         

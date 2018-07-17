@@ -312,20 +312,30 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     PROCEDURE value (
         p_name IN VARCHAR2,
-        p_type IN CHAR,
-        p_value IN VARCHAR2,
+        p_type IN VARCHAR2,
         p_reset_top IN BOOLEAN,
-        p_service_depth IN PLS_INTEGER
+        p_service_depth IN PLS_INTEGER,
+        p_varchar2_value IN VARCHAR2 := NULL,
+        p_number_value IN NUMBER := NULL,
+        p_boolean_value IN BOOLEAN := NULL,
+        p_date_value IN DATE := NULL
     ) IS
         v_value t_value;
     BEGIN
     
         call(p_reset_top, p_service_depth + 1);
         
-        v_value.type := p_type;
-        v_value.value := p_value;
+        IF v_call_values.COUNT > 0 THEN
         
-        v_call_values(v_call_values.COUNT)(p_name) := v_value;
+            v_value.type := p_type;
+            v_value.varchar2_value := p_varchar2_value;
+            v_value.number_value := p_number_value;
+            v_value.boolean_value := p_boolean_value;
+            v_value.date_value := p_date_value;
+        
+            v_call_values(v_call_values.COUNT)(p_name) := v_value;
+            
+        END IF;
     
     END;
     
@@ -339,10 +349,10 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
         value(
             p_name, 
-            'S', 
-            p_value, 
+            'VARCHAR2', 
             p_reset_top, 
-            p_service_depth + 1
+            p_service_depth + 1,
+            p_varchar2_value => p_value
         );
     
     END;
@@ -356,10 +366,10 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
         value(
             p_name, 
-            'S', 
-            p_value, 
+            'VARCHAR2', 
             TRUE, 
-            p_service_depth + 1
+            p_service_depth + 1,
+            p_varchar2_value => p_value
         );
     
     END;
@@ -374,10 +384,10 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
         value(
             p_name, 
-            'N', 
-            TO_CHAR(p_value, 'TM', 'NLS_NUMERIC_CHARACTERS=''.,'''), 
+            'NUMBER', 
             p_reset_top, 
-            p_service_depth + 1
+            p_service_depth + 1,
+            p_number_value => p_value
         );
     
     END;
@@ -391,10 +401,10 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
         value(
             p_name, 
-            'N', 
-            TO_CHAR(p_value, 'TM', 'NLS_NUMERIC_CHARACTERS=''.,'''), 
+            'NUMBER', 
             TRUE, 
-            p_service_depth + 1
+            p_service_depth + 1,
+            p_number_value => p_value
         );
     
     END;
@@ -409,14 +419,10 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
         value(
             p_name, 
-            'B', 
-            CASE p_value
-                WHEN TRUE THEN 'TRUE'
-                WHEN FALSE THEN 'FALSE'
-                ELSE NULL
-            END, 
+            'BOOLEAN', 
             p_reset_top, 
-            p_service_depth + 1
+            p_service_depth + 1,
+            p_boolean_value => p_value
         );
     
     END;
@@ -430,14 +436,10 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
         value(
             p_name, 
-            'B', 
-            CASE p_value
-                WHEN TRUE THEN 'TRUE'
-                WHEN FALSE THEN 'FALSE'
-                ELSE NULL
-            END,
+            'BOOLEAN', 
             TRUE, 
-            p_service_depth + 1
+            p_service_depth + 1,
+            p_boolean_value => p_value
         );
     
     END;
@@ -452,10 +454,10 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
         value(
             p_name, 
-            'D', 
-            TO_CHAR(p_value, 'YYYY-MM-DD HH24:MI:SS'), 
+            'DATE', 
             p_reset_top, 
-            p_service_depth + 1
+            p_service_depth + 1,
+            p_date_value => p_value
         );
     
     END;
@@ -469,10 +471,10 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
         value(
             p_name, 
-            'D', 
-            TO_CHAR(p_value, 'YYYY-MM-DD HH24:MI:SS'),
+            'DATE', 
             TRUE, 
-            p_service_depth + 1
+            p_service_depth + 1,
+            p_date_value => p_value
         );
     
     END;

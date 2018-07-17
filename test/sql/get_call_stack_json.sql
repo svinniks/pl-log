@@ -57,9 +57,28 @@ BEGIN
                 || escape_string(v_name)
                 || '":{"type":"'
                 || v_values(v_i)(v_name).type
-                || '","value":"'
-                || escape_string(v_values(v_i)(v_name).value)
-                || '"}';
+                || '","varchar2_value":'
+                || CASE 
+                       WHEN v_values(v_i)(v_name).varchar2_value IS NULL THEN 'null'
+                       ELSE '"' || escape_string(v_values(v_i)(v_name).varchar2_value) || '"'
+                   END
+                || ',"number_value":'
+                || CASE 
+                       WHEN v_values(v_i)(v_name).number_value IS NULL THEN 'null'
+                       ELSE TO_CHAR(v_values(v_i)(v_name).number_value, 'TM', 'NLS_NUMERIC_CHARACTERS=''.,''')
+                   END    
+                || ',"boolean_value":'
+                || CASE
+                       WHEN v_values(v_i)(v_name).boolean_value IS NULL THEN 'null'
+                       WHEN v_values(v_i)(v_name).boolean_value THEN 'true'
+                       ELSE 'false'
+                   END
+                || ',"date_value":'
+                || CASE 
+                       WHEN v_values(v_i)(v_name).date_value IS NULL THEN 'null'
+                       ELSE '"' || TO_CHAR(v_values(v_i)(v_name).date_value, 'YYYY-MM-DD HH24:MI:SS') || '"'
+                   END 
+                || '}';
                 
             v_name := v_values(v_i).NEXT(v_name);    
         

@@ -56,8 +56,11 @@ CREATE OR REPLACE PACKAGE log$ IS
     
     TYPE t_value IS
         RECORD (
-            type CHAR,
-            value STRING
+            type VARCHAR2(9),
+            varchar2_value STRING,
+            number_value NUMBER,
+            boolean_value BOOLEAN,
+            date_value DATE
         );
     
     TYPE t_values IS
