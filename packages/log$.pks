@@ -229,12 +229,42 @@ CREATE OR REPLACE PACKAGE log$ IS
     );
     
     PROCEDURE debug (
+        p_message IN VARCHAR2
+    );
+    
+    PROCEDURE debug (
         p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2 := NULL,
-        p_argument_2 IN VARCHAR2 := NULL,
-        p_argument_3 IN VARCHAR2 := NULL,
-        p_argument_4 IN VARCHAR2 := NULL,
-        p_argument_5 IN VARCHAR2 := NULL
+        p_argument_1 IN VARCHAR2
+    );
+    
+    PROCEDURE debug (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2
+    );
+    
+    PROCEDURE debug (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2
+    );
+    
+    PROCEDURE debug (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2
+    );
+    
+    PROCEDURE debug (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2,
+        p_argument_5 IN VARCHAR2
     );
         
     PROCEDURE info (
@@ -243,12 +273,42 @@ CREATE OR REPLACE PACKAGE log$ IS
     );
     
     PROCEDURE info (
+        p_message IN VARCHAR2
+    );
+    
+    PROCEDURE info (
         p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2 := NULL,
-        p_argument_2 IN VARCHAR2 := NULL,
-        p_argument_3 IN VARCHAR2 := NULL,
-        p_argument_4 IN VARCHAR2 := NULL,
-        p_argument_5 IN VARCHAR2 := NULL
+        p_argument_1 IN VARCHAR2
+    );
+    
+    PROCEDURE info (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2
+    );
+    
+    PROCEDURE info (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2
+    );
+    
+    PROCEDURE info (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2
+    );
+    
+    PROCEDURE info (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2,
+        p_argument_5 IN VARCHAR2
     );
         
     PROCEDURE warning (
@@ -257,12 +317,42 @@ CREATE OR REPLACE PACKAGE log$ IS
     );
     
     PROCEDURE warning (
+        p_message IN VARCHAR2
+    );
+    
+    PROCEDURE warning (
         p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2 := NULL,
-        p_argument_2 IN VARCHAR2 := NULL,
-        p_argument_3 IN VARCHAR2 := NULL,
-        p_argument_4 IN VARCHAR2 := NULL,
-        p_argument_5 IN VARCHAR2 := NULL
+        p_argument_1 IN VARCHAR2
+    );
+    
+    PROCEDURE warning (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2
+    );
+    
+    PROCEDURE warning (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2
+    );
+    
+    PROCEDURE warning (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2
+    );
+    
+    PROCEDURE warning (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2,
+        p_argument_5 IN VARCHAR2
     );
       
     PROCEDURE error (
@@ -271,12 +361,42 @@ CREATE OR REPLACE PACKAGE log$ IS
     );
     
     PROCEDURE error (
+        p_message IN VARCHAR2
+    );
+    
+    PROCEDURE error (
         p_message IN VARCHAR2,
-        p_argument_1 IN VARCHAR2 := NULL,
-        p_argument_2 IN VARCHAR2 := NULL,
-        p_argument_3 IN VARCHAR2 := NULL,
-        p_argument_4 IN VARCHAR2 := NULL,
-        p_argument_5 IN VARCHAR2 := NULL
+        p_argument_1 IN VARCHAR2
+    );
+    
+    PROCEDURE error (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2
+    );
+    
+    PROCEDURE error (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2
+    );
+    
+    PROCEDURE error (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2
+    );
+    
+    PROCEDURE error (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2,
+        p_argument_5 IN VARCHAR2
     );
     
 END;
