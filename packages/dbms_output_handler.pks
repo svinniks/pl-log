@@ -23,6 +23,13 @@ CREATE OR REPLACE PACKAGE dbms_output_handler IS
     FUNCTION get_log_level
     RETURN log$.t_handler_log_level;
     
+    PROCEDURE set_call_stack_level (
+        p_level IN log$.t_handler_log_level
+    );
+    
+    FUNCTION get_call_stack_level
+    RETURN log$.t_handler_log_level;
+    
     PROCEDURE handle_message (
         p_level IN log$.t_message_log_level,
         p_message IN VARCHAR2
