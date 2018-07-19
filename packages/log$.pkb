@@ -218,6 +218,23 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     /* Call stack management */
     
+    FUNCTION call_stack_unit (
+        p_depth IN PLS_INTEGER
+    )
+    RETURN VARCHAR2 IS
+        v_unit STRING;
+    BEGIN
+    
+        v_unit := utl_call_stack.owner(p_depth + 1);
+        
+        IF v_unit IS NULL THEN
+            RETURN utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(p_depth + 1));
+        ELSE
+            RETURN v_unit || '.' || utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(p_depth + 1));
+        END IF;
+    
+    END;
+    
     PROCEDURE call (
         p_reset_top IN BOOLEAN := TRUE,
         p_service_depth IN NATURALN := 0
@@ -232,21 +249,6 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_actual_call t_call;
         v_stack_call t_call;
         
-        FUNCTION unit_matches
-        RETURN BOOLEAN IS
-        BEGIN
-        
-            RETURN (
-                (
-                    v_stack_call.owner IS NULL 
-                    AND v_actual_call.owner IS NULL
-                )
-                OR v_stack_call.owner = v_actual_call.owner  
-            )
-            AND v_stack_call.unit = v_actual_call.unit;
-        
-        END;
-            
     BEGIN
     
         v_matching_height := 0;
@@ -258,13 +260,12 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             
             v_depth := v_dynamic_depth - v_height + 1;
         
-            v_actual_call.owner := utl_call_stack.owner(v_depth);
-            v_actual_call.unit := utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(v_depth));
+            v_actual_call.unit := call_stack_unit(v_depth);
             v_actual_call.line := utl_call_stack.unit_line(v_depth);
             
             v_stack_call := v_call_stack(v_height);
             
-            EXIT WHEN NOT unit_matches;
+            EXIT WHEN v_actual_call.unit != v_stack_call.unit;
             EXIT WHEN v_height = v_actual_height 
                       AND v_actual_call.line <= v_stack_call.first_line
                       AND NVL(p_reset_top, FALSE);
@@ -290,8 +291,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
             v_depth := v_dynamic_depth - v_height + 1;
         
-            v_actual_call.owner := utl_call_stack.owner(v_depth);
-            v_actual_call.unit := utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(v_depth));
+            v_actual_call.unit := call_stack_unit(v_depth);
             v_actual_call.line := utl_call_stack.unit_line(v_depth);
             v_actual_call.first_line := v_actual_call.line;
         
@@ -496,22 +496,23 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_actual_call t_call;
         v_stack_call t_call;
         
+        v_backtrace_unit VARCHAR2(4000);
         v_backtrace_depth PLS_INTEGER;
         v_call_stack_height PLS_INTEGER;
         
-        FUNCTION unit_matches
-        RETURN BOOLEAN IS
+        v_call t_call;
+        
+        FUNCTION backtrace_unit (
+            p_depth IN PLS_INTEGER
+        ) 
+        RETURN VARCHAR2 IS
+            e_bad_depth_indicator EXCEPTION;
+            PRAGMA EXCEPTION_INIT(e_bad_depth_indicator, -64610);
         BEGIN
-        
-            RETURN (
-                (
-                    v_stack_call.owner IS NULL 
-                    AND v_actual_call.owner IS NULL
-                )
-                OR v_stack_call.owner = v_actual_call.owner  
-            )
-            AND v_stack_call.unit = v_actual_call.unit;
-        
+            RETURN utl_call_stack.backtrace_unit(p_depth);
+        EXCEPTION
+            WHEN e_bad_depth_indicator THEN
+                RETURN '__anonymous_block';
         END;
     
     BEGIN
@@ -525,21 +526,20 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             
             v_depth := v_dynamic_depth - v_height + 1;
         
-            v_actual_call.owner := utl_call_stack.owner(v_depth);
-            v_actual_call.unit := utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(v_depth));
+            v_actual_call.unit := call_stack_unit(v_depth);
             v_actual_call.line := utl_call_stack.unit_line(v_depth);
             
             v_stack_call := v_call_stack(v_height);
             
-            EXIT WHEN NOT unit_matches;
-            EXIT WHEN v_actual_call.line != v_stack_call.first_line;
+            EXIT WHEN v_actual_call.unit != v_stack_call.unit;
+            EXIT WHEN v_actual_call.line != v_stack_call.line;
 
             v_matching_height := v_height;
             
         END LOOP;
         
         IF v_matching_height < v_actual_height - 1 THEN
-            call;
+            call(p_service_depth + 1);
             v_matching_height := v_call_stack.COUNT - 1;
         END IF;
         
@@ -548,7 +548,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
         WHILE v_backtrace_depth >= 1 AND v_call_stack_height <= v_call_stack.COUNT LOOP
         
-            IF v_call_stack(v_call_stack_height).unit LIKE utl_call_stack.backtrace_unit(v_backtrace_depth) || '%' THEN
+            IF v_call_stack(v_call_stack_height).unit LIKE backtrace_unit(v_backtrace_depth) || '%' THEN
                 IF v_call_stack_height = v_call_stack.COUNT THEN
                     v_call_stack(v_call_stack_height).line := utl_call_stack.backtrace_line(v_backtrace_depth);
                 ELSIF v_call_stack(v_call_stack_height).line != utl_call_stack.backtrace_line(v_backtrace_depth) THEN
@@ -562,6 +562,12 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             v_call_stack_height := v_call_stack_height + 1;
         
         END LOOP; 
+        
+        IF v_call_stack_height <= v_call_stack.COUNT THEN
+            v_call_stack.TRIM(v_call_stack_height - v_call_stack.COUNT + 1);
+        END IF;
+        
+        
     
     END;
     
@@ -572,6 +578,118 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     BEGIN
         p_calls := v_call_stack;
         p_values := v_call_values;
+    END;
+    
+    FUNCTION format_call_stack (
+        p_length IN t_string_length := c_STRING_LENGTH,
+        p_first_line_indent IN VARCHAR2 := NULL,
+        p_indent IN VARCHAR2 := NULL
+    )
+    RETURN VARCHAR2 IS
+    
+        v_formatted_call_stack STRING;
+        e_length_exceeded EXCEPTION;
+        
+        v_name STRING;
+        
+        PROCEDURE put (
+            p_text IN VARCHAR2
+        ) IS
+        BEGIN
+        
+            IF NVL(LENGTH(v_formatted_call_stack), 0) + NVL(LENGTH(p_text), 0) + 3 > p_length THEN
+                v_formatted_call_stack := v_formatted_call_stack || '...';
+                RAISE e_length_exceeded;
+            END IF;
+            
+            v_formatted_call_stack := v_formatted_call_stack || p_text;
+        
+        END;
+        
+        PROCEDURE put_line (
+            p_text IN VARCHAR2 := NULL
+        ) IS
+        BEGIN
+            put(p_text);
+            put(CHR(10));
+        END;
+    
+    BEGIN
+    
+        FOR v_i IN REVERSE 1..v_call_stack.COUNT LOOP
+
+            IF v_i = v_call_stack.COUNT THEN
+                put(p_first_line_indent);
+            ELSE
+                put(p_indent);
+            END IF;
+                
+            put_line(v_call_stack(v_i).unit || ' (line ' || v_call_stack(v_i).line || ')');
+                
+            v_name := v_call_values(v_i).FIRST;
+                
+            WHILE v_name IS NOT NULL LOOP
+                
+                put(p_indent);
+                put('    ');
+                put(v_name);
+                put(': ');
+                    
+                CASE v_call_values(v_i)(v_name).type
+                    
+                    WHEN 'VARCHAR2' THEN
+                        
+                        IF v_call_values(v_i)(v_name).varchar2_value IS NULL THEN
+                            put_line('NULL');
+                        ELSE
+                            put('''');
+                            put(REPLACE(v_call_values(v_i)(v_name).varchar2_value, '''', ''''''));
+                            put_line('''');
+                        END IF;
+                            
+                    WHEN 'NUMBER' THEN
+                        
+                        IF v_call_values(v_i)(v_name).number_value IS NULL THEN
+                            put_line('NULL');
+                        ELSE
+                            put_line(TO_CHAR(v_call_values(v_i)(v_name).number_value, 'TM', 'NLS_NUMERIC_CHARACTERS=''.,'''));
+                        END IF;
+                            
+                    WHEN 'BOOLEAN' THEN
+                        
+                        IF v_call_values(v_i)(v_name).boolean_value IS NULL THEN
+                            put_line('NULL');
+                        ELSIF v_call_values(v_i)(v_name).boolean_value IS NULL THEN
+                            put_line('TRUE');
+                        ELSE
+                            put_line('FALSE');
+                        END IF;
+                            
+                    WHEN 'DATE' THEN
+                        
+                        IF v_call_values(v_i)(v_name).date_value IS NULL THEN
+                            put_line('NULL');
+                        ELSE
+                            put_line('TIMESTAMP ''' || TO_CHAR(v_call_values(v_i)(v_name).date_value, 'YYYY-MM-DD HH24:MI:SS') || '''');
+                        END IF;
+                        
+                    ELSE
+                            
+                        put_line;
+                            
+                END CASE;
+                
+                v_name := v_call_values(v_i).NEXT(v_name);
+                
+            END LOOP;
+            
+        END LOOP;
+        
+        RETURN v_formatted_call_stack;
+    
+    EXCEPTION
+        WHEN e_length_exceeded THEN
+            RETURN v_formatted_call_stack;
     END;
     
     /* Generic log message methods */

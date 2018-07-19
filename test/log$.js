@@ -211,7 +211,6 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 4,
                         first_line: 4
@@ -243,7 +242,6 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 6,
                         first_line: 4
@@ -273,7 +271,6 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 2,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 4,
                         first_line: 4
@@ -303,7 +300,6 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 2,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 4,
                         first_line: 4
@@ -333,7 +329,6 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 4,
                         first_line: 4
@@ -363,7 +358,6 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 4,
                         first_line: 4
@@ -388,15 +382,13 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null, 
                         unit: "__anonymous_block",
                         line: 1,
                         first_line: 1
                     },
                     {
                         id: 2,
-                        owner: user,
-                        unit: singleCallProcedureName,
+                        unit: user + "." + singleCallProcedureName,
                         line: 3,
                         first_line: 3
                     }
@@ -421,15 +413,13 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null, 
                         unit: "__anonymous_block",
                         line: 1,
                         first_line: 1
                     },
                     {
                         id: 2,
-                        owner: user,
-                        unit: threeCallProcedureName,
+                        unit: user + "." + threeCallProcedureName,
                         line: 5,
                         first_line: 3
                     }
@@ -455,15 +445,13 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null, 
                         unit: "__anonymous_block",
                         line: 1,
                         first_line: 1
                     },
                     {
                         id: 3,
-                        owner: user,
-                        unit: singleCallProcedure2Name,
+                        unit: user + "." + singleCallProcedure2Name,
                         line: 4,
                         first_line: 4
                     }
@@ -504,21 +492,18 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 15,
                         first_line: 15
                     },
                     {
                         id: 2,
-                        owner: null,
                         unit: "__anonymous_block.PROC1",
                         line: 11,
                         first_line: 11
                     },
                     {
                         id: 3,
-                        owner: null,
                         unit: "__anonymous_block.PROC2",
                         line: 6,
                         first_line: 6
@@ -563,21 +548,18 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 17,
                         first_line: 16
                     },
                     {
                         id: 2,
-                        owner: null,
                         unit: "__anonymous_block.PROC1",
                         line: 12,
                         first_line: 11
                     },
                     {
                         id: 3,
-                        owner: null,
                         unit: "__anonymous_block.PROC2",
                         line: 6,
                         first_line: 6
@@ -622,14 +604,12 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 17,
                         first_line: 16
                     },
                     {
                         id: 2,
-                        owner: null,
                         unit: "__anonymous_block.PROC1",
                         line: 12,
                         first_line: 11
@@ -672,21 +652,18 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 16,
                         first_line: 16
                     },
                     {
                         id: 2,
-                        owner: null,
                         unit: "__anonymous_block.PROC1",
                         line: 12,
                         first_line: 11
                     },
                     {
                         id: 4,
-                        owner: null,
                         unit: "__anonymous_block.PROC2",
                         line: 6,
                         first_line: 6
@@ -730,21 +707,18 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 16,
                         first_line: 16
                     },
                     {
                         id: 2,
-                        owner: null,
                         unit: "__anonymous_block.PROC1",
                         line: 12,
                         first_line: 11
                     },
                     {
                         id: 4,
-                        owner: null,
                         unit: "__anonymous_block.PROC2",
                         line: 6,
                         first_line: 6
@@ -788,21 +762,18 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 16,
                         first_line: 15
                     },
                     {
                         id: 4,
-                        owner: null,
                         unit: "__anonymous_block.PROC1",
                         line: 11,
                         first_line: 11
                     },
                     {
                         id: 5,
-                        owner: null,
                         unit: "__anonymous_block.PROC2",
                         line: 6,
                         first_line: 6
@@ -861,35 +832,30 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 31,
                         first_line: 31
                     },
                     {
                         id: 2,
-                        owner: null,
                         unit: "__anonymous_block.PROC1",
                         line: 27,
                         first_line: 27
                     },
                     {
                         id: 3,
-                        owner: null,
                         unit: "__anonymous_block.PROC2",
                         line: 22,
                         first_line: 21
                     },
                     {
                         id: 6,
-                        owner: null,
                         unit: "__anonymous_block.PROC4",
                         line: 11,
                         first_line: 11
                     },
                     {
                         id: 7,
-                        owner: null,
                         unit: "__anonymous_block.PROC5",
                         line: 6,
                         first_line: 6
@@ -934,14 +900,12 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 15,
                         first_line: 15
                     },
                     {
                         id: 2,
-                        owner: null,
                         unit: "__anonymous_block.PROC1",
                         line: 11,
                         first_line: 11
@@ -1014,14 +978,12 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 15,
                         first_line: 15
                     },
                     {
                         id: 2,
-                        owner: null,
                         unit: "__anonymous_block.PROC1",
                         line: 11,
                         first_line: 11
@@ -1051,7 +1013,6 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 2,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -1080,15 +1041,13 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
                     },
                     {
                         id: 2,
-                        owner: user1Name,
-                        unit: "TEST_PROCEDURE",
+                        unit: user1Name + ".TEST_PROCEDURE",
                         line: 3,
                         first_line: 3
                     }
@@ -1113,15 +1072,13 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
                     },
                     {
                         id: 3,
-                        owner: user2Name,
-                        unit: "TEST_PROCEDURE",
+                        unit: user2Name + ".TEST_PROCEDURE",
                         line: 3,
                         first_line: 3
                     }
@@ -1252,7 +1209,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -1289,7 +1245,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 2,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -1326,7 +1281,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -1363,7 +1317,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -1405,7 +1358,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 8,
                             first_line: 8
@@ -1468,7 +1420,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -1505,7 +1456,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 2,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -1547,7 +1497,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 8,
                             first_line: 8
@@ -1684,7 +1633,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -1721,7 +1669,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 2,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -1758,7 +1705,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -1795,7 +1741,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -1837,7 +1782,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 8,
                             first_line: 8
@@ -1900,7 +1844,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -1937,7 +1880,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 2,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -1979,7 +1921,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 8,
                             first_line: 8
@@ -2116,7 +2057,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -2153,7 +2093,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 2,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -2190,7 +2129,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -2227,7 +2165,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -2269,7 +2206,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 8,
                             first_line: 8
@@ -2332,7 +2268,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -2369,7 +2304,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 2,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -2411,7 +2345,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 8,
                             first_line: 8
@@ -2548,7 +2481,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -2585,7 +2517,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 2,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -2622,7 +2553,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -2659,7 +2589,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -2701,7 +2630,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 8,
                             first_line: 8
@@ -2764,7 +2692,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -2801,7 +2728,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 2,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 3,
                             first_line: 3
@@ -2843,7 +2769,6 @@ suite("Call stack management", function() {
                     p_calls: [
                         {
                             id: 1,
-                            owner: null,
                             unit: "__anonymous_block",
                             line: 8,
                             first_line: 8
@@ -2885,7 +2810,6 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 6,
                         first_line: 4
@@ -2938,7 +2862,6 @@ suite("Call stack management", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 5,
                         first_line: 4
@@ -3839,7 +3762,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null, 
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -3879,7 +3801,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null, 
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -3919,7 +3840,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: 2,
-                        owner: null, 
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -3964,7 +3884,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null, 
                         unit: "__anonymous_block",
                         line: 8,
                         first_line: 8
@@ -4009,7 +3928,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null, 
                         unit: "__anonymous_block",
                         line: 8,
                         first_line: 8
@@ -4389,7 +4307,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: 1,
-                        owner: null, 
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -4692,7 +4609,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -4739,7 +4655,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -4786,7 +4701,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -4833,7 +4747,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -4880,7 +4793,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -4927,7 +4839,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -4974,7 +4885,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5021,7 +4931,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5068,7 +4977,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5115,7 +5023,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5162,7 +5069,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5209,7 +5115,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5256,7 +5161,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5303,7 +5207,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5350,7 +5253,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5397,7 +5299,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5444,7 +5345,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5491,7 +5391,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5538,7 +5437,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5585,7 +5483,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5632,7 +5529,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5679,7 +5575,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5726,7 +5621,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5773,7 +5667,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5820,7 +5713,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5867,7 +5759,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5914,7 +5805,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3
@@ -5961,7 +5851,6 @@ suite("Message handling", function() {
                 p_calls: [
                     {
                         id: callStack.p_calls[0].id,
-                        owner: null,
                         unit: "__anonymous_block",
                         line: 3,
                         first_line: 3

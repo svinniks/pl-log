@@ -16,9 +16,20 @@ CREATE OR REPLACE PACKAGE log$ IS
         limitations under the License.
     */
  
-    SUBTYPE STRING IS VARCHAR2(32767);
-    SUBTYPE STRINGN IS STRING NOT NULL;
+    c_STRING_LENGTH CONSTANT PLS_INTEGER := 32767;
 
+    SUBTYPE t_string_length IS
+        PLS_INTEGER
+            RANGE 3..32767
+            NOT NULL;
+
+    SUBTYPE STRING IS 
+        VARCHAR2(32767);
+        
+    SUBTYPE STRINGN IS 
+        STRING 
+            NOT NULL;
+    
     SUBTYPE t_message_log_level IS 
         PLS_INTEGER 
             RANGE 1..1000
@@ -45,7 +56,6 @@ CREATE OR REPLACE PACKAGE log$ IS
     TYPE t_call IS
         RECORD (
             id NUMBER(30),
-            owner VARCHAR2(30),
             unit STRING,
             line PLS_INTEGER,
             first_line PLS_INTEGER
@@ -194,6 +204,13 @@ CREATE OR REPLACE PACKAGE log$ IS
         p_calls OUT t_call_stack,
         p_values OUT t_call_values 
     );
+    
+    FUNCTION format_call_stack (
+        p_length IN t_string_length := c_STRING_LENGTH,
+        p_first_line_indent IN VARCHAR2 := NULL,
+        p_indent IN VARCHAR2 := NULL
+    )
+    RETURN VARCHAR2;
     
     /* Generic log message methods */
     
