@@ -235,7 +235,12 @@ CREATE OR REPLACE PACKAGE log$ IS
     ); 
     
     PROCEDURE oracle_error (
-        p_level IN t_message_log_level := c_ERROR
+        p_level IN t_message_log_level := c_ERROR,
+        p_service_depth IN NATURALN
+    );
+    
+    PROCEDURE oracle_error (
+        p_service_depth IN NATURALN := 0
     );
     
     /* Shortcut message methods */

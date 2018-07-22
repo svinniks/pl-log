@@ -31,7 +31,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         (p_message IN VARCHAR2
         ,p_arguments IN t_varchars := NULL) IS
     BEGIN
-        log$.error(p_message, p_arguments);
+        log$.message(log$.c_ERROR, p_message, p_arguments, 1);
         raise_application_error(v_error_code, log$.format_message(log$.c_ERROR, p_message, p_arguments));
     END;
         
@@ -89,7 +89,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         IF utl_call_stack.error_depth > 0 THEN
         
             IF NOT handled THEN
-                log$.oracle_error;
+                log$.oracle_error(1);
             END IF;
             
             v_error_number := utl_call_stack.error_number(1);
@@ -148,7 +148,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
                    AND utl_call_stack.backtrace_line(v_i) MEMBER OF v_handled_lines 
                 THEN
                 
-                   RETURN TRUE;
+                    RETURN TRUE;
                    
                 END IF;
                        

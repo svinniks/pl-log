@@ -33,6 +33,8 @@ setup("Create wrapper for LOG$.GET_CALL_STACK to handle associative array argume
 
 });
 
+/*
+
 suite("Call stack management", function() {
 
     let user;
@@ -6020,6 +6022,590 @@ suite("Log level data type constraints", function() {
     
     });
 
+});
+
+*/
+
+suite("Error stack filling and oracle error logging", function() {
+
+    test("Check if call stack isn't affected when tere is no error", function() {
+    
+        resetPackage();
+
+        database.run(`
+            DECLARE
+                
+                PROCEDURE proc1 IS
+                BEGIN
+                    log$.call;
+                END;
+
+            BEGIN
+                log$.call;
+                proc1;
+                log$.fill_error_stack;
+            END;
+        `);
+
+        let callStack = getCallStack();
+
+        expect(callStack).to.eql({
+            p_calls: [
+                {
+                    id: 1,
+                    unit: "__anonymous_block",
+                    line: 11,
+                    first_line: 10
+                },
+                {
+                    id: 2,
+                    unit: "__anonymous_block.PROC1",
+                    line: 6,
+                    first_line: 6
+                }
+            ],
+            "p_values": [
+                {},
+                {}
+            ]
+        });
+    
+    });
+    
+    test("Anonymous block, call stack depth 1, tracked depth 0, backtrace depth 1", function() {
+    
+        resetPackage();
+
+        database.run(`
+            BEGIN
+                RAISE NO_DATA_FOUND;
+            EXCEPTION
+                WHEN OTHERS THEN
+                    log$.fill_error_stack;
+            END;
+        `);
+
+        let callStack = getCallStack();
+
+        expect(callStack).to.eql({
+            p_calls: [
+                {
+                    id: 1,
+                    unit: "__anonymous_block",
+                    line: 3,
+                    first_line: 3
+                }
+            ],
+            p_values: [
+                {}
+            ]
+        });
+    
+    });
+
+    test("Anonymous block, call stack depth 1, tracked depth 1, backtrace depth 1", function() {
+    
+        resetPackage();
+
+        database.run(`
+            BEGIN
+                log$.value('hello', 'world');
+                RAISE NO_DATA_FOUND;
+            EXCEPTION
+                WHEN OTHERS THEN
+                    log$.fill_error_stack;
+            END;
+        `);
+
+        let callStack = getCallStack();
+
+        expect(callStack).to.eql({
+            p_calls: [
+                {
+                    id: 1,
+                    unit: "__anonymous_block",
+                    line: 4,
+                    first_line: 3
+                }
+            ],
+            p_values: [
+                {
+                    hello: {
+                        type: "VARCHAR2",
+                        varchar2_value: "world",
+                        number_value: null,
+                        boolean_value: null,
+                        date_value: null
+                    }
+                }
+            ]
+        });
+    
+    });
+
+    test("Anonymous block, call stack depth 1, tracked depth 1, backtrace depth 3", function() {
+    
+        resetPackage();
+
+        database.run(`
+            DECLARE
+                
+                PROCEDURE proc2 IS
+                BEGIN
+                    RAISE NO_DATA_FOUND;
+                END;
+
+                PROCEDURE proc1 IS
+                BEGIN
+                    proc2;
+                END;
+
+            BEGIN
+                log$.value('hello', 'world');
+                proc1;
+            EXCEPTION
+                WHEN OTHERS THEN
+                    log$.fill_error_stack;
+            END;
+        `);
+
+        let callStack = getCallStack();
+
+        expect(callStack).to.eql({
+            p_calls: [
+                {
+                    id: 1,
+                    unit: "__anonymous_block",
+                    line: 16,
+                    first_line: 15
+                }, 
+                {
+                    id: 2,
+                    unit: "__anonymous_block",
+                    line: 11,
+                    first_line: 11
+                }, 
+                {
+                    id: 3,
+                    unit: "__anonymous_block",
+                    line: 6,
+                    first_line: 6
+                }
+            ],
+            p_values: [
+                {
+                    hello: {
+                        type: "VARCHAR2",
+                        varchar2_value: "world",
+                        number_value: null,
+                        boolean_value: null,
+                        date_value: null
+                    }
+                }, 
+                {}, 
+                {}
+            ]
+        });
+    
+    });
+
+    test("Anonymous block, call stack depth 1, tracked depth 2, backtrace depth 3", function() {
+    
+        resetPackage();
+
+        database.run(`
+            DECLARE
+                
+                PROCEDURE proc2 IS
+                BEGIN
+                    RAISE NO_DATA_FOUND;
+                END;
+
+                PROCEDURE proc1 IS
+                BEGIN
+                    log$.call;
+                    proc2;
+                END;
+
+            BEGIN
+                log$.value('hello', 'world');
+                proc1;
+            EXCEPTION
+                WHEN OTHERS THEN
+                    log$.fill_error_stack;
+            END;
+        `);
+
+        let callStack = getCallStack();
+
+        expect(callStack).to.eql({
+            p_calls: [
+                {
+                    id: 1,
+                    unit: "__anonymous_block",
+                    line: 17,
+                    first_line: 16
+                }, 
+                {
+                    id: 2,
+                    unit: "__anonymous_block.PROC1",
+                    line: 12,
+                    first_line: 11
+                }, 
+                {
+                    id: 3,
+                    unit: "__anonymous_block",
+                    line: 6,
+                    first_line: 6
+                }
+            ],
+            p_values: [
+                {
+                    hello: {
+                        type: "VARCHAR2",
+                        varchar2_value: "world",
+                        number_value: null,
+                        boolean_value: null,
+                        date_value: null
+                    }
+                }, 
+                {}, 
+                {}
+            ]
+        });
+    
+    });
+
+    test("Anonymous block, call stack depth 1, tracked depth 2, backtrace depth 2, common depth 1", function() {
+    
+        resetPackage();
+
+        database.run(`
+            DECLARE
+                
+                PROCEDURE proc2 IS
+                BEGIN
+                    RAISE NO_DATA_FOUND;
+                END;
+
+                PROCEDURE proc1 IS
+                BEGIN
+                    log$.call;
+                END;
+
+            BEGIN
+                log$.value('hello', 'world');
+                proc1;
+                proc2;
+            EXCEPTION
+                WHEN OTHERS THEN
+                    log$.fill_error_stack;
+            END;
+        `);
+
+        let callStack = getCallStack();
+
+        expect(callStack).to.eql({
+            p_calls: [
+                {
+                    id: 1,
+                    unit: "__anonymous_block",
+                    line: 17,
+                    first_line: 15
+                }, 
+                {
+                    id: 3,
+                    unit: "__anonymous_block",
+                    line: 6,
+                    first_line: 6
+                }
+            ],
+            p_values: [
+                {
+                    hello: {
+                        type: "VARCHAR2",
+                        varchar2_value: "world",
+                        number_value: null,
+                        boolean_value: null,
+                        date_value: null
+                    }
+                }, 
+                {}
+            ]
+        });
+    
+    });
+
+    test("Anonymous block, call stack depth 1, tracked depth 3, backtrace depth 4, common depth 2", function() {
+    
+        resetPackage();
+    
+        database.run(`
+            DECLARE
+    
+                PROCEDURE proc4 IS
+                BEGIN
+                    RAISE NO_DATA_FOUND;
+                END;
+    
+                PROCEDURE proc3 IS
+                BEGIN
+                    proc4;
+                END;
+    
+                PROCEDURE proc2 IS
+                BEGIN
+                    log$.value('hello', 'people');
+                END;
+    
+                PROCEDURE proc1 IS
+                BEGIN
+                    log$.call;
+                    proc2;
+                    proc3;
+                END;
+    
+            BEGIN
+                log$.value('hello', 'world');
+                proc1;
+            EXCEPTION
+                WHEN OTHERS THEN
+                    log$.fill_error_stack;
+            END;
+        `);
+    
+        let callStack = getCallStack();
+    
+        expect(callStack).to.eql({
+            p_calls: [
+                {
+                    id: 1,
+                    unit: "__anonymous_block",
+                    line: 28,
+                    first_line: 27
+                }, 
+                {
+                    id: 2,
+                    unit: "__anonymous_block.PROC1",
+                    line: 23,
+                    first_line: 21
+                },
+                {
+                    id: 4,
+                    unit: "__anonymous_block",
+                    line: 11,
+                    first_line: 11
+                },
+                {
+                    id: 5,
+                    unit: "__anonymous_block",
+                    line: 6,
+                    first_line: 6
+                }
+            ],
+            p_values: [
+                {
+                    hello: {
+                        type: "VARCHAR2",
+                        varchar2_value: "world",
+                        number_value: null,
+                        boolean_value: null,
+                        date_value: null
+                    }
+                }, 
+                {},
+                {},
+                {}
+            ]
+        });
+    
+    });
+
+    test("Anonymous block, call stack depth 3, tracked depth 1, backtrace depth 3", function() {
+    
+        resetPackage();
+    
+        database.run(`
+            DECLARE
+    
+                PROCEDURE proc4 IS
+                BEGIN
+                    RAISE NO_DATA_FOUND;
+                END;
+    
+                PROCEDURE proc3 IS
+                BEGIN
+                    proc4;
+                END;
+    
+                PROCEDURE proc2 IS
+                BEGIN
+                    proc3;
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        log$.fill_error_stack;
+                END;
+    
+                PROCEDURE proc1 IS
+                BEGIN
+                    proc2;
+                END;
+    
+            BEGIN
+                log$.value('hello', 'world');
+                proc1;
+            END;
+        `);
+    
+        let callStack = getCallStack();
+    
+        expect(callStack).to.eql({
+            p_calls: [
+                {
+                    id: 1,
+                    unit: "__anonymous_block",
+                    line: 29,
+                    first_line: 28
+                }, 
+                {
+                    id: 2,
+                    unit: "__anonymous_block.PROC1",
+                    line: 24,
+                    first_line: 24
+                },
+                {
+                    id: 3,
+                    unit: "__anonymous_block.PROC2",
+                    line: 16,
+                    first_line: 16
+                },
+                {
+                    id: 4,
+                    unit: "__anonymous_block",
+                    line: 11,
+                    first_line: 11
+                },
+                {
+                    id: 5,
+                    unit: "__anonymous_block",
+                    line: 6,
+                    first_line: 6
+                }
+            ],
+            p_values: [
+                {
+                    hello: {
+                        type: "VARCHAR2",
+                        varchar2_value: "world",
+                        number_value: null,
+                        boolean_value: null,
+                        date_value: null
+                    }
+                }, 
+                {},
+                {},
+                {},
+                {}
+            ]
+        });
+    
+    });
+
+    test("Anonymous block, call stack depth 3, tracked depth 1, backtrace depth 3", function() {
+    
+        resetPackage();
+    
+        database.run(`
+            DECLARE
+    
+                PROCEDURE proc5 IS
+                BEGIN
+                    log$.fill_error_stack(10);
+                END;
+
+                PROCEDURE proc4 IS
+                BEGIN
+                    RAISE NO_DATA_FOUND;
+                END;
+    
+                PROCEDURE proc3 IS
+                BEGIN
+                    proc4;
+                END;
+    
+                PROCEDURE proc2 IS
+                BEGIN
+                    proc3;
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        proc5;
+                END;
+    
+                PROCEDURE proc1 IS
+                BEGIN
+                    proc2;
+                END;
+    
+            BEGIN
+                log$.value('hello', 'world');
+                proc1;
+            END;
+        `);
+    
+        let callStack = getCallStack();
+    
+        expect(callStack).to.eql({
+            p_calls: [
+                {
+                    id: 1,
+                    unit: "__anonymous_block",
+                    line: 29,
+                    first_line: 28
+                }, 
+                {
+                    id: 2,
+                    unit: "__anonymous_block.PROC1",
+                    line: 24,
+                    first_line: 24
+                },
+                {
+                    id: 3,
+                    unit: "__anonymous_block.PROC2",
+                    line: 16,
+                    first_line: 16
+                },
+                {
+                    id: 4,
+                    unit: "__anonymous_block",
+                    line: 11,
+                    first_line: 11
+                },
+                {
+                    id: 5,
+                    unit: "__anonymous_block",
+                    line: 6,
+                    first_line: 6
+                }
+            ],
+            p_values: [
+                {
+                    hello: {
+                        type: "VARCHAR2",
+                        varchar2_value: "world",
+                        number_value: null,
+                        boolean_value: null,
+                        date_value: null
+                    }
+                }, 
+                {},
+                {},
+                {},
+                {}
+            ]
+        });
+    
+    });
+    
 });
 
 teardown("Drop the LOG$.GET_CALL_STACK wrapper", function() {

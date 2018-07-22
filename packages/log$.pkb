@@ -483,8 +483,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
-    PROCEDURE fill_error_stack (
-        p_service_depth IN NATURAL := 0
+    PROCEDURE do_fill_error_stack (
+        p_service_depth IN NATURAL
     ) IS
     
         v_dynamic_depth PLS_INTEGER;
@@ -496,24 +496,13 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_actual_call t_call;
         v_stack_call t_call;
         
+        e_bad_depth_indicator EXCEPTION;
+        PRAGMA EXCEPTION_INIT(e_bad_depth_indicator, -64610);
+        
         v_backtrace_unit VARCHAR2(4000);
         v_backtrace_depth PLS_INTEGER;
-        v_call_stack_height PLS_INTEGER;
         
         v_call t_call;
-        
-        FUNCTION backtrace_unit (
-            p_depth IN PLS_INTEGER
-        ) 
-        RETURN VARCHAR2 IS
-            e_bad_depth_indicator EXCEPTION;
-            PRAGMA EXCEPTION_INIT(e_bad_depth_indicator, -64610);
-        BEGIN
-            RETURN utl_call_stack.backtrace_unit(p_depth);
-        EXCEPTION
-            WHEN e_bad_depth_indicator THEN
-                RETURN '__anonymous_block';
-        END;
     
     BEGIN
     
@@ -531,8 +520,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             
             v_stack_call := v_call_stack(v_height);
             
-            EXIT WHEN v_actual_call.unit != v_stack_call.unit;
-            EXIT WHEN v_actual_call.line != v_stack_call.line;
+            EXIT WHEN v_actual_call.unit != v_stack_call.unit
+                      OR v_actual_call.line != v_stack_call.line;
 
             v_matching_height := v_height;
             
@@ -544,31 +533,83 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         END IF;
         
         v_backtrace_depth := utl_call_stack.backtrace_depth;
-        v_call_stack_height := v_matching_height + 1;
+        v_matching_height := v_matching_height + 1;
         
-        WHILE v_backtrace_depth >= 1 AND v_call_stack_height <= v_call_stack.COUNT LOOP
+        WHILE v_backtrace_depth >= 1 AND v_matching_height <= v_call_stack.COUNT LOOP
+
+            BEGIN
+                v_backtrace_unit := utl_call_stack.backtrace_unit(v_backtrace_depth);
+            EXCEPTION
+                WHEN e_bad_depth_indicator THEN
+                    v_backtrace_unit := '__anonymous_block';
+            END;
         
-            IF v_call_stack(v_call_stack_height).unit LIKE backtrace_unit(v_backtrace_depth) || '%' THEN
-                IF v_call_stack_height = v_call_stack.COUNT THEN
-                    v_call_stack(v_call_stack_height).line := utl_call_stack.backtrace_line(v_backtrace_depth);
-                ELSIF v_call_stack(v_call_stack_height).line != utl_call_stack.backtrace_line(v_backtrace_depth) THEN
+            IF v_call_stack(v_matching_height).unit = v_backtrace_unit
+               OR v_call_stack(v_matching_height).unit LIKE v_backtrace_unit || '.%' 
+            THEN
+            
+                IF v_call_stack(v_matching_height).line != utl_call_stack.backtrace_line(v_backtrace_depth) THEN
+                
+                    v_call_stack(v_matching_height).line := utl_call_stack.backtrace_line(v_backtrace_depth);
+                    v_call_stack(v_matching_height).first_line := LEAST(v_call_stack(v_matching_height).first_line, v_call_stack(v_matching_height).line);
+                
+                    v_backtrace_depth := v_backtrace_depth - 1;
+                    v_matching_height := v_matching_height + 1;
+                
                     EXIT;
+                    
                 END IF;
+                
             ELSE
+            
                 EXIT;
+                
             END IF;
             
             v_backtrace_depth := v_backtrace_depth - 1;
-            v_call_stack_height := v_call_stack_height + 1;
-        
+            v_matching_height := v_matching_height + 1;
+            
         END LOOP; 
         
-        IF v_call_stack_height <= v_call_stack.COUNT THEN
-            v_call_stack.TRIM(v_call_stack_height - v_call_stack.COUNT + 1);
+        IF v_matching_height <= v_call_stack.COUNT THEN
+            v_call_stack.TRIM(v_call_stack.COUNT - v_matching_height + 1);
+            v_call_values.TRIM(v_call_values.COUNT - v_matching_height + 1);
         END IF;
         
+        WHILE v_backtrace_depth >= 1 LOOP
         
+            BEGIN
+                v_backtrace_unit := utl_call_stack.backtrace_unit(v_backtrace_depth);
+            EXCEPTION
+                WHEN e_bad_depth_indicator THEN
+                    v_backtrace_unit := '__anonymous_block';
+            END;
+            
+            v_call_id := v_call_id + 1;
+            v_call.id := v_call_id;
+            
+            v_call.unit := v_backtrace_unit;
+            v_call.line := utl_call_stack.backtrace_line(v_backtrace_depth);
+            v_call.first_line := v_call.line;
+            
+            v_call_stack.EXTEND(1);
+            v_call_stack(v_call_stack.COUNT) := v_call;
+            
+            v_call_values.EXTEND(1);
+            
+            v_backtrace_depth := v_backtrace_depth - 1;
+        
+        END LOOP;
     
+    END;
+    
+    PROCEDURE fill_error_stack (
+        p_service_depth IN NATURAL := 0
+    ) IS
+    BEGIN
+        IF utl_call_stack.error_depth > 0 THEN
+            do_fill_error_stack(p_service_depth + 1);
+        END IF;
     END;
     
     PROCEDURE get_call_stack (
@@ -836,13 +877,14 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     END;
     
     PROCEDURE oracle_error (
-        p_level IN t_message_log_level := c_ERROR
+        p_level IN t_message_log_level := c_ERROR,
+        p_service_depth IN NATURALN
     ) IS
     BEGIN
     
         IF utl_call_stack.error_depth > 0 THEN
     
-            fill_error_stack;
+            do_fill_error_stack(p_service_depth + 1);
             
             FOR v_i IN 1..v_formatted_message_handlers.COUNT LOOP
             
@@ -864,6 +906,13 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             
         END IF;
     
+    END;
+    
+    PROCEDURE oracle_error (
+        p_service_depth IN NATURALN := 0
+    ) IS
+    BEGIN
+        oracle_error(c_ERROR, p_service_depth + 1);
     END;
     
     /* Shortcut message methods */
