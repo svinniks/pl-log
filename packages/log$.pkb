@@ -509,7 +509,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_matching_height := 0;
     
         v_dynamic_depth := utl_call_stack.dynamic_depth;
-        v_actual_height := v_dynamic_depth - NVL(p_service_depth, 0) - 1;
+        v_actual_height := v_dynamic_depth - p_service_depth - 1;
     
         FOR v_height IN 1..LEAST(v_call_stack.COUNT, v_actual_height) LOOP
             
@@ -878,7 +878,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     PROCEDURE oracle_error (
         p_level IN t_message_log_level := c_ERROR,
-        p_service_depth IN NATURALN
+        p_service_depth IN NATURALN := 0
     ) IS
     BEGIN
     
@@ -906,13 +906,6 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             
         END IF;
     
-    END;
-    
-    PROCEDURE oracle_error (
-        p_service_depth IN NATURALN := 0
-    ) IS
-    BEGIN
-        oracle_error(c_ERROR, p_service_depth + 1);
     END;
     
     /* Shortcut message methods */
