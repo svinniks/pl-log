@@ -100,6 +100,10 @@ suite("Call stack management", function() {
                 ';
 
                 EXECUTE IMMEDIATE '
+                    GRANT EXECUTE ON log$ TO "${user1Name}"
+                ';
+
+                EXECUTE IMMEDIATE '
                     CREATE OR REPLACE PROCEDURE "${user1Name}".test_procedure IS
                     BEGIN
                         log$.call(FALSE);
@@ -118,6 +122,10 @@ suite("Call stack management", function() {
 
                 EXECUTE IMMEDIATE '
                     CREATE USER "${user2Name}" IDENTIFIED BY "password"
+                ';
+
+                EXECUTE IMMEDIATE '
+                    GRANT EXECUTE ON log$ TO "${user2Name}"
                 ';
 
                 EXECUTE IMMEDIATE '

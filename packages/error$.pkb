@@ -19,7 +19,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
     v_error_code t_error_code := -20000;
     v_error_level log$.t_message_log_level := log$.c_ERROR;
     
-    v_handler_unit VARCHAR2(4000) := utl_call_stack.owner(1) || '.ERROR$';
+    c_handler_unit CONSTANT VARCHAR2(4000) := $$PLSQL_UNIT_OWNER || '.' || $$PLSQL_UNIT;
     v_handled_lines t_numbers := t_numbers(67, 143, 148, 153);
 
     PROCEDURE reset IS
@@ -167,12 +167,6 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         
     FUNCTION handled
     RETURN BOOLEAN IS
-     
-        e_bad_depth_indicator EXCEPTION;
-        PRAGMA EXCEPTION_INIT(e_bad_depth_indicator, -64610);
-    
-        v_backtrace_unit VARCHAR2(4000);
-    
     BEGIN
     
         IF utl_call_stack.error_depth = 0 THEN
@@ -183,14 +177,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
  
             FOR v_i IN 1..LEAST(utl_call_stack.backtrace_depth, 2) LOOP
        
-                BEGIN
-                    v_backtrace_unit := utl_call_stack.backtrace_unit(v_i);
-                EXCEPTION
-                    WHEN e_bad_depth_indicator THEN
-                        v_backtrace_unit := '__anonymous_block';
-                END;
-                
-                IF v_backtrace_unit = v_handler_unit 
+                IF log$.backtrace_unit(v_i) = c_handler_unit 
                    AND utl_call_stack.backtrace_line(v_i) MEMBER OF v_handled_lines 
                 THEN
                 

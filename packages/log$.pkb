@@ -482,6 +482,32 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
+    FUNCTION backtrace_unit (
+        p_depth IN PLS_INTEGER
+    )
+    RETURN VARCHAR2 IS
+    BEGIN
+    
+        $IF DBMS_DB_VERSION.VERSION = 12 AND DBMS_DB_VERSION.RELEASE = 1 $THEN
+        
+            RETURN NVL(utl_call_stack.backtrace_unit(p_depth), '__anonymous_block');
+            
+        $ELSE
+
+            DECLARE
+                e_bad_depth_indicator EXCEPTION;
+                PRAGMA EXCEPTION_INIT(e_bad_depth_indicator, -64610);        
+            BEGIN
+                RETURN utl_call_stack.backtrace_unit(p_depth);
+            EXCEPTION
+                WHEN e_bad_depth_indicator THEN
+                    RETURN '__anonymous_block';
+            END;
+            
+        $END
+    
+    END;
+    
     PROCEDURE do_fill_error_stack (
         p_service_depth IN NATURAL
     ) IS
@@ -494,9 +520,6 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_depth PLS_INTEGER;
         v_actual_call t_call;
         v_stack_call t_call;
-        
-        e_bad_depth_indicator EXCEPTION;
-        PRAGMA EXCEPTION_INIT(e_bad_depth_indicator, -64610);
         
         v_backtrace_unit VARCHAR2(4000);
         v_backtrace_depth PLS_INTEGER;
@@ -531,17 +554,21 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             v_matching_height := v_call_stack.COUNT - 1;
         END IF;
         
-        v_backtrace_depth := utl_call_stack.backtrace_depth;
+        $IF DBMS_DB_VERSION.VERSION = 12 AND DBMS_DB_VERSION.RELEASE = 1 $THEN
+            v_backtrace_depth := 1;
+        $ELSE
+            v_backtrace_depth := utl_call_stack.backtrace_depth;
+        $END
+        
         v_matching_height := v_matching_height + 1;
         
-        WHILE v_backtrace_depth >= 1 AND v_matching_height <= v_call_stack.COUNT LOOP
+        $IF DBMS_DB_VERSION.VERSION = 12 AND DBMS_DB_VERSION.RELEASE = 1 $THEN
+            WHILE v_backtrace_depth <= utl_call_stack.backtrace_depth AND v_matching_height <= v_call_stack.COUNT LOOP
+        $ELSE
+            WHILE v_backtrace_depth >= 1 AND v_matching_height <= v_call_stack.COUNT LOOP
+        $END
 
-            BEGIN
-                v_backtrace_unit := utl_call_stack.backtrace_unit(v_backtrace_depth);
-            EXCEPTION
-                WHEN e_bad_depth_indicator THEN
-                    v_backtrace_unit := '__anonymous_block';
-            END;
+            v_backtrace_unit := backtrace_unit(v_backtrace_depth);            
         
             IF v_call_stack(v_matching_height).unit = v_backtrace_unit
                OR v_call_stack(v_matching_height).unit LIKE v_backtrace_unit || '.%' 
@@ -552,7 +579,12 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
                     v_call_stack(v_matching_height).line := utl_call_stack.backtrace_line(v_backtrace_depth);
                     v_call_stack(v_matching_height).first_line := LEAST(v_call_stack(v_matching_height).first_line, v_call_stack(v_matching_height).line);
                 
-                    v_backtrace_depth := v_backtrace_depth - 1;
+                    $IF DBMS_DB_VERSION.VERSION = 12 AND DBMS_DB_VERSION.RELEASE = 1 $THEN
+                        v_backtrace_depth := v_backtrace_depth + 1;
+                    $ELSE
+                        v_backtrace_depth := v_backtrace_depth - 1;
+                    $END
+                    
                     v_matching_height := v_matching_height + 1;
                 
                     EXIT;
@@ -565,7 +597,12 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
                 
             END IF;
             
-            v_backtrace_depth := v_backtrace_depth - 1;
+            $IF DBMS_DB_VERSION.VERSION = 12 AND DBMS_DB_VERSION.RELEASE = 1 $THEN
+                v_backtrace_depth := v_backtrace_depth + 1;
+            $ELSE
+                v_backtrace_depth := v_backtrace_depth - 1;
+            $END
+            
             v_matching_height := v_matching_height + 1;
             
         END LOOP; 
@@ -575,14 +612,13 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             v_call_values.TRIM(v_call_values.COUNT - v_matching_height + 1);
         END IF;
         
-        WHILE v_backtrace_depth >= 1 LOOP
+        $IF DBMS_DB_VERSION.VERSION = 12 AND DBMS_DB_VERSION.RELEASE = 1 $THEN
+            WHILE v_backtrace_depth <= utl_call_stack.backtrace_depth LOOP
+        $ELSE
+            WHILE v_backtrace_depth >= 1 LOOP
+        $END
         
-            BEGIN
-                v_backtrace_unit := utl_call_stack.backtrace_unit(v_backtrace_depth);
-            EXCEPTION
-                WHEN e_bad_depth_indicator THEN
-                    v_backtrace_unit := '__anonymous_block';
-            END;
+            v_backtrace_unit := backtrace_unit(v_backtrace_depth);
             
             v_call_id := v_call_id + 1;
             v_call.id := v_call_id;
@@ -596,7 +632,11 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             
             v_call_values.EXTEND(1);
             
-            v_backtrace_depth := v_backtrace_depth - 1;
+            $IF DBMS_DB_VERSION.VERSION = 12 AND DBMS_DB_VERSION.RELEASE = 1 $THEN
+                v_backtrace_depth := v_backtrace_depth + 1;
+            $ELSE
+                v_backtrace_depth := v_backtrace_depth - 1;
+            $END
         
         END LOOP;
     
@@ -885,6 +925,9 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         p_level IN t_message_log_level := c_ERROR,
         p_service_depth IN NATURALN := 0
     ) IS
+    
+        v_message STRING;
+    
     BEGIN
     
         IF utl_call_stack.error_depth > 0 THEN
@@ -900,9 +943,15 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
                     c_NONE
                 ) THEN
                 
+                    v_message := utl_call_stack.error_msg(1);
+                
+                    $IF DBMS_DB_VERSION.VERSION = 12 AND DBMS_DB_VERSION.RELEASE = 1 $THEN
+                        v_message := SUBSTR(v_message, 1, LENGTH(v_message) - 1);
+                    $END
+                
                     v_formatted_message_handlers(v_i).handle_message(
                         p_level, 
-                        'ORA-' || utl_call_stack.error_number(1) || ': ' || utl_call_stack.error_msg(1) 
+                        'ORA-' || utl_call_stack.error_number(1) || ': ' || v_message 
                     );
                     
                 END IF;

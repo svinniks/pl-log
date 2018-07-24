@@ -84,3 +84,5 @@ SET DEFINE OFF
 
 @@contexts/log$context.ctx
 /
+
+@@synonyms/public_synonyms.sql

@@ -196,6 +196,11 @@ CREATE OR REPLACE PACKAGE log$ IS
         p_service_depth IN NATURALN
     );
     
+    FUNCTION backtrace_unit (
+        p_depth IN PLS_INTEGER
+    )
+    RETURN VARCHAR2;
+    
     PROCEDURE fill_error_stack (
         p_service_depth IN NATURAL := 0
     );
