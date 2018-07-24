@@ -16,71 +16,114 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         limitations under the License.
     */
 
-    v_error_code PLS_INTEGER := -20000;
+    v_error_code t_error_code := -20000;
+    v_error_level log$.t_message_log_level := log$.c_ERROR;
     
     v_handler_unit VARCHAR2(4000) := utl_call_stack.owner(1) || '.ERROR$';
-    v_handled_lines t_numbers := t_numbers(35, 105, 109, 113);
+    v_handled_lines t_numbers := t_numbers(67, 143, 148, 153);
 
-    PROCEDURE set_error_code
-        (p_code IN PLS_INTEGER) IS
+    PROCEDURE reset IS
+    BEGIN
+        v_error_code := -20000;
+        v_error_level := log$.c_ERROR;
+    END;
+
+    PROCEDURE set_error_code (
+        p_code IN t_error_code
+    ) IS
     BEGIN
         v_error_code := p_code;
     END;
-
-    PROCEDURE raise
-        (p_message IN VARCHAR2
-        ,p_arguments IN t_varchars := NULL) IS
+    
+    FUNCTION get_error_code
+    RETURN t_error_code IS
     BEGIN
-        log$.message(log$.c_ERROR, p_message, p_arguments, 1);
-        raise_application_error(v_error_code, log$.format_message(log$.c_ERROR, p_message, p_arguments));
-    END;
-        
-    PROCEDURE raise
-        (p_message IN VARCHAR2
-        ,p_argument1 IN VARCHAR2) IS
-    BEGIN
-        error$.raise(p_message, t_varchars(p_argument1));
-    END;
-        
-    PROCEDURE raise
-        (p_message IN VARCHAR2
-        ,p_argument1 IN VARCHAR2
-        ,p_argument2 IN VARCHAR2) IS
-    BEGIN
-        error$.raise(p_message, t_varchars(p_argument1, p_argument2));
-    END;
-  
-    PROCEDURE raise
-        (p_message IN VARCHAR2
-        ,p_argument1 IN VARCHAR2
-        ,p_argument2 IN VARCHAR2
-        ,p_argument3 IN VARCHAR2) IS
-    BEGIN
-        error$.raise(p_message, t_varchars(p_argument1, p_argument2, p_argument3));
-    END;
-        
-    PROCEDURE raise
-        (p_message IN VARCHAR2
-        ,p_argument1 IN VARCHAR2
-        ,p_argument2 IN VARCHAR2
-        ,p_argument3 IN VARCHAR2
-        ,p_argument4 IN VARCHAR2) IS
-    BEGIN
-        error$.raise(p_message, t_varchars(p_argument1, p_argument2, p_argument3, p_argument4));
-    END;
-        
-    PROCEDURE raise
-        (p_message IN VARCHAR2
-        ,p_argument1 IN VARCHAR2
-        ,p_argument2 IN VARCHAR2
-        ,p_argument3 IN VARCHAR2
-        ,p_argument4 IN VARCHAR2
-        ,p_argument5 IN VARCHAR2) IS
-    BEGIN
-        error$.raise(p_message, t_varchars(p_argument1, p_argument2, p_argument3, p_argument4, p_argument5));
+        RETURN v_error_code;
     END;
     
-    PROCEDURE raise IS
+    PROCEDURE set_error_level (
+        p_level IN log$.t_message_log_level
+    ) IS
+    BEGIN
+        v_error_level := p_level;
+    END;
+    
+    FUNCTION get_error_level
+    RETURN log$.t_message_log_level IS
+    BEGIN
+        RETURN v_error_level;
+    END;
+
+    PROCEDURE raise (
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL,
+        p_service_depth IN NATURALN := 0
+    ) IS
+    BEGIN
+    
+        log$.message(v_error_level, p_message, p_arguments, p_service_depth + 1);
+    
+        -- Handled!
+        raise_application_error(
+            v_error_code, 
+            log$.format_message(v_error_level, p_message, p_arguments)
+        );
+         
+    END;
+        
+    PROCEDURE raise (
+        p_message IN VARCHAR2,
+        p_argument1 IN VARCHAR2
+    ) IS
+    BEGIN
+        error$.raise(p_message, t_varchars(p_argument1), 1);
+    END;
+        
+    PROCEDURE raise (
+        p_message IN VARCHAR2,
+        p_argument1 IN VARCHAR2,
+        p_argument2 IN VARCHAR2
+    ) IS
+    BEGIN
+        error$.raise(p_message, t_varchars(p_argument1, p_argument2), 1);
+    END;
+  
+    PROCEDURE raise (
+        p_message IN VARCHAR2,
+        p_argument1 IN VARCHAR2,
+        p_argument2 IN VARCHAR2,
+        p_argument3 IN VARCHAR2
+    ) IS
+    BEGIN
+        error$.raise(p_message, t_varchars(p_argument1, p_argument2, p_argument3), 1);
+    END;
+        
+    PROCEDURE raise (
+        p_message IN VARCHAR2,
+        p_argument1 IN VARCHAR2,
+        p_argument2 IN VARCHAR2,
+        p_argument3 IN VARCHAR2,
+        p_argument4 IN VARCHAR2
+    ) IS
+    BEGIN
+        error$.raise(p_message, t_varchars(p_argument1, p_argument2, p_argument3, p_argument4), 1);
+    END;
+        
+    PROCEDURE raise (
+        p_message IN VARCHAR2,
+        p_argument1 IN VARCHAR2,
+        p_argument2 IN VARCHAR2,
+        p_argument3 IN VARCHAR2,
+        p_argument4 IN VARCHAR2,
+        p_argument5 IN VARCHAR2
+    ) IS
+    BEGIN
+        error$.raise(p_message, t_varchars(p_argument1, p_argument2, p_argument3, p_argument4, p_argument5), 1);
+    END;
+    
+    PROCEDURE raise (
+        p_service_depth IN NATURALN := 0
+    ) IS
     
         v_error_number NUMBER;
     
@@ -89,21 +132,24 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         IF utl_call_stack.error_depth > 0 THEN
         
             IF NOT handled THEN
-                log$.oracle_error(1);
+                log$.oracle_error(v_error_level, p_service_depth + 1);
             END IF;
             
             v_error_number := utl_call_stack.error_number(1);
         
-            IF v_error_number BETWEEN 20000 AND 20099 THEN
+            IF v_error_number BETWEEN 20000 AND 20999 THEN
         
+                -- Handled!
                 raise_application_error(-v_error_number, utl_call_stack.error_msg(1), TRUE);
             
             ELSIF v_error_number = 1403 THEN
                 
+                -- Handled!
                 RAISE NO_DATA_FOUND;
             
             ELSE
             
+                -- Handled!
                 EXECUTE IMMEDIATE '
                     DECLARE
                         e EXCEPTION;
@@ -129,7 +175,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
     
     BEGIN
     
-        IF utl_call_stack.backtrace_depth = 0 THEN
+        IF utl_call_stack.error_depth = 0 THEN
         
             RETURN FALSE;
             
@@ -160,5 +206,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         
     END;
 
+BEGIN
+    reset;
 END;
 

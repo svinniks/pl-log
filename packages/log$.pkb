@@ -64,8 +64,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_session_log_level := NULL;
         
         v_call_id := 0;
-        v_call_stack := t_call_stack();
-        v_call_values := t_call_values();
+        reset_call_stack;
     
     END;
 
@@ -621,6 +620,12 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         p_values := v_call_values;
     END;
     
+    PROCEDURE reset_call_stack IS
+    BEGIN
+        v_call_stack := t_call_stack();
+        v_call_values := t_call_values();
+    END;
+    
     FUNCTION format_call_stack (
         p_length IN t_string_length := c_STRING_LENGTH,
         p_first_line_indent IN VARCHAR2 := NULL,
@@ -912,7 +917,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
     PROCEDURE debug (
         p_message IN VARCHAR2,
-        p_arguments IN t_varchars
+        p_arguments IN t_varchars := NULL
     ) IS
     BEGIN
     
@@ -921,20 +926,6 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     END;
     
     PROCEDURE debug (
-        p_message IN VARCHAR2
-    ) IS
-    BEGIN
-    
-        message(
-            c_DEBUG,
-            p_message, 
-            NULL,
-            1
-        );
-    
-    END;
-    
-    PROCEDURE debug (
         p_message IN VARCHAR2,
         p_argument_1 IN VARCHAR2
     ) IS
@@ -1021,7 +1012,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
     PROCEDURE info (
         p_message IN VARCHAR2,
-        p_arguments IN t_varchars
+        p_arguments IN t_varchars := NULL
     ) IS
     BEGIN
     
@@ -1030,20 +1021,6 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     END; 
     
     PROCEDURE info (
-        p_message IN VARCHAR2
-    ) IS
-    BEGIN
-    
-        message(
-            c_INFO,
-            p_message, 
-            NULL,
-            1
-        );
-    
-    END;
-    
-    PROCEDURE info (
         p_message IN VARCHAR2,
         p_argument_1 IN VARCHAR2
     ) IS
@@ -1130,7 +1107,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     PROCEDURE warning (
         p_message IN VARCHAR2,
-        p_arguments IN t_varchars
+        p_arguments IN t_varchars := NULL
     ) IS
     BEGIN
     
@@ -1139,20 +1116,6 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     END;
     
     PROCEDURE warning (
-        p_message IN VARCHAR2
-    ) IS
-    BEGIN
-    
-        message(
-            c_WARNING,
-            p_message, 
-            NULL,
-            1
-        );
-    
-    END;
-    
-    PROCEDURE warning (
         p_message IN VARCHAR2,
         p_argument_1 IN VARCHAR2
     ) IS
@@ -1239,26 +1202,12 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
     PROCEDURE error (
         p_message IN VARCHAR2,
-        p_arguments IN t_varchars
+        p_arguments IN t_varchars := NULL
     ) IS
     BEGIN
     
         message(c_ERROR, p_message, p_arguments, 1);
         
-    END;
-    
-    PROCEDURE error (
-        p_message IN VARCHAR2
-    ) IS
-    BEGIN
-    
-        message(
-            c_ERROR,
-            p_message, 
-            NULL,
-            1
-        );
-    
     END;
     
     PROCEDURE error (

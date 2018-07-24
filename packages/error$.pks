@@ -16,44 +16,71 @@ CREATE OR REPLACE PACKAGE error$ IS
         limitations under the License.
     */
 
-    PROCEDURE set_error_code
-        (p_code IN PLS_INTEGER);
+    SUBTYPE t_error_code IS
+        PLS_INTEGER
+            RANGE -20999..-20000
+            NOT NULL;
 
-    PROCEDURE raise
-        (p_message IN VARCHAR2
-        ,p_arguments IN t_varchars := NULL);
+    PROCEDURE reset;
+
+    PROCEDURE set_error_code (
+        p_code IN t_error_code
+    );
+    
+    FUNCTION get_error_code
+    RETURN t_error_code;
+    
+    PROCEDURE set_error_level (
+        p_level IN log$.t_message_log_level
+    );
+    
+    FUNCTION get_error_level
+    RETURN log$.t_message_log_level;
+
+    PROCEDURE raise (
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL,
+        p_service_depth IN NATURALN := 0
+    );
         
-    PROCEDURE raise
-        (p_message IN VARCHAR2
-        ,p_argument1 IN VARCHAR2);
+    PROCEDURE raise (
+        p_message IN VARCHAR2,
+        p_argument1 IN VARCHAR2
+    );
         
-    PROCEDURE raise
-        (p_message IN VARCHAR2
-        ,p_argument1 IN VARCHAR2
-        ,p_argument2 IN VARCHAR2);
+    PROCEDURE raise (
+        p_message IN VARCHAR2,
+        p_argument1 IN VARCHAR2,
+        p_argument2 IN VARCHAR2
+    );
   
-    PROCEDURE raise
-        (p_message IN VARCHAR2
-        ,p_argument1 IN VARCHAR2
-        ,p_argument2 IN VARCHAR2
-        ,p_argument3 IN VARCHAR2);
+    PROCEDURE raise (
+        p_message IN VARCHAR2,
+        p_argument1 IN VARCHAR2,
+        p_argument2 IN VARCHAR2,
+        p_argument3 IN VARCHAR2
+    );
         
-    PROCEDURE raise
-        (p_message IN VARCHAR2
-        ,p_argument1 IN VARCHAR2
-        ,p_argument2 IN VARCHAR2
-        ,p_argument3 IN VARCHAR2
-        ,p_argument4 IN VARCHAR2);
+    PROCEDURE raise (
+        p_message IN VARCHAR2,
+        p_argument1 IN VARCHAR2,
+        p_argument2 IN VARCHAR2,
+        p_argument3 IN VARCHAR2,
+        p_argument4 IN VARCHAR2
+    );
         
-    PROCEDURE raise
-        (p_message IN VARCHAR2
-        ,p_argument1 IN VARCHAR2
-        ,p_argument2 IN VARCHAR2
-        ,p_argument3 IN VARCHAR2
-        ,p_argument4 IN VARCHAR2
-        ,p_argument5 IN VARCHAR2);
+    PROCEDURE raise (
+        p_message IN VARCHAR2,
+        p_argument1 IN VARCHAR2,
+        p_argument2 IN VARCHAR2,
+        p_argument3 IN VARCHAR2,
+        p_argument4 IN VARCHAR2,
+        p_argument5 IN VARCHAR2
+    );
         
-    PROCEDURE raise;    
+    PROCEDURE raise (
+        p_service_depth IN NATURALN := 0
+    );    
         
     FUNCTION handled
     RETURN BOOLEAN;

@@ -205,6 +205,8 @@ CREATE OR REPLACE PACKAGE log$ IS
         p_values OUT t_call_values 
     );
     
+    PROCEDURE reset_call_stack;
+    
     FUNCTION format_call_stack (
         p_length IN t_string_length := c_STRING_LENGTH,
         p_first_line_indent IN VARCHAR2 := NULL,
@@ -243,11 +245,7 @@ CREATE OR REPLACE PACKAGE log$ IS
         
     PROCEDURE debug (
         p_message IN VARCHAR2,
-        p_arguments IN t_varchars
-    );
-    
-    PROCEDURE debug (
-        p_message IN VARCHAR2
+        p_arguments IN t_varchars := NULL
     );
     
     PROCEDURE debug (
@@ -287,11 +285,7 @@ CREATE OR REPLACE PACKAGE log$ IS
         
     PROCEDURE info (
         p_message IN VARCHAR2,
-        p_arguments IN t_varchars
-    );
-    
-    PROCEDURE info (
-        p_message IN VARCHAR2
+        p_arguments IN t_varchars := NULL
     );
     
     PROCEDURE info (
@@ -331,13 +325,9 @@ CREATE OR REPLACE PACKAGE log$ IS
         
     PROCEDURE warning (
         p_message IN VARCHAR2,
-        p_arguments IN t_varchars
+        p_arguments IN t_varchars := NULL
     );
-    
-    PROCEDURE warning (
-        p_message IN VARCHAR2
-    );
-    
+        
     PROCEDURE warning (
         p_message IN VARCHAR2,
         p_argument_1 IN VARCHAR2
@@ -375,11 +365,7 @@ CREATE OR REPLACE PACKAGE log$ IS
       
     PROCEDURE error (
         p_message IN VARCHAR2,
-        p_arguments IN t_varchars
-    );
-    
-    PROCEDURE error (
-        p_message IN VARCHAR2
+        p_arguments IN t_varchars := NULL
     );
     
     PROCEDURE error (

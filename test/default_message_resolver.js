@@ -42,7 +42,7 @@ suite("Default messsage resolver tests", function() {
             p_code: "MSG-00001"
         });
 
-        expect(message).to.be("Hello, World!");
+        expect(message).to.be("MSG-00001: Hello, World!");
     
     });
 
@@ -60,7 +60,7 @@ suite("Default messsage resolver tests", function() {
             FROM dual
         `);
 
-        expect(message).to.be("Hello, World!");
+        expect(message).to.be("MSG-00001: Hello, World!");
     
     });
     
