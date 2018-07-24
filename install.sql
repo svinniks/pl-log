@@ -82,7 +82,7 @@ SET DEFINE OFF
 @@views/log$tail.vw
 /
 
-@@contexts/log$context.ctx
+@@contexts/log$levels.ctx
 /
 
 @@synonyms/public_synonyms.sql

@@ -14,7 +14,7 @@
     limitations under the License.
 */
 
-DROP PUBLIC SYNONYM error#
+DROP PUBLIC SYNONYM error$
 /
 DROP PUBLIC SYNONYM log$
 /

@@ -15,6 +15,9 @@ CREATE OR REPLACE PACKAGE log$ IS
         See the License for the specific language governing permissions and
         limitations under the License.
     */
+    
+    SUBTYPE t_session_serial# IS
+        NUMBER NOT NULL;
  
     c_STRING_LENGTH CONSTANT PLS_INTEGER := 32767;
 
@@ -125,11 +128,21 @@ CREATE OR REPLACE PACKAGE log$ IS
     );      
     
     PROCEDURE reset_system_log_level;
-        
+    
     FUNCTION get_session_log_level
+    RETURN t_handler_log_level;
+        
+    FUNCTION get_session_log_level (
+        p_session_serial# IN t_session_serial#
+    )        
     RETURN t_handler_log_level;
     
     PROCEDURE set_session_log_level (
+        p_level IN t_handler_log_level
+    );
+    
+    PROCEDURE set_session_log_level (
+        p_session_serial# IN t_session_serial#,
         p_level IN t_handler_log_level
     );
     

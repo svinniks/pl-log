@@ -16,6 +16,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         limitations under the License.
     */
 
+    v_session_serial# t_session_serial# := DBMS_DEBUG_JDWP.CURRENT_SESSION_SERIAL;
+
     TYPE t_message_resolvers IS 
         TABLE OF t_log_message_resolver;
         
@@ -40,8 +42,6 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     v_raw_message_handlers t_raw_message_handlers;
     v_formatted_message_handlers t_formatted_message_handlers;
     
-    v_session_log_level t_handler_log_level;
-    
     v_call_id NUMBER(30);    
     v_call_stack t_call_stack;
     
@@ -61,7 +61,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_raw_message_handlers := t_raw_message_handlers();
         v_formatted_message_handlers := t_formatted_message_handlers();
         
-        v_session_log_level := NULL;
+        set_session_log_level(NULL);
         
         v_call_id := 0;
         reset_call_stack;
@@ -151,7 +151,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     RETURN t_handler_log_level IS
     BEGIN
     
-        RETURN SYS_CONTEXT('LOG$CONTEXT', 'LOG_LEVEL'); 
+        RETURN SYS_CONTEXT('LOG$LEVELS', 'SYSTEM'); 
     
     END;
     
@@ -160,7 +160,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     ) IS
     BEGIN
     
-        DBMS_SESSION.SET_CONTEXT('LOG$CONTEXT', 'LOG_LEVEL', p_level);
+        DBMS_SESSION.SET_CONTEXT('LOG$LEVELS', 'SYSTEM', p_level);
     
     END;       
     
@@ -173,8 +173,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         CURSOR c_context_variable IS
             SELECT 1
             FROM global_context
-            WHERE namespace = 'LOG$CONTEXT'
-                  AND attribute = 'LOG_LEVEL';
+            WHERE namespace = 'LOG$LEVELS'
+                  AND attribute = 'SYSTEM';
         
     BEGIN
     
@@ -194,15 +194,79 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     PROCEDURE reset_system_log_level IS
     BEGIN
     
-        DBMS_SESSION.CLEAR_CONTEXT('LOG$CONTEXT', NULL, 'LOG_LEVEL');
+        DBMS_SESSION.CLEAR_CONTEXT('LOG$LEVELS', NULL, 'SYSTEM');
     
     END;
         
-    FUNCTION get_session_log_level
+    FUNCTION get_session_log_level (
+        p_session_serial# IN t_session_serial#
+    )
     RETURN t_handler_log_level IS
     BEGIN
     
-        RETURN v_session_log_level;
+        RETURN SYS_CONTEXT (
+            'LOG$LEVELS',
+            '#' || p_session_serial#
+        );
+    
+    END;
+    
+    FUNCTION get_session_log_level
+    RETURN t_handler_log_level IS
+    BEGIN
+        RETURN get_session_log_level(v_session_serial#);
+    END;
+    
+    PROCEDURE cleanup_session_log_levels IS
+    
+        CURSOR c_non_existing_sessions IS
+            SELECT ctx.attribute AS serial#
+            FROM global_context ctx,
+                 v$session ssn
+            WHERE ctx.namespace = 'LOG$LEVELS'
+                  AND ctx.attribute LIKE '#%'
+                  AND ssn.serial#(+) = SUBSTR(ctx.value, 2)
+                  AND ssn.serial# IS NULL;
+    
+    BEGIN
+    
+        FOR v_session IN c_non_existing_sessions LOOP
+        
+            DBMS_SESSION.CLEAR_CONTEXT(
+                'LOG$LEVELS',
+                NULL,
+                v_session.serial#
+            );
+        
+        END LOOP;
+    
+    END;
+    
+    PROCEDURE set_session_log_level (
+        p_session_serial# IN t_session_serial#,
+        p_level IN t_handler_log_level
+    ) IS
+    BEGIN
+    
+        cleanup_session_log_levels;
+    
+        IF p_level IS NULL THEN
+            
+            DBMS_SESSION.CLEAR_CONTEXT(
+                'LOG$LEVELS', 
+                NULL,
+                '#' || p_session_serial#
+            );
+            
+        ELSE
+    
+            DBMS_SESSION.SET_CONTEXT(
+                'LOG$LEVELS', 
+                '#' || p_session_serial#, 
+                p_level
+            );
+            
+        END IF;
     
     END;
     
@@ -210,9 +274,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         p_level IN t_handler_log_level
     ) IS
     BEGIN
-    
-        v_session_log_level := p_level;
-    
+        set_session_log_level(v_session_serial#, p_level);
     END;
     
     /* Call stack management */
