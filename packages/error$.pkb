@@ -18,14 +18,16 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
 
     v_error_code t_error_code := -20000;
     v_error_level log$.t_message_log_level := log$.c_ERROR;
+    v_oracle_error_level log$.t_message_log_level := log$.c_FATAL;
     
     c_handler_unit CONSTANT VARCHAR2(4000) := $$PLSQL_UNIT_OWNER || '.' || $$PLSQL_UNIT;
-    v_handled_lines t_numbers := t_numbers(67, 143, 148, 153);
+    v_handled_lines t_numbers := t_numbers(82, 158, 163, 168);
 
     PROCEDURE reset IS
     BEGIN
         v_error_code := -20000;
         v_error_level := log$.c_ERROR;
+        v_oracle_error_level := log$.c_FATAL;
     END;
 
     PROCEDURE set_error_code (
@@ -52,6 +54,19 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
     RETURN log$.t_message_log_level IS
     BEGIN
         RETURN v_error_level;
+    END;
+    
+    PROCEDURE set_oracle_error_level (
+        p_level IN log$.t_message_log_level
+    ) IS
+    BEGIN
+        v_oracle_error_level := p_level;
+    END;
+    
+    FUNCTION get_oracle_error_level
+    RETURN log$.t_message_log_level IS
+    BEGIN
+        RETURN v_oracle_error_level;
     END;
 
     PROCEDURE raise (
@@ -132,7 +147,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         IF utl_call_stack.error_depth > 0 THEN
         
             IF NOT handled THEN
-                log$.oracle_error(v_error_level, p_service_depth + 1);
+                log$.oracle_error(v_oracle_error_level, p_service_depth + 1);
             END IF;
             
             v_error_number := utl_call_stack.error_number(1);

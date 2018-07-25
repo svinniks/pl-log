@@ -35,26 +35,27 @@ CREATE OR REPLACE PACKAGE log$ IS
     
     SUBTYPE t_message_log_level IS 
         PLS_INTEGER 
-            RANGE 1..1000
+            RANGE 1..600
             NOT NULL;
     
-    c_DEBUG CONSTANT t_message_log_level := 200;
-    c_INFO CONSTANT t_message_log_level := 400;
-    c_WARNING CONSTANT t_message_log_level := 600;
-    c_ERROR CONSTANT t_message_log_level := 800;
+    c_DEBUG CONSTANT t_message_log_level := 100;
+    c_INFO CONSTANT t_message_log_level := 200;
+    c_WARNING CONSTANT t_message_log_level := 300;
+    c_ERROR CONSTANT t_message_log_level := 400;
+    c_FATAL CONSTANT t_message_log_level := 500;
             
     SUBTYPE t_resolver_log_level IS 
         PLS_INTEGER 
-            RANGE 0..1000
+            RANGE 0..600
             NOT NULL;            
 
     c_ALL CONSTANT t_resolver_log_level := 0;
     
     SUBTYPE t_handler_log_level IS 
         PLS_INTEGER 
-            RANGE 0..1001;            
+            RANGE 0..601;            
 
-    c_NONE CONSTANT t_handler_log_level := 1001;
+    c_NONE CONSTANT t_handler_log_level := 601;
 
     TYPE t_call IS
         RECORD (
@@ -255,7 +256,7 @@ CREATE OR REPLACE PACKAGE log$ IS
     ); 
     
     PROCEDURE oracle_error (
-        p_level IN t_message_log_level := c_ERROR,
+        p_level IN t_message_log_level := c_FATAL,
         p_service_depth IN NATURALN := 0
     );
     
@@ -413,6 +414,46 @@ CREATE OR REPLACE PACKAGE log$ IS
     );
     
     PROCEDURE error (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2,
+        p_argument_5 IN VARCHAR2
+    );
+    
+    PROCEDURE fatal (
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL
+    );
+    
+    PROCEDURE fatal (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2
+    );
+    
+    PROCEDURE fatal (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2
+    );
+    
+    PROCEDURE fatal (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2
+    );
+    
+    PROCEDURE fatal (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2
+    );
+    
+    PROCEDURE fatal (
         p_message IN VARCHAR2,
         p_argument_1 IN VARCHAR2,
         p_argument_2 IN VARCHAR2,

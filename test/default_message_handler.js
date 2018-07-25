@@ -1,7 +1,10 @@
-const ERROR = 800;
-const WARNING = 600;
-const INFO = 400;
-const DEBUG = 200;
+const NONE = 601;
+const FATAL = 500;
+const ERROR = 400; 
+const WARNING = 300; 
+const INFO = 200; 
+const DEBUG = 100;
+const ALL = 0;
 
 suite("Default message handler tests", function() {
 

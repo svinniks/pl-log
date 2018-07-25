@@ -984,7 +984,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     END;
     
     PROCEDURE oracle_error (
-        p_level IN t_message_log_level := c_ERROR,
+        p_level IN t_message_log_level := c_FATAL,
         p_service_depth IN NATURALN := 0
     ) IS
     
@@ -1399,6 +1399,101 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
         message(
             c_ERROR,
+            p_message, 
+            t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4, p_argument_5),
+            1
+        );
+    
+    END;
+    
+    PROCEDURE fatal (
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL
+    ) IS
+    BEGIN
+    
+        message(c_FATAL, p_message, p_arguments, 1);
+        
+    END;
+    
+    PROCEDURE fatal (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        message(
+            c_FATAL,
+            p_message, 
+            t_varchars(p_argument_1),
+            1
+        );
+    
+    END;
+    
+    PROCEDURE fatal (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        message(
+            c_FATAL,
+            p_message, 
+            t_varchars(p_argument_1, p_argument_2),
+            1
+        );
+    
+    END;
+    
+    PROCEDURE fatal (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        message(
+            c_FATAL,
+            p_message, 
+            t_varchars(p_argument_1, p_argument_2, p_argument_3),
+            1
+        );
+    
+    END;
+    
+    PROCEDURE fatal (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        message(
+            c_FATAL,
+            p_message, 
+            t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4),
+            1
+        );
+    
+    END;
+    
+    PROCEDURE fatal (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        p_argument_2 IN VARCHAR2,
+        p_argument_3 IN VARCHAR2,
+        p_argument_4 IN VARCHAR2,
+        p_argument_5 IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        message(
+            c_FATAL,
             p_message, 
             t_varchars(p_argument_1, p_argument_2, p_argument_3, p_argument_4, p_argument_5),
             1

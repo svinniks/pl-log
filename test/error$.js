@@ -14,11 +14,12 @@
     limitations under the License.
 */
 
-const NONE = 1001;
-const ERROR = 800;
-const WARNING = 600;
-const INFO = 400;
-const DEBUG = 200;
+const NONE = 601;
+const FATAL = 500;
+const ERROR = 400; 
+const WARNING = 300; 
+const INFO = 200; 
+const DEBUG = 100;
 const ALL = 0;
 
 let getCallStackJsonProcedureName;
@@ -158,7 +159,7 @@ suite("Error raising and handling", function() {
                 log$.reset_call_stack;
                 default_message_handler.reset;
                 error$.set_error_code(-20123);
-                error$.set_error_level(900);
+                error$.set_error_level(550);
             END;
         `);
 
@@ -180,11 +181,11 @@ suite("Error raising and handling", function() {
 
         expect(tail).to.eql([
             {
-                log_level: 800,
+                log_level: FATAL,
                 message: "ORA-20123: MSG-00002: Good bye, World!"
             },
             {
-                log_level: 900,
+                log_level: 550,
                 message: "MSG-00002: Good bye, World!"
             }
         ]);
@@ -216,7 +217,7 @@ suite("Error raising and handling", function() {
 
         expect(tail).to.eql([
             {
-                log_level: 800,
+                log_level: ERROR,
                 message: "MSG-00001: Hello, World!"
             }
         ]);
@@ -277,7 +278,7 @@ suite("Error raising and handling", function() {
     
         expect(tail).to.eql([
             {
-                log_level: 800,
+                log_level: ERROR,
                 message: "MSG-00001: Hello, World!"
             }
         ]);
@@ -333,7 +334,7 @@ suite("Error raising and handling", function() {
     
         expect(tail).to.eql([
             {
-                log_level: 800,
+                log_level: ERROR,
                 message: "MSG-00003: Hello, World, :2, :3, :4 and :5!"
             }
         ]);
@@ -389,7 +390,7 @@ suite("Error raising and handling", function() {
     
         expect(tail).to.eql([
             {
-                log_level: 800,
+                log_level: ERROR,
                 message: "MSG-00003: Hello, World, People, :3, :4 and :5!"
             }
         ]);
@@ -445,7 +446,7 @@ suite("Error raising and handling", function() {
     
         expect(tail).to.eql([
             {
-                log_level: 800,
+                log_level: ERROR,
                 message: "MSG-00003: Hello, World, People, Sun, :4 and :5!"
             }
         ]);
@@ -501,7 +502,7 @@ suite("Error raising and handling", function() {
     
         expect(tail).to.eql([
             {
-                log_level: 800,
+                log_level: ERROR,
                 message: "MSG-00003: Hello, World, People, Sun, Joy and :5!"
             }
         ]);
@@ -557,7 +558,7 @@ suite("Error raising and handling", function() {
     
         expect(tail).to.eql([
             {
-                log_level: 800,
+                log_level: ERROR,
                 message: "MSG-00003: Hello, World, People, Sun, Joy and Fun!"
             }
         ]);
@@ -640,7 +641,7 @@ suite("Error reraising", function() {
             BEGIN
                 log$.reset_call_stack;
                 error$.reset;
-                error$.set_error_level(900);
+                error$.set_oracle_error_level(550);
                 default_message_handler.reset;
             END;
         `);
@@ -665,7 +666,7 @@ suite("Error reraising", function() {
     
         expect(tail).to.eql([
             {
-                log_level: 900,
+                log_level: 550,
                 message: "ORA-20000: Hello, World!"
             }
         ]);
@@ -718,7 +719,7 @@ suite("Error reraising", function() {
     
         expect(tail).to.eql([
             {
-                log_level: 800,
+                log_level: FATAL,
                 message: "ORA-1403: no data found"
             }
         ]);
@@ -771,7 +772,7 @@ suite("Error reraising", function() {
     
         expect(tail).to.eql([
             {
-                log_level: 800,
+                log_level: FATAL,
                 message: "ORA-1422: exact fetch returns more than requested number of rows"
             }
         ]);
@@ -826,7 +827,7 @@ suite("Error reraising", function() {
     
         expect(tail).to.eql([
             {
-                log_level: 800,
+                log_level: FATAL,
                 message: "ORA-1422: exact fetch returns more than requested number of rows"
             }
         ]);

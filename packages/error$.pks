@@ -36,6 +36,13 @@ CREATE OR REPLACE PACKAGE error$ IS
     
     FUNCTION get_error_level
     RETURN log$.t_message_log_level;
+    
+    PROCEDURE set_oracle_error_level (
+        p_level IN log$.t_message_log_level
+    );
+    
+    FUNCTION get_oracle_error_level
+    RETURN log$.t_message_log_level;
 
     PROCEDURE raise (
         p_message IN VARCHAR2,

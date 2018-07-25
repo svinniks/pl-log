@@ -1,8 +1,9 @@
-const NONE = 1001;
-const ERROR = 800;
-const WARNING = 600;
-const INFO = 400;
-const DEBUG = 200;
+const NONE = 601;
+const FATAL = 500;
+const ERROR = 400; 
+const WARNING = 300; 
+const INFO = 200; 
+const DEBUG = 100;
 const ALL = 0;
 
 let getCallStackJsonProcedureName;
@@ -3035,14 +3036,14 @@ suite("Log level management", function() {
     test("Set system level, get from another (proxy) session", function() {
     
         database.call("log$.set_system_log_level", {
-            p_level: 777
+            p_level: 555
         });
 
         database.commit();
 
         let level = database.call("log$.get_system_log_level");
 
-        expect(level).to.be(777);
+        expect(level).to.be(555);
     
     });
     
@@ -3709,7 +3710,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "400: Hello, World!"
+                `${INFO}: Hello, World!`
             ]);
         
         });
@@ -3738,7 +3739,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "400: Hello, World!"
+                `${INFO}: Hello, World!`
             ]);
         
         });
@@ -4009,7 +4010,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "400: Hello, World!"
+                `${INFO}: Hello, World!`
             ]);
         
         });
@@ -4040,8 +4041,8 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "400: Hello, World!",
-                "400: Hello, World!"
+                `${INFO}: Hello, World!`,
+                `${INFO}: Hello, World!`
             ]);
         
         });
@@ -4283,7 +4284,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "400: Hello, World!"
+                `${INFO}: Hello, World!`
             ]);
         
         });
@@ -4400,7 +4401,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "400: Hello, World!"
+                `${INFO}: Hello, World!`
             ]);
         
         });
@@ -4437,8 +4438,8 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "400: Hello, World!",
-                "400: Hello, World!"
+                `${INFO}: Hello, World!`,
+                `${INFO}: Hello, World!`
             ]);
         
         });
@@ -4596,7 +4597,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "200: Hello, World!"
+                `${DEBUG}: Hello, World!`
             ]);
         
         });
@@ -4642,7 +4643,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "200: Hello, :1, :2, :3, :4 and :5!"
+                `${DEBUG}: Hello, :1, :2, :3, :4 and :5!`
             ]);
         
         });
@@ -4688,7 +4689,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "200: Hello, World, :2, :3, :4 and :5!"
+                `${DEBUG}: Hello, World, :2, :3, :4 and :5!`
             ]);
         
         });
@@ -4734,7 +4735,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "200: Hello, World, People, :3, :4 and :5!"
+                `${DEBUG}: Hello, World, People, :3, :4 and :5!`
             ]);
         
         });
@@ -4780,7 +4781,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "200: Hello, World, People, Sun, :4 and :5!"
+                `${DEBUG}: Hello, World, People, Sun, :4 and :5!`
             ]);
         
         });
@@ -4826,7 +4827,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "200: Hello, World, People, Sun, Joy and :5!"
+                `${DEBUG}: Hello, World, People, Sun, Joy and :5!`
             ]);
         
         });
@@ -4872,7 +4873,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "200: Hello, World, People, Sun, Joy and Fun!"
+                `${DEBUG}: Hello, World, People, Sun, Joy and Fun!`
             ]);
         
         });
@@ -4918,7 +4919,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "400: Hello, World!"
+                `${INFO}: Hello, World!`
             ]);
         
         });
@@ -4964,7 +4965,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "400: Hello, :1, :2, :3, :4 and :5!"
+                `${INFO}: Hello, :1, :2, :3, :4 and :5!`
             ]);
         
         });
@@ -5010,7 +5011,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "400: Hello, World, :2, :3, :4 and :5!"
+                `${INFO}: Hello, World, :2, :3, :4 and :5!`
             ]);
         
         });
@@ -5056,7 +5057,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "400: Hello, World, People, :3, :4 and :5!"
+                `${INFO}: Hello, World, People, :3, :4 and :5!`
             ]);
         
         });
@@ -5102,7 +5103,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "400: Hello, World, People, Sun, :4 and :5!"
+                `${INFO}: Hello, World, People, Sun, :4 and :5!`
             ]);
         
         });
@@ -5148,7 +5149,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "400: Hello, World, People, Sun, Joy and :5!"
+                `${INFO}: Hello, World, People, Sun, Joy and :5!`
             ]);
         
         });
@@ -5194,7 +5195,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "400: Hello, World, People, Sun, Joy and Fun!"
+                `${INFO}: Hello, World, People, Sun, Joy and Fun!`
             ]);
         
         });
@@ -5240,7 +5241,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "600: Hello, World!"
+                `${WARNING}: Hello, World!`
             ]);
         
         });
@@ -5286,7 +5287,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "600: Hello, :1, :2, :3, :4 and :5!"
+                `${WARNING}: Hello, :1, :2, :3, :4 and :5!`
             ]);
         
         });
@@ -5332,7 +5333,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "600: Hello, World, :2, :3, :4 and :5!"
+                `${WARNING}: Hello, World, :2, :3, :4 and :5!`
             ]);
         
         });
@@ -5378,7 +5379,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "600: Hello, World, People, :3, :4 and :5!"
+                `${WARNING}: Hello, World, People, :3, :4 and :5!`
             ]);
         
         });
@@ -5424,7 +5425,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "600: Hello, World, People, Sun, :4 and :5!"
+                `${WARNING}: Hello, World, People, Sun, :4 and :5!`
             ]);
         
         });
@@ -5470,7 +5471,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "600: Hello, World, People, Sun, Joy and :5!"
+                `${WARNING}: Hello, World, People, Sun, Joy and :5!`
             ]);
         
         });
@@ -5516,7 +5517,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "600: Hello, World, People, Sun, Joy and Fun!"
+                `${WARNING}: Hello, World, People, Sun, Joy and Fun!`
             ]);
         
         });
@@ -5562,7 +5563,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "800: Hello, World!"
+                `${ERROR}: Hello, World!`
             ]);
         
         });
@@ -5608,7 +5609,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "800: Hello, :1, :2, :3, :4 and :5!"
+                `${ERROR}: Hello, :1, :2, :3, :4 and :5!`
             ]);
         
         });
@@ -5654,7 +5655,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "800: Hello, World, :2, :3, :4 and :5!"
+                `${ERROR}: Hello, World, :2, :3, :4 and :5!`
             ]);
         
         });
@@ -5700,7 +5701,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "800: Hello, World, People, :3, :4 and :5!"
+                `${ERROR}: Hello, World, People, :3, :4 and :5!`
             ]);
         
         });
@@ -5746,7 +5747,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "800: Hello, World, People, Sun, :4 and :5!"
+                `${ERROR}: Hello, World, People, Sun, :4 and :5!`
             ]);
         
         });
@@ -5792,7 +5793,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "800: Hello, World, People, Sun, Joy and :5!"
+                `${ERROR}: Hello, World, People, Sun, Joy and :5!`
             ]);
         
         });
@@ -5838,7 +5839,7 @@ suite("Message handling", function() {
             let messages = database.call(`"${handlerPackageName}".get_messages`);
 
             expect(messages).to.eql([
-                "800: Hello, World, People, Sun, Joy and Fun!"
+                `${ERROR}: Hello, World, People, Sun, Joy and Fun!`
             ]);
         
         });
@@ -5850,6 +5851,282 @@ suite("Message handling", function() {
             database.run(`
                 BEGIN
                     log$.error('Hello, :1, :2, :3, :4 and :5!', 'World', 'People', 'Sun', 'Joy', 'Fun');
+                END;
+            `);
+
+            let callStack = getCallStack();
+
+            expect(callStack).to.eql({
+                p_calls: [
+                    {
+                        id: callStack.p_calls[0].id,
+                        unit: "__anonymous_block",
+                        line: 3,
+                        first_line: 3
+                    }
+                ],
+                p_values: [
+                    {}
+                ]
+            });
+
+        });
+
+        test("FATAL no argument version", function() {
+        
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.run(`
+                BEGIN
+                    log$.fatal('Hello, :1, :2, :3, :4 and :5!');
+                END;
+            `);
+
+            let messages = database.call(`"${handlerPackageName}".get_messages`);
+
+            expect(messages).to.eql([
+                `${FATAL}: Hello, :1, :2, :3, :4 and :5!`
+            ]);
+        
+        });
+
+        test("FATAL no argument version, check call stack", function() {
+        
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.run(`
+                BEGIN
+                    log$.fatal('Hello, :1, :2, :3, :4 and :5!');
+                END;
+            `);
+
+            let callStack = getCallStack();
+
+            expect(callStack).to.eql({
+                p_calls: [
+                    {
+                        id: callStack.p_calls[0].id,
+                        unit: "__anonymous_block",
+                        line: 3,
+                        first_line: 3
+                    }
+                ],
+                p_values: [
+                    {}
+                ]
+            });
+
+        });
+
+        test("FATAL 1 argument version", function() {
+        
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.run(`
+                BEGIN
+                    log$.fatal('Hello, :1, :2, :3, :4 and :5!', 'World');
+                END;
+            `);
+
+            let messages = database.call(`"${handlerPackageName}".get_messages`);
+
+            expect(messages).to.eql([
+                `${FATAL}: Hello, World, :2, :3, :4 and :5!`
+            ]);
+        
+        });
+
+        test("FATAL 1 argument version, check call stack", function() {
+        
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.run(`
+                BEGIN
+                    log$.fatal('Hello, :1, :2, :3, :4 and :5!', 'World');
+                END;
+            `);
+
+            let callStack = getCallStack();
+
+            expect(callStack).to.eql({
+                p_calls: [
+                    {
+                        id: callStack.p_calls[0].id,
+                        unit: "__anonymous_block",
+                        line: 3,
+                        first_line: 3
+                    }
+                ],
+                p_values: [
+                    {}
+                ]
+            });
+
+        });
+
+        test("FATAL 2 argument version", function() {
+        
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.run(`
+                BEGIN
+                    log$.fatal('Hello, :1, :2, :3, :4 and :5!', 'World', 'People');
+                END;
+            `);
+
+            let messages = database.call(`"${handlerPackageName}".get_messages`);
+
+            expect(messages).to.eql([
+                `${FATAL}: Hello, World, People, :3, :4 and :5!`
+            ]);
+        
+        });
+
+        test("FATAL 2 argument version, check call stack", function() {
+        
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.run(`
+                BEGIN
+                    log$.fatal('Hello, :1, :2, :3, :4 and :5!', 'World', 'People');
+                END;
+            `);
+
+            let callStack = getCallStack();
+
+            expect(callStack).to.eql({
+                p_calls: [
+                    {
+                        id: callStack.p_calls[0].id,
+                        unit: "__anonymous_block",
+                        line: 3,
+                        first_line: 3
+                    }
+                ],
+                p_values: [
+                    {}
+                ]
+            });
+
+        });
+
+        test("FATAL 3 argument version", function() {
+        
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.run(`
+                BEGIN
+                    log$.fatal('Hello, :1, :2, :3, :4 and :5!', 'World', 'People', 'Sun');
+                END;
+            `);
+
+            let messages = database.call(`"${handlerPackageName}".get_messages`);
+
+            expect(messages).to.eql([
+                `${FATAL}: Hello, World, People, Sun, :4 and :5!`
+            ]);
+        
+        });
+
+        test("FATAL 3 argument version, check call stack", function() {
+        
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.run(`
+                BEGIN
+                    log$.fatal('Hello, :1, :2, :3, :4 and :5!', 'World', 'People', 'Sun');
+                END;
+            `);
+
+            let callStack = getCallStack();
+
+            expect(callStack).to.eql({
+                p_calls: [
+                    {
+                        id: callStack.p_calls[0].id,
+                        unit: "__anonymous_block",
+                        line: 3,
+                        first_line: 3
+                    }
+                ],
+                p_values: [
+                    {}
+                ]
+            });
+
+        });
+
+        test("FATAL 4 argument version", function() {
+        
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.run(`
+                BEGIN
+                    log$.fatal('Hello, :1, :2, :3, :4 and :5!', 'World', 'People', 'Sun', 'Joy');
+                END;
+            `);
+
+            let messages = database.call(`"${handlerPackageName}".get_messages`);
+
+            expect(messages).to.eql([
+                `${FATAL}: Hello, World, People, Sun, Joy and :5!`
+            ]);
+        
+        });
+
+        test("FATAL 4 argument version, check call stack", function() {
+        
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.run(`
+                BEGIN
+                    log$.fatal('Hello, :1, :2, :3, :4 and :5!', 'World', 'People', 'Sun', 'Joy');
+                END;
+            `);
+
+            let callStack = getCallStack();
+
+            expect(callStack).to.eql({
+                p_calls: [
+                    {
+                        id: callStack.p_calls[0].id,
+                        unit: "__anonymous_block",
+                        line: 3,
+                        first_line: 3
+                    }
+                ],
+                p_values: [
+                    {}
+                ]
+            });
+
+        });
+
+        test("FATAL 5 argument version", function() {
+        
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.run(`
+                BEGIN
+                    log$.fatal('Hello, :1, :2, :3, :4 and :5!', 'World', 'People', 'Sun', 'Joy', 'Fun');
+                END;
+            `);
+
+            let messages = database.call(`"${handlerPackageName}".get_messages`);
+
+            expect(messages).to.eql([
+                `${FATAL}: Hello, World, People, Sun, Joy and Fun!`
+            ]);
+        
+        });
+
+        test("FATAL 5 argument version, check call stack", function() {
+        
+            database.call(`"${handlerPackageName}".reset`);
+
+            database.run(`
+                BEGIN
+                    log$.fatal('Hello, :1, :2, :3, :4 and :5!', 'World', 'People', 'Sun', 'Joy', 'Fun');
                 END;
             `);
 
@@ -6841,7 +7118,7 @@ suite("Error stack filling and oracle error logging", function() {
 
         let messages = database.call(`"${handlerPackageName}".get_messages`);
 
-        expect(messages).to.eql(["800: ORA-1403: no data found"]);
+        expect(messages).to.eql([`${FATAL}: ORA-1403: no data found`]);
 
         let callStack = getCallStack();
     
@@ -6907,7 +7184,7 @@ suite("Error stack filling and oracle error logging", function() {
 
         let messages = database.call(`"${handlerPackageName}".get_messages`);
 
-        expect(messages).to.eql(["800: ORA-1403: no data found"]);
+        expect(messages).to.eql([`${FATAL}: ORA-1403: no data found`]);
 
         let callStack = getCallStack();
     
@@ -6949,7 +7226,7 @@ suite("Error stack filling and oracle error logging", function() {
 
         database.run(`
             BEGIN
-                log$.add_handler("${handlerTypeName}"(NULL, 400));    
+                log$.add_handler("${handlerTypeName}"(NULL, ${INFO}));    
             END;
         `);
 
@@ -6973,7 +7250,7 @@ suite("Error stack filling and oracle error logging", function() {
 
         let messages = database.call(`"${handlerPackageName}".get_messages`);
 
-        expect(messages).to.eql(["800: ORA-1403: no data found"]);
+        expect(messages).to.eql([`${FATAL}: ORA-1403: no data found`]);
 
         let callStack = getCallStack();
     
@@ -7015,7 +7292,7 @@ suite("Error stack filling and oracle error logging", function() {
 
         database.run(`
             BEGIN
-                log$.add_handler("${handlerTypeName}"(NULL, 400));    
+                log$.add_handler("${handlerTypeName}"(NULL, ${INFO}));    
             END;
         `);
 
@@ -7039,7 +7316,7 @@ suite("Error stack filling and oracle error logging", function() {
 
         let messages = database.call(`"${handlerPackageName}".get_messages`);
 
-        expect(messages).to.eql(["600: ORA-1403: no data found"]);
+        expect(messages).to.eql([`${WARNING}: ORA-1403: no data found`]);
 
         let callStack = getCallStack();
     
@@ -7081,7 +7358,7 @@ suite("Error stack filling and oracle error logging", function() {
 
         database.run(`
             BEGIN
-                log$.add_handler("${handlerTypeName}"(NULL, 400));    
+                log$.add_handler("${handlerTypeName}"(NULL, ${INFO}));    
             END;
         `);
 
@@ -7112,7 +7389,7 @@ suite("Error stack filling and oracle error logging", function() {
 
         let messages = database.call(`"${handlerPackageName}".get_messages`);
 
-        expect(messages).to.eql(["800: ORA-1403: no data found"]);
+        expect(messages).to.eql([`${FATAL}: ORA-1403: no data found`]);
 
         let callStack = getCallStack();
     
