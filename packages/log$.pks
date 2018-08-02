@@ -16,6 +16,10 @@ CREATE OR REPLACE PACKAGE log$ IS
         limitations under the License.
     */
     
+    SUBTYPE BOOLEANN IS 
+        BOOLEAN 
+            NOT NULL;
+    
     SUBTYPE t_session_serial# IS
         NUMBER NOT NULL;
  
@@ -62,7 +66,7 @@ CREATE OR REPLACE PACKAGE log$ IS
             id NUMBER(30),
             unit STRING,
             line PLS_INTEGER,
-            first_line PLS_INTEGER
+            first_tracked_line PLS_INTEGER
         );
         
     TYPE t_call_stack IS
@@ -94,13 +98,13 @@ CREATE OR REPLACE PACKAGE log$ IS
     
     PROCEDURE add_resolver (
         p_resolver IN t_log_message_resolver,
+        p_level IN t_resolver_log_level := c_ALL,
         p_formatter IN t_log_message_formatter := NULL
     );
     
     PROCEDURE add_resolver (
         p_resolver IN t_log_message_resolver,
-        p_level IN t_resolver_log_level,
-        p_formatter IN t_log_message_formatter := NULL
+        p_formatter IN t_log_message_formatter
     );
     
     PROCEDURE set_default_formatter (
@@ -149,65 +153,41 @@ CREATE OR REPLACE PACKAGE log$ IS
     
     /* Call stack management */ 
      
-    PROCEDURE call (
-        p_reset_top IN BOOLEAN := TRUE,
+    PROCEDURE fill_call_stack (
+        p_reset_top IN BOOLEANN := TRUE,
         p_service_depth IN NATURALN := 0
     );
     
-    PROCEDURE call (
+    PROCEDURE fill_call_stack (
         p_service_depth IN NATURALN
     );
     
-    PROCEDURE value (
-        p_name IN STRINGN,
-        p_value IN VARCHAR2,
-        p_reset_top IN BOOLEAN := TRUE,
+    PROCEDURE call (
         p_service_depth IN NATURALN := 0
     );
     
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN VARCHAR2,
-        p_service_depth IN NATURALN
-    );
-    
-    PROCEDURE value (
-        p_name IN STRINGN,
-        p_value IN NUMBER,
-        p_reset_top IN BOOLEAN := TRUE,
         p_service_depth IN NATURALN := 0
     );
     
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN NUMBER,
-        p_service_depth IN NATURALN
-    );
-    
-    PROCEDURE value (
-        p_name IN STRINGN,
-        p_value IN BOOLEAN,
-        p_reset_top IN BOOLEAN := TRUE,
         p_service_depth IN NATURALN := 0
     );
     
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN BOOLEAN,
-        p_service_depth IN NATURALN
-    );
-    
-    PROCEDURE value (
-        p_name IN STRINGN,
-        p_value IN DATE,
-        p_reset_top IN BOOLEAN := TRUE,
         p_service_depth IN NATURALN := 0
     );
     
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN DATE,
-        p_service_depth IN NATURALN
+        p_service_depth IN NATURALN := 0
     );
     
     FUNCTION backtrace_unit (

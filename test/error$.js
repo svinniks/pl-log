@@ -230,7 +230,7 @@ suite("Error raising and handling", function() {
                     id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 4,
-                    first_line: 3
+                    first_tracked_line: 3
                 }
             ],
             p_values: [
@@ -291,7 +291,7 @@ suite("Error raising and handling", function() {
                     id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 9,
-                    first_line: 8
+                    first_tracked_line: 8
                 }
             ],
             p_values: [
@@ -347,7 +347,7 @@ suite("Error raising and handling", function() {
                     id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 4,
-                    first_line: 3
+                    first_tracked_line: 3
                 }
             ],
             p_values: [
@@ -403,7 +403,7 @@ suite("Error raising and handling", function() {
                     id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 4,
-                    first_line: 3
+                    first_tracked_line: 3
                 }
             ],
             p_values: [
@@ -459,7 +459,7 @@ suite("Error raising and handling", function() {
                     id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 4,
-                    first_line: 3
+                    first_tracked_line: 3
                 }
             ],
             p_values: [
@@ -515,7 +515,7 @@ suite("Error raising and handling", function() {
                     id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 4,
-                    first_line: 3
+                    first_tracked_line: 3
                 }
             ],
             p_values: [
@@ -571,7 +571,7 @@ suite("Error raising and handling", function() {
                     id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 4,
-                    first_line: 3
+                    first_tracked_line: 3
                 }
             ],
             p_values: [
@@ -679,7 +679,7 @@ suite("Error reraising", function() {
                     id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 3,
-                    first_line: 3
+                    first_tracked_line: 3
                 }
             ],
             p_values: [
@@ -732,7 +732,7 @@ suite("Error reraising", function() {
                     id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 3,
-                    first_line: 3
+                    first_tracked_line: 3
                 }
             ],
             p_values: [
@@ -785,7 +785,7 @@ suite("Error reraising", function() {
                     id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 3,
-                    first_line: 3
+                    first_tracked_line: 3
                 }
             ],
             p_values: [
@@ -840,7 +840,7 @@ suite("Error reraising", function() {
                     id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 8,
-                    first_line: 8
+                    first_tracked_line: 8
                 }
             ],
             p_values: [
