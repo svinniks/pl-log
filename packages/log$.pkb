@@ -296,9 +296,35 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
+    PROCEDURE reidentify_untracked_nodes (
+        p_matching_depth IN PLS_INTEGER
+    ) IS
+        
+        v_untracked_depth PLS_INTEGER;
+    
+    BEGIN
+    
+        v_untracked_depth := 0;
+                
+        FOR v_i IN REVERSE 1..p_matching_depth LOOP
+                
+            EXIT WHEN v_call_stack(v_i).first_tracked_line IS NOT NULL;
+                    
+            v_untracked_depth := v_untracked_depth + 1;
+                    
+        END LOOP;
+                
+        FOR v_i IN p_matching_depth - v_untracked_depth + 1..p_matching_depth LOOP
+            v_call_id := v_call_id + 1;
+            v_call_stack(v_i).id := v_call_id;
+        END LOOP; 
+    
+    END;
+    
     PROCEDURE fill_call_stack (
-        p_reset_top IN BOOLEANN := TRUE,
-        p_service_depth IN NATURALN := 0
+        p_service_depth IN NATURALN,
+        p_reset_top IN BOOLEANN,
+        p_track_top IN BOOLEANN
     ) IS
     
         v_dynamic_depth PLS_INTEGER;
@@ -309,8 +335,6 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_depth PLS_INTEGER;
         v_actual_call t_call;
         v_stack_call t_call;
-        
-        v_non_tracked_depth PLS_INTEGER;
         
     BEGIN
     
@@ -352,23 +376,12 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             
         END LOOP;
         
-        v_non_tracked_depth := 0;
-                
-        FOR v_i IN REVERSE 1..v_matching_height LOOP
-                
-            EXIT WHEN v_call_stack(v_i).first_tracked_line IS NOT NULL;
-                    
-            v_non_tracked_depth := v_non_tracked_depth + 1;
-                    
-        END LOOP;
-                
-        FOR v_i IN v_matching_height - v_non_tracked_depth + 1..v_matching_height LOOP
-            v_call_id := v_call_id + 1;
-            v_call_stack(v_i).id := v_call_id;
-        END LOOP; 
+        reidentify_untracked_nodes(v_matching_height);
         
         v_call_stack.TRIM(v_call_stack.COUNT - v_matching_height);
         v_call_values.TRIM(v_call_values.COUNT - v_matching_height);
+        
+        v_actual_call.first_tracked_line := NULL;
         
         FOR v_height IN v_call_stack.COUNT + 1..v_actual_height LOOP 
         
@@ -377,12 +390,10 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             v_actual_call.unit := call_stack_unit(v_depth);
             v_actual_call.line := utl_call_stack.unit_line(v_depth);
             
-            IF v_height = v_actual_height THEN
+            IF v_height = v_actual_height AND p_track_top THEN
                 v_actual_call.first_tracked_line := v_actual_call.line;
-            ELSE
-                v_actual_call.first_tracked_line := NULL;
             END IF;
-        
+            
             v_call_id := v_call_id + 1;
             v_actual_call.id := v_call_id;
             
@@ -395,24 +406,18 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
-    PROCEDURE fill_call_stack (
-        p_service_depth IN NATURALN
-    ) IS
-    BEGIN
-        fill_call_stack(TRUE, p_service_depth + 1);
-    END;
-    
     PROCEDURE call (
         p_service_depth IN NATURALN := 0
     ) IS
     BEGIN
-        fill_call_stack(TRUE, p_service_depth + 1);
+        fill_call_stack(p_service_depth + 1, TRUE, TRUE);
     END;
     
     PROCEDURE value (
         p_name IN VARCHAR2,
         p_type IN VARCHAR2,
         p_service_depth IN PLS_INTEGER,
+        p_fill_call_stack IN BOOLEAN,
         p_varchar2_value IN VARCHAR2 := NULL,
         p_number_value IN NUMBER := NULL,
         p_boolean_value IN BOOLEAN := NULL,
@@ -421,7 +426,15 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_value t_value;
     BEGIN
     
-        fill_call_stack(FALSE, p_service_depth + 1);
+        IF p_fill_call_stack THEN
+        
+            fill_call_stack(
+                p_service_depth => p_service_depth + 1, 
+                p_reset_top => FALSE, 
+                p_track_top => TRUE
+            );
+                
+        END IF;
         
         IF v_call_values.COUNT > 0 THEN
         
@@ -440,7 +453,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN VARCHAR2,
-        p_service_depth IN NATURALN := 0
+        p_service_depth IN NATURALN := 0,
+        p_fill_call_stack IN BOOLEANN := TRUE
     ) IS
     BEGIN
     
@@ -448,6 +462,24 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             p_name, 
             'VARCHAR2', 
             p_service_depth + 1,
+            p_fill_call_stack,
+            p_varchar2_value => p_value
+        );
+    
+    END;
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN VARCHAR2,
+        p_fill_call_stack IN BOOLEANN
+    ) IS
+    BEGIN
+    
+        value(
+            p_name, 
+            'VARCHAR2', 
+            1,
+            p_fill_call_stack,
             p_varchar2_value => p_value
         );
     
@@ -456,7 +488,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN NUMBER,
-        p_service_depth IN NATURALN := 0
+        p_service_depth IN NATURALN := 0,
+        p_fill_call_stack IN BOOLEANN := TRUE
     ) IS
     BEGIN
     
@@ -464,6 +497,24 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             p_name, 
             'NUMBER', 
             p_service_depth + 1,
+            p_fill_call_stack,
+            p_number_value => p_value
+        );
+    
+    END;
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN NUMBER,
+        p_fill_call_stack IN BOOLEANN
+    ) IS
+    BEGIN
+    
+        value(
+            p_name, 
+            'NUMBER', 
+            1,
+            p_fill_call_stack,
             p_number_value => p_value
         );
     
@@ -472,7 +523,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN BOOLEAN,
-        p_service_depth IN NATURALN := 0
+        p_service_depth IN NATURALN := 0,
+        p_fill_call_stack IN BOOLEANN := TRUE
     ) IS
     BEGIN
     
@@ -480,6 +532,24 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             p_name, 
             'BOOLEAN', 
             p_service_depth + 1,
+            p_fill_call_stack,
+            p_boolean_value => p_value
+        );
+    
+    END;
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN BOOLEAN,
+        p_fill_call_stack IN BOOLEANN
+    ) IS
+    BEGIN
+    
+        value(
+            p_name, 
+            'BOOLEAN', 
+            1,
+            p_fill_call_stack,
             p_boolean_value => p_value
         );
     
@@ -488,7 +558,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN DATE,
-        p_service_depth IN NATURALN := 0
+        p_service_depth IN NATURALN := 0,
+        p_fill_call_stack IN BOOLEANN := TRUE
     ) IS
     BEGIN
     
@@ -496,6 +567,24 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             p_name, 
             'DATE', 
             p_service_depth + 1,
+            p_fill_call_stack,
+            p_date_value => p_value
+        );
+    
+    END;
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN DATE,
+        p_fill_call_stack IN BOOLEANN
+    ) IS
+    BEGIN
+    
+        value(
+            p_name, 
+            'DATE', 
+            1,
+            p_fill_call_stack,
             p_date_value => p_value
         );
     
@@ -569,8 +658,15 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         END LOOP;
         
         IF v_matching_height < v_actual_height - 1 THEN
-            call(p_service_depth + 1);
+        
+            fill_call_stack(
+                p_service_depth => p_service_depth + 1,
+                p_reset_top => FALSE,
+                p_track_top => FALSE
+            );    
+        
             v_matching_height := v_call_stack.COUNT - 1;
+        
         END IF;
         
         $IF DBMS_DB_VERSION.VERSION = 12 AND DBMS_DB_VERSION.RELEASE = 1 $THEN
@@ -596,7 +692,6 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
                 IF v_call_stack(v_matching_height).line != utl_call_stack.backtrace_line(v_backtrace_depth) THEN
                 
                     v_call_stack(v_matching_height).line := utl_call_stack.backtrace_line(v_backtrace_depth);
-                    v_call_stack(v_matching_height).first_tracked_line := LEAST(v_call_stack(v_matching_height).first_tracked_line, v_call_stack(v_matching_height).line);
                 
                     $IF DBMS_DB_VERSION.VERSION = 12 AND DBMS_DB_VERSION.RELEASE = 1 $THEN
                         v_backtrace_depth := v_backtrace_depth + 1;
@@ -630,6 +725,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             v_call_stack.TRIM(v_call_stack.COUNT - v_matching_height + 1);
             v_call_values.TRIM(v_call_values.COUNT - v_matching_height + 1);
         END IF;
+
+        v_call.first_tracked_line := NULL;
         
         $IF DBMS_DB_VERSION.VERSION = 12 AND DBMS_DB_VERSION.RELEASE = 1 $THEN
             WHILE v_backtrace_depth <= utl_call_stack.backtrace_depth LOOP
@@ -644,7 +741,6 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             
             v_call.unit := v_backtrace_unit;
             v_call.line := utl_call_stack.backtrace_line(v_backtrace_depth);
-            v_call.first_tracked_line := v_call.line;
             
             v_call_stack.EXTEND(1);
             v_call_stack(v_call_stack.COUNT) := v_call;
@@ -892,8 +988,15 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             ) THEN
             
                 IF NOT v_call_stack_updated THEN
-                    fill_call_stack(FALSE, p_service_depth + 1);
+                
+                    fill_call_stack(
+                        p_service_depth => p_service_depth + 1,
+                        p_reset_top => FALSE,
+                        p_track_top => TRUE
+                    );
+                    
                     v_call_stack_updated := TRUE;
+                    
                 END IF;
             
                 v_raw_message_handlers(v_i).handle_message(p_level, p_message, p_arguments);
@@ -919,8 +1022,15 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
                 END IF;
                 
                 IF NOT v_call_stack_updated THEN
-                    fill_call_stack(FALSE, p_service_depth + 1);
+                
+                    fill_call_stack(
+                        p_service_depth => p_service_depth + 1,
+                        p_reset_top => FALSE,
+                        p_track_top => TRUE
+                    );
+                    
                     v_call_stack_updated := TRUE;
+                    
                 END IF;
               
                 v_formatted_message_handlers(v_i).handle_message(p_level, v_message);

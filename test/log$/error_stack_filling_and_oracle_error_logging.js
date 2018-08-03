@@ -1,3 +1,11 @@
+const NONE = 601;
+const FATAL = 500;
+const ERROR = 400; 
+const WARNING = 300; 
+const INFO = 200; 
+const DEBUG = 100;
+const ALL = 0;
+
 function resetPackage() {
     database.run(`
         BEGIN
@@ -190,7 +198,7 @@ suite("Error stack filling and oracle error logging", function() {
                     id: 1,
                     unit: "__anonymous_block",
                     line: 3,
-                    first_tracked_line: 3
+                    first_tracked_line: null
                 }
             ],
             p_values: [
@@ -280,13 +288,13 @@ suite("Error stack filling and oracle error logging", function() {
                     id: 2,
                     unit: "__anonymous_block",
                     line: 11,
-                    first_tracked_line: 11
+                    first_tracked_line: null
                 }, 
                 {
                     id: 3,
                     unit: "__anonymous_block",
                     line: 6,
-                    first_tracked_line: 6
+                    first_tracked_line: null
                 }
             ],
             p_values: [
@@ -353,7 +361,7 @@ suite("Error stack filling and oracle error logging", function() {
                     id: 3,
                     unit: "__anonymous_block",
                     line: 6,
-                    first_tracked_line: 6
+                    first_tracked_line: null
                 }
             ],
             p_values: [
@@ -414,7 +422,7 @@ suite("Error stack filling and oracle error logging", function() {
                     id: 3,
                     unit: "__anonymous_block",
                     line: 6,
-                    first_tracked_line: 6
+                    first_tracked_line: null
                 }
             ],
             p_values: [
@@ -491,13 +499,13 @@ suite("Error stack filling and oracle error logging", function() {
                     id: 4,
                     unit: "__anonymous_block",
                     line: 11,
-                    first_tracked_line: 11
+                    first_tracked_line: null
                 },
                 {
                     id: 5,
                     unit: "__anonymous_block",
                     line: 6,
-                    first_tracked_line: 6
+                    first_tracked_line: null
                 }
             ],
             p_values: [
@@ -568,25 +576,25 @@ suite("Error stack filling and oracle error logging", function() {
                     id: 2,
                     unit: "__anonymous_block.PROC1",
                     line: 24,
-                    first_tracked_line: 24
+                    first_tracked_line: null
                 },
                 {
                     id: 3,
                     unit: "__anonymous_block.PROC2",
                     line: 16,
-                    first_tracked_line: 16
+                    first_tracked_line: null
                 },
                 {
                     id: 4,
                     unit: "__anonymous_block",
                     line: 11,
-                    first_tracked_line: 11
+                    first_tracked_line: null
                 },
                 {
                     id: 5,
                     unit: "__anonymous_block",
                     line: 6,
-                    first_tracked_line: 6
+                    first_tracked_line: null
                 }
             ],
             p_values: [
@@ -663,25 +671,25 @@ suite("Error stack filling and oracle error logging", function() {
                     id: 2,
                     unit: "__anonymous_block.PROC1",
                     line: 29,
-                    first_tracked_line: 29
+                    first_tracked_line: null
                 },
                 {
                     id: 3,
                     unit: "__anonymous_block.PROC2",
                     line: 21,
-                    first_tracked_line: 21
+                    first_tracked_line: null
                 },
                 {
                     id: 4,
                     unit: "__anonymous_block",
                     line: 16,
-                    first_tracked_line: 16
+                    first_tracked_line: null
                 },
                 {
                     id: 5,
                     unit: "__anonymous_block",
                     line: 11,
-                    first_tracked_line: 11
+                    first_tracked_line: null
                 }
             ],
             p_values: [

@@ -154,12 +154,9 @@ CREATE OR REPLACE PACKAGE log$ IS
     /* Call stack management */ 
      
     PROCEDURE fill_call_stack (
-        p_reset_top IN BOOLEANN := TRUE,
-        p_service_depth IN NATURALN := 0
-    );
-    
-    PROCEDURE fill_call_stack (
-        p_service_depth IN NATURALN
+        p_service_depth IN NATURALN,
+        p_reset_top IN BOOLEANN,
+        p_track_top IN BOOLEANN
     );
     
     PROCEDURE call (
@@ -169,25 +166,53 @@ CREATE OR REPLACE PACKAGE log$ IS
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN VARCHAR2,
-        p_service_depth IN NATURALN := 0
+        p_service_depth IN NATURALN := 0,
+        p_fill_call_stack IN BOOLEANN := TRUE
+    );
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN VARCHAR2,
+        p_fill_call_stack IN BOOLEANN
     );
     
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN NUMBER,
-        p_service_depth IN NATURALN := 0
+        p_service_depth IN NATURALN := 0,
+        p_fill_call_stack IN BOOLEANN := TRUE
+    );
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN NUMBER,
+        p_fill_call_stack IN BOOLEANN
     );
     
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN BOOLEAN,
-        p_service_depth IN NATURALN := 0
+        p_service_depth IN NATURALN := 0,
+        p_fill_call_stack IN BOOLEANN := TRUE
+    );
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN BOOLEAN,
+        p_fill_call_stack IN BOOLEANN
     );
     
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN DATE,
-        p_service_depth IN NATURALN := 0
+        p_service_depth IN NATURALN := 0,
+        p_fill_call_stack IN BOOLEANN := TRUE
+    );
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN DATE,
+        p_fill_call_stack IN BOOLEANN
     );
     
     FUNCTION backtrace_unit (

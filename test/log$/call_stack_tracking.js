@@ -36,7 +36,7 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
             database.run(`
                 BEGIN
-                    log$.fill_call_stack;                        
+                    log$.fill_call_stack(0, TRUE, TRUE);                        
                 END;
             `);
 
@@ -67,7 +67,7 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc2 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc1 IS
@@ -121,7 +121,7 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc2 IS
                     BEGIN
-                        log$.fill_call_stack(1);
+                        log$.fill_call_stack(1, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc1 IS
@@ -168,7 +168,7 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc2 IS
                     BEGIN
-                        log$.fill_call_stack(10);
+                        log$.fill_call_stack(10, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc1 IS
@@ -203,18 +203,18 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc2 IS
                     BEGIN
-                        log$.fill_call_stack;
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
+                        log$.fill_call_stack(0, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc1 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                         proc2;
                     END;
 
                 BEGIN
-                    log$.fill_call_stack;    
+                    log$.fill_call_stack(0, TRUE, TRUE);    
                     proc1;
                 END;
             `);
@@ -260,18 +260,18 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc2 IS
                     BEGIN
-                        log$.fill_call_stack;
-                        log$.fill_call_stack(FALSE);
+                        log$.fill_call_stack(0, TRUE, TRUE);
+                        log$.fill_call_stack(0, FALSE, TRUE);
                     END;
 
                     PROCEDURE proc1 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                         proc2;
                     END;
 
                 BEGIN
-                    log$.fill_call_stack;    
+                    log$.fill_call_stack(0, TRUE, TRUE);    
                     proc1;
                 END;
             `);
@@ -317,8 +317,8 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc2 IS
                     BEGIN
-                        log$.fill_call_stack;
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
+                        log$.fill_call_stack(0, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc1 IS
@@ -372,8 +372,8 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc2 IS
                     BEGIN
-                        log$.fill_call_stack;
-                        log$.fill_call_stack(FALSE);
+                        log$.fill_call_stack(0, TRUE, TRUE);
+                        log$.fill_call_stack(0, FALSE, TRUE);
                     END;
 
                     PROCEDURE proc1 IS
@@ -427,7 +427,7 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc2 IS
                     BEGIN
-                        log$.fill_call_stack; log$.fill_call_stack(FALSE);
+                        log$.fill_call_stack(0, TRUE, TRUE); log$.fill_call_stack(0, FALSE, TRUE);
                     END;
 
                     PROCEDURE proc1 IS
@@ -481,8 +481,8 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc2 IS
                     BEGIN
-                        log$.fill_call_stack;
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
+                        log$.fill_call_stack(0, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc1 IS
@@ -491,7 +491,7 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
                     END;
 
                 BEGIN
-                    log$.fill_call_stack;
+                    log$.fill_call_stack(0, TRUE, TRUE);
                     proc1;
                 END;
             `);
@@ -537,13 +537,13 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc3 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc2 IS
                     BEGIN
                         proc3;
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc1 IS
@@ -597,13 +597,13 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc3 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc2 IS
                     BEGIN
                         proc3;
-                        log$.fill_call_stack(FALSE);
+                        log$.fill_call_stack(0, FALSE, TRUE);
                     END;
 
                     PROCEDURE proc1 IS
@@ -661,7 +661,7 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc5 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc4 IS
@@ -671,23 +671,23 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc3 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc2 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                         proc3; proc4;
                     END;
 
                     PROCEDURE proc1 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                         proc2;
                     END;
 
                 BEGIN
-                    log$.fill_call_stack;
+                    log$.fill_call_stack(0, TRUE, TRUE);
                     proc1;
                 END;
             `);
@@ -747,7 +747,7 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc5 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc4 IS
@@ -757,23 +757,23 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc3 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc2 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                         proc3; proc4;
                     END;
 
                     PROCEDURE proc1 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                         proc2;
                     END;
 
                 BEGIN
-                    log$.fill_call_stack;
+                    log$.fill_call_stack(0, TRUE, TRUE);
                     proc1;
                 END;
             `);
@@ -833,7 +833,7 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc5 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc4 IS
@@ -843,23 +843,23 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc3 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc2 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                         proc3; proc4;
                     END;
 
                     PROCEDURE proc1 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                         proc2;
                     END;
 
                 BEGIN
-                    log$.fill_call_stack;
+                    log$.fill_call_stack(0, TRUE, TRUE);
                     proc1;
                 END;
             `);
@@ -919,7 +919,7 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc5 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc4 IS
@@ -929,7 +929,7 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc3 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc2 IS
@@ -943,7 +943,7 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
                     END;
 
                 BEGIN
-                    log$.fill_call_stack;
+                    log$.fill_call_stack(0, TRUE, TRUE);
                     proc1;
                 END;
             `);
@@ -1007,7 +1007,7 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc5 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc4 IS
@@ -1017,24 +1017,24 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc3 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc2 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                         proc3; 
                         proc4;
                     END;
 
                     PROCEDURE proc1 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                         proc2;
                     END;
 
                 BEGIN
-                    log$.fill_call_stack;
+                    log$.fill_call_stack(0, TRUE, TRUE);
                     proc1;
                 END;
             `);
@@ -1094,7 +1094,7 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc5 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc4 IS
@@ -1104,7 +1104,7 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
 
                     PROCEDURE proc3 IS
                     BEGIN
-                        log$.fill_call_stack;
+                        log$.fill_call_stack(0, TRUE, TRUE);
                     END;
 
                     PROCEDURE proc2 IS
@@ -1119,7 +1119,7 @@ suite("Call stack tracking using FILL_CALL_STACK", function() {
                     END;
 
                 BEGIN
-                    log$.fill_call_stack;
+                    log$.fill_call_stack(0, TRUE, TRUE);
                     proc1;
                 END;
             `);
