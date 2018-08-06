@@ -70,18 +70,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
 
     PROCEDURE init IS
     BEGIN
-    
         reset;
-        
-        BEGIN
-        
-            EXECUTE IMMEDIATE 'BEGIN log$init; END;';
-        
-        EXCEPTION
-            WHEN OTHERS THEN
-                NULL;
-        END;
-    
+        log$init;
     END;
     
     /* Resolver and handler management */

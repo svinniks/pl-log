@@ -87,6 +87,10 @@ CREATE OR REPLACE PACKAGE error$ IS
         
     PROCEDURE raise (
         p_service_depth IN NATURALN := 0
+    );
+    
+    PROCEDURE handle (
+        p_service_depth IN NATURALN := 0
     );    
         
     FUNCTION handled

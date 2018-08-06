@@ -179,6 +179,17 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         END IF;
     
     END;    
+
+    PROCEDURE handle (
+        p_service_depth IN NATURALN := 0
+    ) IS
+    BEGIN
+        
+        IF NOT handled THEN
+            log$.oracle_error(v_oracle_error_level, p_service_depth + 1);
+        END IF;
+    
+    END;
         
     FUNCTION handled
     RETURN BOOLEAN IS

@@ -66,6 +66,7 @@ CREATE OR REPLACE PACKAGE BODY dbms_output_handler IS
                     WHEN log$.c_INFO THEN 'INFO'
                     WHEN log$.c_WARNING THEN 'WARNING'
                     WHEN log$.c_ERROR THEN 'ERROR'
+                    WHEN log$.c_FATAL THEN 'FATAL'
                     ELSE TO_CHAR(p_level)
                 END,
                 7
