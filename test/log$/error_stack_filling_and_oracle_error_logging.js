@@ -91,7 +91,7 @@ suite("Error stack filling and oracle error logging", function() {
                 ';
 
                 EXECUTE IMMEDIATE '
-                    CREATE OR REPLACE TYPE "${handlerTypeName}" UNDER t_formatted_message_handler (
+                    CREATE OR REPLACE TYPE "${handlerTypeName}" UNDER t_log_message_handler (
 
                         log_level NUMBER,
 
@@ -720,13 +720,13 @@ suite("Error stack filling and oracle error logging", function() {
 
         database.run(`
             BEGIN
-                log$.add_handler("${handlerTypeName}"(NULL, 0));    
+                log$.add_message_handler("${handlerTypeName}"(NULL, 0));    
             END;
         `);
 
         database.run(`
             BEGIN
-                log$.set_default_formatter(t_default_message_formatter(':'));
+                log$.set_default_message_formatter(t_default_message_formatter(':'));
             END;
         `);
 
@@ -760,17 +760,11 @@ suite("Error stack filling and oracle error logging", function() {
 
         database.run(`
             BEGIN
-                log$.add_handler("${handlerTypeName}"(NULL, NULL));    
+                log$.add_message_handler("${handlerTypeName}"(NULL, NULL));    
+                log$.set_default_message_formatter(t_default_message_formatter(':'));
+                "${handlerPackageName}".reset;
             END;
         `);
-
-        database.run(`
-            BEGIN
-                log$.set_default_formatter(t_default_message_formatter(':'));
-            END;
-        `);
-
-        database.call(`"${handlerPackageName}".reset`);
 
         database.run(`
             BEGIN
@@ -793,7 +787,7 @@ suite("Error stack filling and oracle error logging", function() {
                 {
                     id: 1,
                     unit: "__anonymous_block",
-                    line: 4,
+                    line: 3,
                     first_tracked_line: 3
                 }
             ],
@@ -821,13 +815,13 @@ suite("Error stack filling and oracle error logging", function() {
 
         database.run(`
             BEGIN
-                log$.add_handler("${handlerTypeName}"(NULL, NULL));    
+                log$.add_message_handler("${handlerTypeName}"(NULL, NULL));    
             END;
         `);
 
         database.run(`
             BEGIN
-                log$.set_default_formatter(t_default_message_formatter(':'));
+                log$.set_default_message_formatter(t_default_message_formatter(':'));
             END;
         `);
 
@@ -887,13 +881,13 @@ suite("Error stack filling and oracle error logging", function() {
 
         database.run(`
             BEGIN
-                log$.add_handler("${handlerTypeName}"(NULL, NULL));    
+                log$.add_message_handler("${handlerTypeName}"(NULL, NULL));    
             END;
         `);
 
         database.run(`
             BEGIN
-                log$.set_default_formatter(t_default_message_formatter(':'));
+                log$.set_default_message_formatter(t_default_message_formatter(':'));
             END;
         `);
 
@@ -953,13 +947,13 @@ suite("Error stack filling and oracle error logging", function() {
 
         database.run(`
             BEGIN
-                log$.add_handler("${handlerTypeName}"(NULL, ${INFO}));    
+                log$.add_message_handler("${handlerTypeName}"(NULL, ${INFO}));    
             END;
         `);
 
         database.run(`
             BEGIN
-                log$.set_default_formatter(t_default_message_formatter(':'));
+                log$.set_default_message_formatter(t_default_message_formatter(':'));
             END;
         `);
 
@@ -1019,13 +1013,13 @@ suite("Error stack filling and oracle error logging", function() {
 
         database.run(`
             BEGIN
-                log$.add_handler("${handlerTypeName}"(NULL, ${INFO}));    
+                log$.add_message_handler("${handlerTypeName}"(NULL, ${INFO}));    
             END;
         `);
 
         database.run(`
             BEGIN
-                log$.set_default_formatter(t_default_message_formatter(':'));
+                log$.set_default_message_formatter(t_default_message_formatter(':'));
             END;
         `);
 
@@ -1085,13 +1079,13 @@ suite("Error stack filling and oracle error logging", function() {
 
         database.run(`
             BEGIN
-                log$.add_handler("${handlerTypeName}"(NULL, ${INFO}));    
+                log$.add_message_handler("${handlerTypeName}"(NULL, ${INFO}));    
             END;
         `);
 
         database.run(`
             BEGIN
-                log$.set_default_formatter(t_default_message_formatter(':'));
+                log$.set_default_message_formatter(t_default_message_formatter(':'));
             END;
         `);
 

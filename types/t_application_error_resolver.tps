@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE t_formatted_message_handler UNDER t_log_message_handler (
+CREATE OR REPLACE TYPE t_application_error_resolver IS OBJECT (
 
     /* 
         Copyright 2017 Sergejs Vinniks
@@ -15,11 +15,12 @@ CREATE OR REPLACE TYPE t_formatted_message_handler UNDER t_log_message_handler (
         See the License for the specific language governing permissions and
         limitations under the License.
     */
-          
-    NOT INSTANTIABLE MEMBER PROCEDURE handle_message (
-        p_level IN PLS_INTEGER,
-        p_message IN VARCHAR2
+  
+    dummy CHAR,
+
+    NOT INSTANTIABLE MEMBER FUNCTION resolve_error_message (
+        p_error_code IN NATURALN
     )
+    RETURN VARCHAR2
     
-) 
-NOT INSTANTIABLE NOT FINAL
+) NOT INSTANTIABLE NOT FINAL;

@@ -48,9 +48,9 @@ setup("Setup logger and error handler", function() {
 
     database.run(`
         BEGIN
-            log$.add_resolver(t_default_message_resolver());
-            log$.set_default_formatter(t_default_message_formatter(':'));
-            log$.add_handler(t_default_message_handler());
+            log$.add_message_resolver(t_default_message_resolver());
+            log$.set_default_message_formatter(t_default_message_formatter(':'));
+            log$.add_message_handler(t_default_message_handler());
             log$.set_system_log_level(log$.c_ALL);
         END;
     `);

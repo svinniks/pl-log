@@ -182,7 +182,7 @@ suite("Message resolving and formatting", function() {
             
                 database.run(`
                     BEGIN
-                        log$.add_resolver("${dummyResolverName}"(), p_level => NULL);    
+                        log$.add_message_resolver("${dummyResolverName}"(), p_level => NULL);    
                     END;
                 `);
             
@@ -198,7 +198,7 @@ suite("Message resolving and formatting", function() {
             
                 database.run(`
                     BEGIN
-                        log$.add_resolver("${dummyResolverName}"(), p_level => log$.c_NONE);    
+                        log$.add_message_resolver("${dummyResolverName}"(), p_level => log$.c_NONE);    
                     END;
                 `);
             
@@ -212,7 +212,7 @@ suite("Message resolving and formatting", function() {
 
             database.run(`
                 BEGIN
-                    log$.add_resolver("${dummyResolverName}"());    
+                    log$.add_message_resolver("${dummyResolverName}"());    
                 END;
             `);
 
@@ -232,7 +232,7 @@ suite("Message resolving and formatting", function() {
 
             database.run(`
                 BEGIN
-                    log$.add_resolver("${dummyResolverName}"(), p_level => log$.c_INFO);    
+                    log$.add_message_resolver("${dummyResolverName}"(), p_level => log$.c_INFO);    
                 END;
             `);
 
@@ -252,7 +252,7 @@ suite("Message resolving and formatting", function() {
 
             database.run(`
                 BEGIN
-                    log$.add_resolver("${dummyResolverName}"(), p_level => log$.c_INFO);    
+                    log$.add_message_resolver("${dummyResolverName}"(), p_level => log$.c_INFO);    
                 END;
             `);
 
@@ -272,7 +272,7 @@ suite("Message resolving and formatting", function() {
 
             database.run(`
                 BEGIN
-                    log$.add_resolver(t_default_message_resolver());    
+                    log$.add_message_resolver(t_default_message_resolver());    
                 END;
             `);
 
@@ -292,8 +292,8 @@ suite("Message resolving and formatting", function() {
 
             database.run(`
                 BEGIN
-                    log$.add_resolver(t_default_message_resolver()); 
-                    log$.add_resolver("${dummyResolverName}"());       
+                    log$.add_message_resolver(t_default_message_resolver()); 
+                    log$.add_message_resolver("${dummyResolverName}"());       
                 END;
             `);
 
@@ -313,8 +313,8 @@ suite("Message resolving and formatting", function() {
 
             database.run(`
                 BEGIN
-                    log$.add_resolver("${dummyResolverName}"());       
-                    log$.add_resolver(t_default_message_resolver()); 
+                    log$.add_message_resolver("${dummyResolverName}"());       
+                    log$.add_message_resolver(t_default_message_resolver()); 
                 END;
             `);
 
@@ -353,7 +353,7 @@ suite("Message resolving and formatting", function() {
 
             database.run(`
                 BEGIN
-                    log$.set_default_formatter(
+                    log$.set_default_message_formatter(
                         t_default_message_formatter(':')
                     );    
                 END;
@@ -382,11 +382,11 @@ suite("Message resolving and formatting", function() {
             database.run(`
                 BEGIN
 
-                    log$.add_resolver(
+                    log$.add_message_resolver(
                         t_default_message_resolver()
                     );
 
-                    log$.set_default_formatter(
+                    log$.set_default_message_formatter(
                         t_default_message_formatter(':')
                     );    
                     
@@ -416,12 +416,12 @@ suite("Message resolving and formatting", function() {
             database.run(`
                 BEGIN
 
-                    log$.add_resolver(
+                    log$.add_message_resolver(
                         t_default_message_resolver(),
                         t_default_message_formatter(':')
                     );
 
-                    log$.set_default_formatter(
+                    log$.set_default_message_formatter(
                         t_default_message_formatter('#')
                     );    
                     
@@ -450,7 +450,7 @@ suite("Message resolving and formatting", function() {
 
             database.run(`
                 BEGIN
-                    log$.add_resolver(
+                    log$.add_message_resolver(
                         t_default_message_resolver()
                     );
                 END;

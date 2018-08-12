@@ -16,13 +16,13 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         limitations under the License.
     */
 
-    v_error_code t_error_code := -20000;
+    v_error_code log$.t_application_error_code := -20000;
     v_error_level log$.t_message_log_level := log$.c_ERROR;
     v_oracle_error_level log$.t_message_log_level := log$.c_FATAL;
     
     c_handler_unit CONSTANT VARCHAR2(4000) := $$PLSQL_UNIT_OWNER || '.' || $$PLSQL_UNIT;
-    v_handled_lines t_numbers := t_numbers(82, 158, 163, 168);
-
+    v_handled_lines t_numbers := t_numbers(97, 173, 178, 183);
+    
     PROCEDURE reset IS
     BEGIN
         v_error_code := -20000;
@@ -31,14 +31,14 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
     END;
 
     PROCEDURE set_error_code (
-        p_code IN t_error_code
+        p_code IN log$.t_application_error_code
     ) IS
     BEGIN
         v_error_code := p_code;
     END;
     
     FUNCTION get_error_code
-    RETURN t_error_code IS
+    RETURN log$.t_application_error_code IS
     BEGIN
         RETURN v_error_code;
     END;
@@ -74,14 +74,29 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         p_arguments IN t_varchars := NULL,
         p_service_depth IN NATURALN := 0
     ) IS
+    
+        v_message log$.STRING;
+    
     BEGIN
     
-        log$.message(v_error_level, p_message, p_arguments, p_service_depth + 1);
+        v_message := log$.format_message(v_error_level, p_message, p_arguments);
+        
+        IF log$.handling(v_error_level) THEN
+        
+            log$.fill_call_stack(
+                p_service_depth => p_service_depth + 1,
+                p_reset_top => FALSE,
+                p_track_top => TRUE
+            );
+            
+            log$.handle_message(v_error_level, v_message);
+        
+        END IF;
     
         -- Handled!
         raise_application_error(
             v_error_code, 
-            log$.format_message(v_error_level, p_message, p_arguments)
+            v_message
         );
          
     END;

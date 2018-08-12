@@ -60,7 +60,12 @@ CREATE OR REPLACE PACKAGE log$ IS
             RANGE 0..601;            
 
     c_NONE CONSTANT t_handler_log_level := 601;
-
+    
+    SUBTYPE t_application_error_code IS
+        PLS_INTEGER
+            RANGE -20999..-20000
+            NOT NULL;
+    
     TYPE t_call IS
         RECORD (
             id NUMBER(30),
@@ -96,30 +101,30 @@ CREATE OR REPLACE PACKAGE log$ IS
     
     /* Resolver and handler management */
     
-    PROCEDURE add_resolver (
+    PROCEDURE add_message_resolver (
         p_resolver IN t_log_message_resolver,
         p_level IN t_resolver_log_level := c_ALL,
         p_formatter IN t_log_message_formatter := NULL
     );
     
-    PROCEDURE add_resolver (
+    PROCEDURE add_message_resolver (
         p_resolver IN t_log_message_resolver,
         p_formatter IN t_log_message_formatter
     );
     
-    PROCEDURE set_default_formatter (
+    PROCEDURE set_default_message_formatter (
         p_formatter IN t_log_message_formatter
     );
 
-    PROCEDURE add_handler (
-        p_handler IN t_raw_message_handler
+    PROCEDURE add_message_handler (
+        p_handler IN t_log_message_handler
     );
     
-    PROCEDURE add_handler (
-        p_handler IN t_formatted_message_handler
+    PROCEDURE add_application_error_resovler (
+        p_resolver IN t_application_error_resolver
     );
     
-    /* Log level management */
+    /* System log level management */
     
     FUNCTION get_system_log_level
     RETURN t_handler_log_level;
@@ -133,6 +138,8 @@ CREATE OR REPLACE PACKAGE log$ IS
     );      
     
     PROCEDURE reset_system_log_level;
+    
+    /* Session log level management */
     
     FUNCTION get_session_log_level
     RETURN t_handler_log_level;
@@ -247,6 +254,16 @@ CREATE OR REPLACE PACKAGE log$ IS
     )
     RETURN VARCHAR2;
     
+    FUNCTION handling (
+        p_level IN t_message_log_level
+    )
+    RETURN BOOLEAN;
+    
+    PROCEDURE handle_message (
+        p_level IN t_message_log_level,
+        p_message IN VARCHAR2
+    );
+    
     PROCEDURE message (
         p_level IN t_message_log_level,
         p_message IN VARCHAR2,
@@ -259,6 +276,17 @@ CREATE OR REPLACE PACKAGE log$ IS
         p_message IN VARCHAR2,
         p_service_depth IN NATURALN
     ); 
+    
+    FUNCTION format_application_error (
+        p_level IN t_message_log_level,
+        p_code IN t_application_error_code
+    )
+    RETURN VARCHAR2;
+    
+    PROCEDURE format_oracle_error (
+        p_code OUT PLS_INTEGER,
+        p_message OUT VARCHAR2
+    );
     
     PROCEDURE oracle_error (
         p_level IN t_message_log_level := c_FATAL,

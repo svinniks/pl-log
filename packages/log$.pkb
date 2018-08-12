@@ -33,14 +33,15 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
 
     v_default_message_formatter t_log_message_formatter;
     
-    TYPE t_raw_message_handlers IS 
-        TABLE OF t_raw_message_handler;
-    
-    TYPE t_formatted_message_handlers IS
-        TABLE OF t_formatted_message_handler;
+    TYPE t_application_error_resolvers IS
+        TABLE OF t_application_error_resolver;
         
-    v_raw_message_handlers t_raw_message_handlers;
-    v_formatted_message_handlers t_formatted_message_handlers;
+    v_application_error_resolvers t_application_error_resolvers;
+    
+    TYPE t_log_message_handlers IS
+        TABLE OF t_log_message_handler;
+    
+    v_message_handlers t_log_message_handlers;
     
     v_call_id NUMBER(30);    
     v_call_stack t_call_stack;
@@ -58,8 +59,9 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_message_formatters := t_message_formatters();
         v_default_message_formatter := NULL;
         
-        v_raw_message_handlers := t_raw_message_handlers();
-        v_formatted_message_handlers := t_formatted_message_handlers();
+        v_application_error_resolvers := t_application_error_resolvers();
+        
+        v_message_handlers := t_log_message_handlers();
         
         set_session_log_level(NULL);
         
@@ -76,7 +78,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     /* Resolver and handler management */
     
-    PROCEDURE add_resolver (
+    PROCEDURE add_message_resolver (
         p_resolver IN t_log_message_resolver,
         p_level IN t_resolver_log_level := c_ALL,
         p_formatter IN t_log_message_formatter := NULL
@@ -98,60 +100,58 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
           
     END;
     
-    PROCEDURE add_resolver (
+    PROCEDURE add_message_resolver (
         p_resolver IN t_log_message_resolver,
         p_formatter IN t_log_message_formatter
     ) IS
     BEGIN
-    
-        add_resolver(p_resolver, c_ALL, p_formatter); 
-     
+        add_message_resolver(p_resolver, c_ALL, p_formatter); 
     END;
     
-    PROCEDURE set_default_formatter (
+    PROCEDURE set_default_message_formatter (
         p_formatter IN t_log_message_formatter
     ) IS
     BEGIN
-    
         v_default_message_formatter := p_formatter;
-    
     END;
     
-    PROCEDURE add_handler (
-        p_handler IN t_raw_message_handler
+    PROCEDURE add_message_handler (
+        p_handler IN t_log_message_handler
     ) IS
     BEGIN
     
-        v_raw_message_handlers.EXTEND(1);
-        v_raw_message_handlers(v_raw_message_handlers.COUNT) := p_handler;
+        IF p_handler IS NOT NULL THEN
+            v_message_handlers.EXTEND(1);
+            v_message_handlers(v_message_handlers.COUNT) := p_handler;
+        END IF;
     
     END;
     
-    PROCEDURE add_handler (
-        p_handler IN t_formatted_message_handler
+    PROCEDURE add_application_error_resovler (
+        p_resolver IN t_application_error_resolver
     ) IS
     BEGIN
     
-        v_formatted_message_handlers.EXTEND(1);
-        v_formatted_message_handlers(v_formatted_message_handlers.COUNT) := p_handler;
+        IF p_resolver IS NOT NULL THEN
+            v_application_error_resolvers.EXTEND(1);
+            v_application_error_resolvers(v_application_error_resolvers.COUNT) := p_resolver;
+        END IF;
     
     END;
+    
+    /* System log level management */
     
     FUNCTION get_system_log_level
     RETURN t_handler_log_level IS
     BEGIN
-    
         RETURN SYS_CONTEXT('LOG$LEVELS', 'SYSTEM'); 
-    
     END;
     
     PROCEDURE set_system_log_level (
         p_level IN t_handler_log_level
     ) IS
     BEGIN
-    
         DBMS_SESSION.SET_CONTEXT('LOG$LEVELS', 'SYSTEM', p_level);
-    
     END;       
     
     PROCEDURE init_system_log_level (
@@ -183,9 +183,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     PROCEDURE reset_system_log_level IS
     BEGIN
-    
         DBMS_SESSION.CLEAR_CONTEXT('LOG$LEVELS', NULL, 'SYSTEM');
-    
     END;
         
     FUNCTION get_session_log_level (
@@ -200,6 +198,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         );
     
     END;
+    
+    /* Session log level management */
     
     FUNCTION get_session_log_level
     RETURN t_handler_log_level IS
@@ -892,7 +892,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     )
     RETURN VARCHAR2 IS
     
-        v_message VARCHAR2(32000);
+        v_message STRING;
         v_formatter t_log_message_formatter;
     
     BEGIN
@@ -952,83 +952,77 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
     END;
 
+    FUNCTION handling (
+        p_level IN t_message_log_level
+    )
+    RETURN BOOLEAN IS
+    BEGIN
+    
+        FOR v_i IN 1..v_message_handlers.COUNT LOOP
+        
+            IF p_level >= COALESCE(
+                v_message_handlers(v_i).get_log_level, 
+                get_session_log_level, 
+                get_system_log_level,
+                c_NONE
+            ) THEN
+            
+                RETURN TRUE;
+                
+            END IF;
+        
+        END LOOP;
+    
+        RETURN FALSE;
+    
+    END;
+    
+    PROCEDURE handle_message (
+        p_level IN t_message_log_level,
+        p_message IN VARCHAR2
+    ) IS
+    BEGIN
+    
+        FOR v_i IN 1..v_message_handlers.COUNT LOOP
+        
+            IF p_level >= COALESCE(
+                v_message_handlers(v_i).get_log_level, 
+                get_session_log_level, 
+                get_system_log_level,
+                c_NONE
+            ) THEN
+            
+                v_message_handlers(v_i).handle_message(p_level, p_message);
+                
+            END IF;
+        
+        END LOOP;
+    
+    END;
+
     PROCEDURE message (
         p_level IN t_message_log_level,
         p_message IN VARCHAR2,
         p_arguments IN t_varchars := NULL,
         p_service_depth IN NATURALN := 0
     ) IS
-        
-        v_call_stack_updated BOOLEAN;
-    
-        v_message VARCHAR2(4000);
-        v_message_formatted BOOLEAN;
-        
     BEGIN
     
-        v_call_stack_updated := FALSE;
-    
-        FOR v_i IN 1..v_raw_message_handlers.COUNT LOOP
+        IF handling(p_level) THEN
         
-            IF p_level >= COALESCE(
-                v_raw_message_handlers(v_i).get_log_level, 
-                get_session_log_level, 
-                get_system_log_level,
-                c_NONE
-            ) THEN
+            fill_call_stack(
+                p_service_depth => p_service_depth + 1,
+                p_reset_top => FALSE,
+                p_track_top => TRUE
+            );
             
-                IF NOT v_call_stack_updated THEN
-                
-                    fill_call_stack(
-                        p_service_depth => p_service_depth + 1,
-                        p_reset_top => FALSE,
-                        p_track_top => TRUE
-                    );
-                    
-                    v_call_stack_updated := TRUE;
-                    
-                END IF;
+            handle_message(
+                p_level,
+                format_message(p_level, p_message, p_arguments)
+            );
             
-                v_raw_message_handlers(v_i).handle_message(p_level, p_message, p_arguments);
-                
-            END IF;
-        
-        END LOOP;
-    
-        v_message_formatted := FALSE;
-        
-        FOR v_i IN 1..v_formatted_message_handlers.COUNT LOOP
-        
-            IF p_level >= COALESCE(
-                v_formatted_message_handlers(v_i).get_log_level, 
-                get_session_log_level, 
-                get_system_log_level,
-                c_NONE
-            ) THEN
-            
-                IF NOT v_message_formatted THEN
-                    v_message := format_message(p_level, p_message, p_arguments);
-                    v_message_formatted := TRUE;
-                END IF;
-                
-                IF NOT v_call_stack_updated THEN
-                
-                    fill_call_stack(
-                        p_service_depth => p_service_depth + 1,
-                        p_reset_top => FALSE,
-                        p_track_top => TRUE
-                    );
-                    
-                    v_call_stack_updated := TRUE;
-                    
-                END IF;
-              
-                v_formatted_message_handlers(v_i).handle_message(p_level, v_message);
-                
-            END IF;
-        
-        END LOOP;
-    
+        END IF;
+       
     END;
     
     PROCEDURE message (
@@ -1040,42 +1034,60 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         message(p_level, p_message, NULL, p_service_depth + 1);
     END;
     
-    PROCEDURE oracle_error (
-        p_level IN t_message_log_level := c_FATAL,
-        p_service_depth IN NATURALN := 0
-    ) IS
+    FUNCTION format_application_error (
+        p_level IN t_message_log_level,
+        p_code IN t_application_error_code
+    )
+    RETURN VARCHAR2 IS
     
         v_message STRING;
     
     BEGIN
     
-        IF utl_call_stack.error_depth > 0 THEN
+        FOR v_i IN 1..v_application_error_resolvers.COUNT LOOP
+                
+            v_message := v_application_error_resolvers(v_i).resolve_error_message(p_code);
+            
+            IF v_message IS NOT NULL THEN
+                RETURN format_message(p_level, v_message);
+            END IF;
+                
+        END LOOP;
+        
+        RETURN 'ORA-' || p_code;
+        
+    END;
+    
+    PROCEDURE oracle_error (
+        p_level IN t_message_log_level := c_FATAL,
+        p_service_depth IN NATURALN := 0
+    ) IS
+    
+        v_code PLS_INTEGER;
+        v_message STRING;
+        
+        v_resolved_message STRING;
+    
+    BEGIN
+    
+        IF utl_call_stack.error_depth > 0 AND handling(p_level) THEN 
     
             do_fill_error_stack(p_service_depth + 1);
+        
+            v_code := utl_call_stack.error_number(1);
+            v_message := utl_call_stack.error_msg(1);
             
-            FOR v_i IN 1..v_formatted_message_handlers.COUNT LOOP
+            $IF DBMS_DB_VERSION.VERSION = 12 AND DBMS_DB_VERSION.RELEASE = 1 $THEN
+                v_message := SUBSTR(v_message, 1, LENGTH(v_message) - 1);
+            $END
             
-                IF p_level >= COALESCE(
-                    v_formatted_message_handlers(v_i).get_log_level, 
-                    get_session_log_level, 
-                    get_system_log_level,
-                    c_NONE
-                ) THEN
-                
-                    v_message := utl_call_stack.error_msg(1);
-                
-                    $IF DBMS_DB_VERSION.VERSION = 12 AND DBMS_DB_VERSION.RELEASE = 1 $THEN
-                        v_message := SUBSTR(v_message, 1, LENGTH(v_message) - 1);
-                    $END
-                
-                    v_formatted_message_handlers(v_i).handle_message(
-                        p_level, 
-                        'ORA-' || utl_call_stack.error_number(1) || ': ' || v_message 
-                    );
-                    
-                END IF;
-            
-            END LOOP;
+            IF v_message IS NULL AND v_code BETWEEN 20000 AND 20999 THEN
+                v_message := format_application_error(p_level, v_code);
+            ELSE
+                v_message := 'ORA-' || v_code || ': ' || v_message;
+            END IF;     
+ 
+            handle_message(p_level, v_message);
             
         END IF;
     

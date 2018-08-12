@@ -16,19 +16,14 @@ CREATE OR REPLACE PACKAGE error$ IS
         limitations under the License.
     */
 
-    SUBTYPE t_error_code IS
-        PLS_INTEGER
-            RANGE -20999..-20000
-            NOT NULL;
-
     PROCEDURE reset;
 
     PROCEDURE set_error_code (
-        p_code IN t_error_code
+        p_code IN log$.t_application_error_code
     );
     
     FUNCTION get_error_code
-    RETURN t_error_code;
+    RETURN log$.t_application_error_code;
     
     PROCEDURE set_error_level (
         p_level IN log$.t_message_log_level

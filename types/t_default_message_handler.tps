@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE t_default_message_handler UNDER t_formatted_message_handler(
+CREATE OR REPLACE TYPE t_default_message_handler UNDER t_log_message_handler(
 
     /* 
         Copyright 2017 Sergejs Vinniks

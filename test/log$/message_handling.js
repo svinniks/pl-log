@@ -128,605 +128,7 @@ suite("Message handling", function() {
     
     });
 
-    suite("Raw message handlers", function() {
-    
-        let handlerTypeName = randomString(30);
-        let handlerPackageName = randomString(30);
-
-        setup("Create a dummy raw message handler", function() {
-        
-            database.run(`
-                BEGIN
-
-                    EXECUTE IMMEDIATE '
-                        CREATE OR REPLACE PACKAGE "${handlerPackageName}" IS
-                            
-                            v_messages t_varchars := t_varchars();
-
-                            PROCEDURE reset;
-
-                            PROCEDURE handle_message (
-                                p_level IN log$.t_message_log_level,
-                                p_message IN VARCHAR2,
-                                p_arguments IN t_varchars
-                            );
-
-                            FUNCTION get_messages
-                            RETURN t_varchars;
-
-                        END;
-                    ';
-
-                    EXECUTE IMMEDIATE '
-                        CREATE OR REPLACE PACKAGE BODY "${handlerPackageName}" IS
-
-                            PROCEDURE reset IS
-                            BEGIN
-                                v_messages := t_varchars();
-                            END;
-
-                            PROCEDURE handle_message (
-                                p_level IN log$.t_message_log_level,
-                                p_message IN VARCHAR2,
-                                p_arguments IN t_varchars
-                            ) IS
-                            BEGIN
-
-                                v_messages.EXTEND(1);
-                                v_messages(v_messages.COUNT) := p_level || '': '' || t_default_message_formatter('':'').format_message(
-                                    p_message,
-                                    p_arguments
-                                );
-
-                            END;
-
-                            FUNCTION get_messages
-                            RETURN t_varchars IS
-                            BEGIN
-                                RETURN v_messages;
-                            END;
-
-                        END;
-                    ';
-
-                    EXECUTE IMMEDIATE '
-                        CREATE OR REPLACE TYPE "${handlerTypeName}" UNDER t_raw_message_handler (
-
-                            log_level NUMBER,
-
-                            OVERRIDING MEMBER FUNCTION get_log_level
-                            RETURN PLS_INTEGER,
-                            
-                            OVERRIDING MEMBER PROCEDURE handle_message (
-                                p_level IN PLS_INTEGER,
-                                p_message IN VARCHAR2,
-                                p_arguments IN t_varchars
-                            )
-
-                        );
-                    ';
-
-                    EXECUTE IMMEDIATE '
-                        CREATE OR REPLACE TYPE BODY "${handlerTypeName}" IS
-
-                            OVERRIDING MEMBER FUNCTION get_log_level
-                            RETURN PLS_INTEGER IS
-                            BEGIN
-                                RETURN log_level;
-                            END;
-                            
-                            OVERRIDING MEMBER PROCEDURE handle_message (
-                                p_level IN PLS_INTEGER,
-                                p_message IN VARCHAR2,
-                                p_arguments IN t_varchars
-                            ) IS
-                            BEGIN
-
-                                "${handlerPackageName}".handle_message(p_level, p_message, p_arguments);
-
-                            END;
-                            
-                        END;
-                    ';
-
-                END;
-            `);
-        
-        });
-
-        test("INFO message to one handler with NULL handler, session and system level", function() {
-        
-            database.call("log$.reset");
-            database.call("log$.reset_system_log_level");
-
-            database.run(`
-                BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
-                END;
-            `);
-
-            database.call(`"${handlerPackageName}".reset`);
-
-            database.call("log$.message", {
-                p_level: INFO,
-                p_message: "Hello, :1!",
-                p_arguments: ["World"]
-            });
-
-            let messages = database.call(`"${handlerPackageName}".get_messages`);
-
-            expect(messages).to.eql([]);
-
-            let callStack = getCallStack();
-
-            expect(callStack).to.eql({
-                p_calls: [],
-                p_values: []
-            });
-        
-        });
-
-        test("Check if call stack is updated when none of the registered handlers run", function() {
-        
-            resetPackage();
-
-            database.call("log$.reset");
-            database.call("log$.reset_system_log_level");
-
-            database.run(`
-                BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
-                END;
-            `);
-
-            database.call("log$.message", {
-                p_level: INFO,
-                p_message: "Hello, :1!",
-                p_arguments: ["World"]
-            });
-
-            let callStack = getCallStack();
-
-            expect(callStack).to.eql({
-                p_calls: [],
-                p_values: []
-            });
-        
-        });
-        
-        test("INFO message to one handler with NULL handler and session level, ERROR system level", function() {
-        
-            database.call("log$.reset");
-            database.call("log$.set_system_log_level", {
-                p_level: ERROR
-            });
-
-            database.run(`
-                BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
-                END;
-            `);
-
-            database.call(`"${handlerPackageName}".reset`);
-
-            database.call("log$.message", {
-                p_level: INFO,
-                p_message: "Hello, :1!",
-                p_arguments: ["World"]
-            });
-
-            let messages = database.call(`"${handlerPackageName}".get_messages`);
-
-            expect(messages).to.eql([]);
-        
-        });
-
-        test("INFO message to one handler with NULL handler and session level, INFO system level", function() {
-        
-            database.call("log$.reset");
-            database.call("log$.set_system_log_level", {
-                p_level: INFO
-            });
-
-            database.run(`
-                BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
-                END;
-            `);
-
-            database.call(`"${handlerPackageName}".reset`);
-
-            database.call("log$.message", {
-                p_level: INFO,
-                p_message: "Hello, :1!",
-                p_arguments: ["World"]
-            });
-
-            let messages = database.call(`"${handlerPackageName}".get_messages`);
-
-            expect(messages).to.eql([
-                `${INFO}: Hello, World!`
-            ]);
-        
-        });
-
-        test("INFO message to one handler with NULL handler and session level, INFO system level, MESSAGE overload 2", function() {
-        
-            database.call("log$.reset");
-            database.call("log$.set_system_log_level", {
-                p_level: INFO
-            });
-
-            database.run(`
-                BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
-                END;
-            `);
-
-            database.call(`"${handlerPackageName}".reset`);
-
-            database.run(`
-                BEGIN
-                    log$.message(log$.c_INFO, 'Hello, World!', 0);
-                END;
-            `);
-
-            let messages = database.call(`"${handlerPackageName}".get_messages`);
-
-            expect(messages).to.eql([
-                `${INFO}: Hello, World!`
-            ]);
-        
-        });
-
-        test("Check if call stack is updated when at least one handler is executed", function() {
-        
-            resetPackage();
-
-            database.call("log$.reset");
-            database.call("log$.set_system_log_level", {
-                p_level: ALL
-            });
-
-            database.run(`
-                BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
-                END;
-            `);
-
-            database.run(`
-                BEGIN
-                    log$.message(log$.c_INFO, 'Hello, :1!', t_varchars('World'));
-                END;
-            `);
-            
-            let callStack = getCallStack();
-
-            expect(callStack).to.eql({
-                p_calls: [
-                    {
-                        id: 1,
-                        unit: "__anonymous_block",
-                        line: 3,
-                        first_tracked_line: 3
-                    }
-                ],
-                p_values: [
-                    {}
-                ]
-            });
-        
-        });
-
-        test("Check if call stack is updated when at least one handler is executed, MESSAGE overload 2", function() {
-        
-            resetPackage();
-
-            database.call("log$.reset");
-            database.call("log$.set_system_log_level", {
-                p_level: ALL
-            });
-
-            database.run(`
-                BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
-                END;
-            `);
-
-            database.run(`
-                BEGIN
-                    log$.message(log$.c_INFO, 'Hello, World!', 0);
-                END;
-            `);
-            
-            let callStack = getCallStack();
-
-            expect(callStack).to.eql({
-                p_calls: [
-                    {
-                        id: 1,
-                        unit: "__anonymous_block",
-                        line: 3,
-                        first_tracked_line: 3
-                    }
-                ],
-                p_values: [
-                    {}
-                ]
-            });
-        
-        });
-
-        test("Check if MESSAGE resets the top of the call stack", function() {
-        
-            resetPackage();
-
-            database.call("log$.reset");
-            database.call("log$.set_system_log_level", {
-                p_level: ALL
-            });
-
-            database.run(`
-                BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
-                END;
-            `);
-
-            database.run(`
-                BEGIN
-                    log$.message(log$.c_INFO, 'Hello, :1!', t_varchars('World')); log$.message(log$.c_INFO, 'Hello, :1!', t_varchars('World'));
-                END;
-            `);
-            
-            let callStack = getCallStack();
-
-            expect(callStack).to.eql({
-                p_calls: [
-                    {
-                        id: 2,
-                        unit: "__anonymous_block",
-                        line: 3,
-                        first_tracked_line: 3
-                    }
-                ],
-                p_values: [
-                    {}
-                ]
-            });
-        
-        });
-
-        test("Hide one level of the call stack", function() {
-        
-            resetPackage();
-
-            database.call("log$.reset");
-            database.call("log$.set_system_log_level", {
-                p_level: ALL
-            });
-
-            database.run(`
-                BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
-                END;
-            `);
-
-            database.run(`  
-                DECLARE
-                    PROCEDURE proc IS
-                    BEGIN
-                        log$.message(log$.c_INFO, 'Hello, :1!', t_varchars('World'), 1);
-                    END;
-                BEGIN
-                    proc;
-                END;
-            `);
-            
-            let callStack = getCallStack();
-
-            expect(callStack).to.eql({
-                p_calls: [
-                    {
-                        id: 1,
-                        unit: "__anonymous_block",
-                        line: 8,
-                        first_tracked_line: 8
-                    }
-                ],
-                p_values: [
-                    {}
-                ]
-            });
-        
-        });
-
-        test("Hide one level of the call stack, MESSAGE overload 2", function() {
-        
-            resetPackage();
-
-            database.call("log$.reset");
-            database.call("log$.set_system_log_level", {
-                p_level: ALL
-            });
-
-            database.run(`
-                BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
-                END;
-            `);
-
-            database.run(`  
-                DECLARE
-                    PROCEDURE proc IS
-                    BEGIN
-                        log$.message(log$.c_INFO, 'Hello, World!', 1);
-                    END;
-                BEGIN
-                    proc;
-                END;
-            `);
-            
-            let callStack = getCallStack();
-
-            expect(callStack).to.eql({
-                p_calls: [
-                    {
-                        id: 1,
-                        unit: "__anonymous_block",
-                        line: 8,
-                        first_tracked_line: 8
-                    }
-                ],
-                p_values: [
-                    {}
-                ]
-            });
-        
-        });
-
-        test("INFO message to one handler with NULL handler level, ERROR session level, INFO system level", function() {
-        
-            database.call("log$.reset");
-
-            database.call("log$.set_session_log_level", {
-                p_level: ERROR
-            });
-
-            database.call("log$.set_system_log_level", {
-                p_level: INFO
-            });
-
-            database.run(`
-                BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
-                END;
-            `);
-
-            database.call(`"${handlerPackageName}".reset`);
-
-            database.call("log$.message", {
-                p_level: INFO,
-                p_message: "Hello, :1!",
-                p_arguments: ["World"]
-            });
-
-            let messages = database.call(`"${handlerPackageName}".get_messages`);
-
-            expect(messages).to.eql([]);
-        
-        });
-
-        test("INFO message to one handler with ALL handler level, ERROR session level, INFO system level", function() {
-        
-            database.call("log$.reset");
-
-            database.call("log$.set_session_log_level", {
-                p_level: ERROR
-            });
-
-            database.call("log$.set_system_log_level", {
-                p_level: INFO
-            });
-
-            database.run(`
-                BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, 0));    
-                END;
-            `);
-
-            database.call(`"${handlerPackageName}".reset`);
-
-            database.call("log$.message", {
-                p_level: INFO,
-                p_message: "Hello, :1!",
-                p_arguments: ["World"]
-            });
-
-            let messages = database.call(`"${handlerPackageName}".get_messages`);
-
-            expect(messages).to.eql([
-                `${INFO}: Hello, World!`
-            ]);
-        
-        });
-
-        test("INFO message to two handlers, both handle", function() {
-        
-            database.call("log$.reset");
-
-            database.call("log$.set_system_log_level", {
-                p_level: INFO
-            });
-
-            database.run(`
-                BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, 0));    
-                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
-                END;
-            `);
-
-            database.call(`"${handlerPackageName}".reset`);
-
-            database.call("log$.message", {
-                p_level: INFO,
-                p_message: "Hello, :1!",
-                p_arguments: ["World"]
-            });
-
-            let messages = database.call(`"${handlerPackageName}".get_messages`);
-
-            expect(messages).to.eql([
-                `${INFO}: Hello, World!`,
-                `${INFO}: Hello, World!`
-            ]);
-        
-        });
-        
-        test("INFO message to one handler with NULL handler, session and system level", function() {
-        
-            database.call("log$.reset");
-            database.call("log$.reset_system_log_level");
-
-            database.run(`
-                BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
-                END;
-            `);
-
-            database.call(`"${handlerPackageName}".reset`);
-
-            database.call("log$.message", {
-                p_level: INFO,
-                p_message: "Hello, :1!",
-                p_arguments: ["World"]
-            });
-
-            let messages = database.call(`"${handlerPackageName}".get_messages`);
-
-            expect(messages).to.eql([]);
-        
-        });
-
-        teardown("Drop the dummy raw message handler", function() {
-        
-            database.run(`
-                BEGIN
-                    EXECUTE IMMEDIATE '
-                        DROP TYPE "${handlerTypeName}"
-                    ';
-                    EXECUTE IMMEDIATE '
-                        DROP PACKAGE "${handlerPackageName}"
-                    ';
-                END;
-            `);
-
-            database.commit();
-        
-        });
-        
-    });
-
-    suite("Formatted message handlers", function() {
+    suite("Message handlers", function() {
     
         let handlerTypeName = randomString(30);
         let handlerPackageName = randomString(30);
@@ -783,7 +185,7 @@ suite("Message handling", function() {
                     ';
 
                     EXECUTE IMMEDIATE '
-                        CREATE OR REPLACE TYPE "${handlerTypeName}" UNDER t_formatted_message_handler (
+                        CREATE OR REPLACE TYPE "${handlerTypeName}" UNDER t_log_message_handler (
 
                             log_level NUMBER,
 
@@ -832,13 +234,13 @@ suite("Message handling", function() {
 
             database.run(`
                 BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
+                    log$.add_message_handler("${handlerTypeName}"(NULL, NULL));    
                 END;
             `);
 
             database.run(`
                 BEGIN
-                    log$.set_default_formatter(t_default_message_formatter(':'));
+                    log$.set_default_message_formatter(t_default_message_formatter(':'));
                 END;
             `);
 
@@ -865,13 +267,13 @@ suite("Message handling", function() {
 
             database.run(`
                 BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
+                    log$.add_message_handler("${handlerTypeName}"(NULL, NULL));    
                 END;
             `);
 
             database.run(`
                 BEGIN
-                    log$.set_default_formatter(t_default_message_formatter(':'));
+                    log$.set_default_message_formatter(t_default_message_formatter(':'));
                 END;
             `);
 
@@ -898,13 +300,13 @@ suite("Message handling", function() {
 
             database.run(`
                 BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
+                    log$.add_message_handler("${handlerTypeName}"(NULL, NULL));    
                 END;
             `);
 
             database.run(`
                 BEGIN
-                    log$.set_default_formatter(t_default_message_formatter(':'));
+                    log$.set_default_message_formatter(t_default_message_formatter(':'));
                 END;
             `);
 
@@ -935,7 +337,7 @@ suite("Message handling", function() {
 
             database.run(`
                 BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
+                    log$.add_message_handler("${handlerTypeName}"(NULL, NULL));    
                 END;
             `);
 
@@ -977,13 +379,13 @@ suite("Message handling", function() {
 
             database.run(`
                 BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
+                    log$.add_message_handler("${handlerTypeName}"(NULL, NULL));    
                 END;
             `);
 
             database.run(`
                 BEGIN
-                    log$.set_default_formatter(t_default_message_formatter(':'));
+                    log$.set_default_message_formatter(t_default_message_formatter(':'));
                 END;
             `);
 
@@ -1015,13 +417,13 @@ suite("Message handling", function() {
 
             database.run(`
                 BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, 0));    
+                    log$.add_message_handler("${handlerTypeName}"(NULL, 0));    
                 END;
             `);
 
             database.run(`
                 BEGIN
-                    log$.set_default_formatter(t_default_message_formatter(':'));
+                    log$.set_default_message_formatter(t_default_message_formatter(':'));
                 END;
             `);
 
@@ -1051,14 +453,14 @@ suite("Message handling", function() {
 
             database.run(`
                 BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, 0));    
-                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
+                    log$.add_message_handler("${handlerTypeName}"(NULL, 0));    
+                    log$.add_message_handler("${handlerTypeName}"(NULL, NULL));    
                 END;
             `);
 
             database.run(`
                 BEGIN
-                    log$.set_default_formatter(t_default_message_formatter(':'));
+                    log$.set_default_message_formatter(t_default_message_formatter(':'));
                 END;
             `);
 
@@ -1103,7 +505,7 @@ suite("Message handling", function() {
         let handlerTypeName = randomString(30);
         let handlerPackageName = randomString(30);
 
-        setup("Create a dummy raw message handler", function() {
+        setup("Create a dummy message handler", function() {
         
             database.run(`
                 BEGIN
@@ -1117,8 +519,7 @@ suite("Message handling", function() {
 
                             PROCEDURE handle_message (
                                 p_level IN log$.t_message_log_level,
-                                p_message IN VARCHAR2,
-                                p_arguments IN t_varchars
+                                p_message IN VARCHAR2
                             );
 
                             FUNCTION get_messages
@@ -1137,16 +538,12 @@ suite("Message handling", function() {
 
                             PROCEDURE handle_message (
                                 p_level IN log$.t_message_log_level,
-                                p_message IN VARCHAR2,
-                                p_arguments IN t_varchars
+                                p_message IN VARCHAR2
                             ) IS
                             BEGIN
 
                                 v_messages.EXTEND(1);
-                                v_messages(v_messages.COUNT) := p_level || '': '' || t_default_message_formatter('':'').format_message(
-                                    p_message,
-                                    p_arguments
-                                );
+                                v_messages(v_messages.COUNT) := p_level || '': '' || p_message;
 
                             END;
 
@@ -1160,7 +557,7 @@ suite("Message handling", function() {
                     ';
 
                     EXECUTE IMMEDIATE '
-                        CREATE OR REPLACE TYPE "${handlerTypeName}" UNDER t_raw_message_handler (
+                        CREATE OR REPLACE TYPE "${handlerTypeName}" UNDER t_log_message_handler (
 
                             log_level NUMBER,
 
@@ -1169,8 +566,7 @@ suite("Message handling", function() {
                             
                             OVERRIDING MEMBER PROCEDURE handle_message (
                                 p_level IN PLS_INTEGER,
-                                p_message IN VARCHAR2,
-                                p_arguments IN t_varchars
+                                p_message IN VARCHAR2
                             )
 
                         );
@@ -1187,12 +583,11 @@ suite("Message handling", function() {
                             
                             OVERRIDING MEMBER PROCEDURE handle_message (
                                 p_level IN PLS_INTEGER,
-                                p_message IN VARCHAR2,
-                                p_arguments IN t_varchars
+                                p_message IN VARCHAR2
                             ) IS
                             BEGIN
 
-                                "${handlerPackageName}".handle_message(p_level, p_message, p_arguments);
+                                "${handlerPackageName}".handle_message(p_level, p_message);
 
                             END;
                             
@@ -1213,7 +608,8 @@ suite("Message handling", function() {
 
             database.run(`
                 BEGIN
-                    log$.add_handler("${handlerTypeName}"(NULL, NULL));    
+                    log$.add_message_handler("${handlerTypeName}"(NULL, NULL));    
+                    log$.set_default_message_formatter(t_default_message_formatter(':'));
                 END;
             `);
         
