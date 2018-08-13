@@ -103,12 +103,12 @@ suite("Error handler configuration", function() {
     test("Set valid error code", function() {
     
         database.call("error$.set_error_code", {
-            p_code: -20123
+            p_code: 20123
         });
         
         let errorCode = database.call("error$.get_error_code");
 
-        expect(errorCode).to.be(-20123);
+        expect(errorCode).to.be(20123);
     
     });
 
@@ -158,7 +158,7 @@ suite("Error raising and handling", function() {
             BEGIN
                 log$.reset_call_stack;
                 default_message_handler.reset;
-                error$.set_error_code(-20123);
+                error$.set_error_code(20123);
                 error$.set_error_level(550);
             END;
         `);

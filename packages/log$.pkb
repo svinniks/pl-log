@@ -33,10 +33,10 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
 
     v_default_message_formatter t_log_message_formatter;
     
-    TYPE t_application_error_resolvers IS
-        TABLE OF t_application_error_resolver;
+    TYPE t_oracle_error_mappers IS
+        TABLE OF t_oracle_error_mapper;
         
-    v_application_error_resolvers t_application_error_resolvers;
+    v_oracle_error_mappers t_oracle_error_mappers;
     
     TYPE t_log_message_handlers IS
         TABLE OF t_log_message_handler;
@@ -59,7 +59,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_message_formatters := t_message_formatters();
         v_default_message_formatter := NULL;
         
-        v_application_error_resolvers := t_application_error_resolvers();
+        v_oracle_error_mappers := t_oracle_error_mappers();
         
         v_message_handlers := t_log_message_handlers();
         
@@ -127,14 +127,14 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
-    PROCEDURE add_application_error_resovler (
-        p_resolver IN t_application_error_resolver
+    PROCEDURE add_oracle_error_mapper (
+        p_mapper IN t_oracle_error_mapper
     ) IS
     BEGIN
     
-        IF p_resolver IS NOT NULL THEN
-            v_application_error_resolvers.EXTEND(1);
-            v_application_error_resolvers(v_application_error_resolvers.COUNT) := p_resolver;
+        IF p_mapper IS NOT NULL THEN
+            v_oracle_error_mappers.EXTEND(1);
+            v_oracle_error_mappers(v_oracle_error_mappers.COUNT) := p_mapper;
         END IF;
     
     END;
@@ -1034,28 +1034,23 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         message(p_level, p_message, NULL, p_service_depth + 1);
     END;
     
-    FUNCTION format_application_error (
-        p_level IN t_message_log_level,
-        p_code IN t_application_error_code
-    )
-    RETURN VARCHAR2 IS
-    
-        v_message STRING;
-    
+    PROCEDURE map_oracle_error (
+        p_source_code IN NATURALN,
+        p_target_code OUT t_target_error_code,
+        p_target_message OUT VARCHAR2
+    ) IS
     BEGIN
     
-        FOR v_i IN 1..v_application_error_resolvers.COUNT LOOP
-                
-            v_message := v_application_error_resolvers(v_i).resolve_error_message(p_code);
+        FOR v_i IN 1..v_oracle_error_mappers.COUNT LOOP
+        
+            v_oracle_error_mappers(v_i).map_oracle_error(p_source_code, p_target_code, p_target_message);
             
-            IF v_message IS NOT NULL THEN
-                RETURN format_message(p_level, v_message);
+            IF p_target_code IS NOT NULL THEN
+                RETURN;
             END IF;
-                
+        
         END LOOP;
-        
-        RETURN 'ORA-' || p_code;
-        
+    
     END;
     
     PROCEDURE oracle_error (
@@ -1066,8 +1061,9 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_code PLS_INTEGER;
         v_message STRING;
         
-        v_resolved_message STRING;
-    
+        v_mapped_code PLS_INTEGER;
+        v_mapped_message STRING;
+        
     BEGIN
     
         IF utl_call_stack.error_depth > 0 AND handling(p_level) THEN 
@@ -1081,8 +1077,10 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
                 v_message := SUBSTR(v_message, 1, LENGTH(v_message) - 1);
             $END
             
-            IF v_message IS NULL AND v_code BETWEEN 20000 AND 20999 THEN
-                v_message := format_application_error(p_level, v_code);
+            map_oracle_error(v_code, v_mapped_code, v_mapped_message);
+            
+            IF v_mapped_code IS NOT NULL THEN
+                v_message := format_message(p_level, v_mapped_message, t_varchars(v_code, v_message)); 
             ELSE
                 v_message := 'ORA-' || v_code || ': ' || v_message;
             END IF;     

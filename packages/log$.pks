@@ -61,9 +61,12 @@ CREATE OR REPLACE PACKAGE log$ IS
 
     c_NONE CONSTANT t_handler_log_level := 601;
     
-    SUBTYPE t_application_error_code IS
+    SUBTYPE t_target_error_code IS
         PLS_INTEGER
-            RANGE -20999..-20000
+            RANGE 20000..20999;
+    
+    SUBTYPE t_application_error_code IS
+        t_target_error_code
             NOT NULL;
     
     TYPE t_call IS
@@ -120,8 +123,8 @@ CREATE OR REPLACE PACKAGE log$ IS
         p_handler IN t_log_message_handler
     );
     
-    PROCEDURE add_application_error_resovler (
-        p_resolver IN t_application_error_resolver
+    PROCEDURE add_oracle_error_mapper (
+        p_mapper IN t_oracle_error_mapper
     );
     
     /* System log level management */
@@ -277,15 +280,10 @@ CREATE OR REPLACE PACKAGE log$ IS
         p_service_depth IN NATURALN
     ); 
     
-    FUNCTION format_application_error (
-        p_level IN t_message_log_level,
-        p_code IN t_application_error_code
-    )
-    RETURN VARCHAR2;
-    
-    PROCEDURE format_oracle_error (
-        p_code OUT PLS_INTEGER,
-        p_message OUT VARCHAR2
+    PROCEDURE map_oracle_error (
+        p_source_code IN NATURALN,
+        p_target_code OUT t_target_error_code,
+        p_target_message OUT VARCHAR2
     );
     
     PROCEDURE oracle_error (

@@ -16,16 +16,16 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         limitations under the License.
     */
 
-    v_error_code log$.t_application_error_code := -20000;
+    v_error_code log$.t_application_error_code := 20000;
     v_error_level log$.t_message_log_level := log$.c_ERROR;
     v_oracle_error_level log$.t_message_log_level := log$.c_FATAL;
     
     c_handler_unit CONSTANT VARCHAR2(4000) := $$PLSQL_UNIT_OWNER || '.' || $$PLSQL_UNIT;
-    v_handled_lines t_numbers := t_numbers(97, 173, 178, 183);
+    v_handled_lines t_numbers := t_numbers(97, 201, 206, 211);
     
     PROCEDURE reset IS
     BEGIN
-        v_error_code := -20000;
+        v_error_code := 20000;
         v_error_level := log$.c_ERROR;
         v_oracle_error_level := log$.c_FATAL;
     END;
@@ -95,7 +95,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
     
         -- Handled!
         raise_application_error(
-            v_error_code, 
+            -v_error_code, 
             v_message
         );
          
@@ -155,24 +155,52 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         p_service_depth IN NATURALN := 0
     ) IS
     
-        v_error_number NUMBER;
+        v_code PLS_INTEGER;
+        v_message log$.STRING;
+        
+        v_mapped_code PLS_INTEGER;
+        v_mapped_message log$.STRING;
     
     BEGIN
     
         IF utl_call_stack.error_depth > 0 THEN
         
+            v_code := utl_call_stack.error_number(1);
+            v_message := utl_call_stack.error_msg(1);
+                
+            $IF DBMS_DB_VERSION.VERSION = 12 AND DBMS_DB_VERSION.RELEASE = 1 $THEN
+                v_message := SUBSTR(v_message, 1, LENGTH(v_message) - 1);
+            $END
+        
             IF NOT handled THEN
-                log$.oracle_error(v_oracle_error_level, p_service_depth + 1);
+                
+                IF log$.handling(v_oracle_error_level) THEN
+                    log$.fill_error_stack(p_service_depth + 1);
+                END IF;
+                
+                log$.map_oracle_error(v_code, v_mapped_code, v_mapped_message);
+            
+                IF v_mapped_code IS NOT NULL THEN
+                
+                    v_message := log$.format_message(v_oracle_error_level, v_mapped_message, t_varchars(v_code, v_message));
+                    log$.handle_message(v_oracle_error_level, v_message);
+                     
+                    v_code := v_mapped_code;
+                    
+                ELSE
+                
+                    log$.handle_message(v_oracle_error_level, 'ORA-' || v_code || ': ' || v_message);
+                    
+                END IF;     
+            
             END IF;
             
-            v_error_number := utl_call_stack.error_number(1);
-        
-            IF v_error_number BETWEEN 20000 AND 20999 THEN
+            IF v_code BETWEEN 20000 AND 20999 THEN
         
                 -- Handled!
-                raise_application_error(-v_error_number, utl_call_stack.error_msg(1), TRUE);
+                raise_application_error(-v_code, v_message, TRUE);
             
-            ELSIF v_error_number = 1403 THEN
+            ELSIF v_code = 1403 THEN
                 
                 -- Handled!
                 RAISE NO_DATA_FOUND;
@@ -183,7 +211,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
                 EXECUTE IMMEDIATE '
                     DECLARE
                         e EXCEPTION;
-                        PRAGMA EXCEPTION_INIT(e, -' || v_error_number || ');
+                        PRAGMA EXCEPTION_INIT(e, -' || v_code || ');
                     BEGIN
                         RAISE e;
                     END;

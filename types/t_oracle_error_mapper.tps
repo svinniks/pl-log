@@ -1,4 +1,4 @@
-CREATE OR REPLACE TYPE t_application_error_resolver IS OBJECT (
+CREATE OR REPLACE TYPE t_oracle_error_mapper IS OBJECT (
 
     /* 
         Copyright 2017 Sergejs Vinniks
@@ -18,9 +18,10 @@ CREATE OR REPLACE TYPE t_application_error_resolver IS OBJECT (
   
     dummy CHAR,
 
-    NOT INSTANTIABLE MEMBER FUNCTION resolve_error_message (
-        p_error_code IN NATURALN
+    NOT INSTANTIABLE MEMBER PROCEDURE map_oracle_error (
+        p_source_code IN NATURALN,
+        p_target_code OUT NATURAL,
+        p_target_message OUT VARCHAR2
     )
-    RETURN VARCHAR2
     
 ) NOT INSTANTIABLE NOT FINAL;
