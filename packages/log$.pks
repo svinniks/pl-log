@@ -16,6 +16,8 @@ CREATE OR REPLACE PACKAGE log$ IS
         limitations under the License.
     */
     
+    PRAGMA RESTRICT_REFERENCES(DEFAULT, RNDS, WNDS, RNPS, WNPS, TRUST);
+    
     SUBTYPE BOOLEANN IS 
         BOOLEAN 
             NOT NULL;

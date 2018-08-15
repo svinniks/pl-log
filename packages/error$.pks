@@ -16,6 +16,8 @@ CREATE OR REPLACE PACKAGE error$ IS
         limitations under the License.
     */
 
+    PRAGMA RESTRICT_REFERENCES(DEFAULT, RNDS, WNDS, RNPS, WNPS, TRUST);
+
     PROCEDURE reset;
 
     PROCEDURE set_error_code (
