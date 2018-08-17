@@ -243,9 +243,13 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
             RETURN FALSE;
             
         ELSE
- 
-            FOR v_i IN 1..LEAST(utl_call_stack.backtrace_depth, 2) LOOP
-       
+    
+            $IF DBMS_DB_VERSION.VERSION = 12 AND DBMS_DB_VERSION.RELEASE = 1 $THEN
+                FOR v_i IN REVERSE utl_call_stack.backtrace_depth - LEAST(utl_call_stack.backtrace_depth, 2) + 1..utl_call_stack.backtrace_depth LOOP
+            $ELSE
+                FOR v_i IN 1..LEAST(utl_call_stack.backtrace_depth, 2) LOOP
+            $END 
+
                 IF log$.backtrace_unit(v_i) = c_handler_unit 
                    AND utl_call_stack.backtrace_line(v_i) MEMBER OF v_handled_lines 
                 THEN
