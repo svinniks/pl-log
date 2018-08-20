@@ -19,7 +19,8 @@ CREATE OR REPLACE TYPE t_log_message_resolver IS OBJECT (
     dummy CHAR,
 
     NOT INSTANTIABLE MEMBER FUNCTION resolve_message (
-        p_message IN VARCHAR2
+        p_message IN VARCHAR2,
+        p_language IN VARCHAR2 := NULL
     )
     RETURN VARCHAR2
     

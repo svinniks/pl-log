@@ -720,7 +720,7 @@ suite("Error reraising", function() {
         expect(tail).to.eql([
             {
                 log_level: FATAL,
-                message: "ORA-1403: no data found"
+                message: "ORA-01403: no data found"
             }
         ]);
     
@@ -773,7 +773,7 @@ suite("Error reraising", function() {
         expect(tail).to.eql([
             {
                 log_level: FATAL,
-                message: "ORA-1422: exact fetch returns more than requested number of rows"
+                message: "ORA-01422: exact fetch returns more than requested number of rows"
             }
         ]);
     
@@ -828,7 +828,7 @@ suite("Error reraising", function() {
         expect(tail).to.eql([
             {
                 log_level: FATAL,
-                message: "ORA-1422: exact fetch returns more than requested number of rows"
+                message: "ORA-01422: exact fetch returns more than requested number of rows"
             }
         ]);
     

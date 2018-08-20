@@ -41,6 +41,13 @@ CREATE OR REPLACE PACKAGE error$ IS
     FUNCTION get_oracle_error_level
     RETURN log$.t_message_log_level;
 
+    PROCEDURE set_display_language (
+        p_language IN VARCHAR2
+    );
+    
+    FUNCTION get_display_language
+    RETURN VARCHAR2;
+
     PROCEDURE raise (
         p_message IN VARCHAR2,
         p_arguments IN t_varchars := NULL,

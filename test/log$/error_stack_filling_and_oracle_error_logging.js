@@ -839,7 +839,7 @@ suite("Error stack filling and oracle error logging", function() {
 
         let messages = database.call(`"${handlerPackageName}".get_messages`);
 
-        expect(messages).to.eql([`${FATAL}: ORA-1403: no data found`]);
+        expect(messages).to.eql([`${FATAL}: ORA-01403: no data found`]);
 
         let callStack = getCallStack();
     
@@ -905,7 +905,7 @@ suite("Error stack filling and oracle error logging", function() {
 
         let messages = database.call(`"${handlerPackageName}".get_messages`);
 
-        expect(messages).to.eql([`${FATAL}: ORA-1403: no data found`]);
+        expect(messages).to.eql([`${FATAL}: ORA-01403: no data found`]);
 
         let callStack = getCallStack();
     
@@ -971,7 +971,7 @@ suite("Error stack filling and oracle error logging", function() {
 
         let messages = database.call(`"${handlerPackageName}".get_messages`);
 
-        expect(messages).to.eql([`${FATAL}: ORA-1403: no data found`]);
+        expect(messages).to.eql([`${FATAL}: ORA-01403: no data found`]);
 
         let callStack = getCallStack();
     
@@ -1037,7 +1037,7 @@ suite("Error stack filling and oracle error logging", function() {
 
         let messages = database.call(`"${handlerPackageName}".get_messages`);
 
-        expect(messages).to.eql([`${WARNING}: ORA-1403: no data found`]);
+        expect(messages).to.eql([`${WARNING}: ORA-01403: no data found`]);
 
         let callStack = getCallStack();
     
@@ -1110,7 +1110,7 @@ suite("Error stack filling and oracle error logging", function() {
 
         let messages = database.call(`"${handlerPackageName}".get_messages`);
 
-        expect(messages).to.eql([`${FATAL}: ORA-1403: no data found`]);
+        expect(messages).to.eql([`${FATAL}: ORA-01403: no data found`]);
 
         let callStack = getCallStack();
     

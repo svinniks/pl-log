@@ -24,7 +24,8 @@ CREATE OR REPLACE TYPE BODY t_default_message_resolver IS
     END;
 
     OVERRIDING MEMBER FUNCTION resolve_message (
-        p_message IN VARCHAR2
+        p_message IN VARCHAR2,
+        p_language IN VARCHAR2 := NULL
     )
     RETURN VARCHAR2 IS
     BEGIN

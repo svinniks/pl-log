@@ -20,7 +20,8 @@ CREATE OR REPLACE TYPE t_default_message_resolver UNDER t_log_message_resolver(
     RETURN SELF AS RESULT,
 
     OVERRIDING MEMBER FUNCTION resolve_message (
-        p_message IN VARCHAR2
+        p_message IN VARCHAR2,
+        p_language IN VARCHAR2 := NULL
     ) 
     RETURN VARCHAR2
     

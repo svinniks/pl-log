@@ -21,7 +21,9 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
     v_oracle_error_level log$.t_message_log_level := log$.c_FATAL;
     
     c_handler_unit CONSTANT VARCHAR2(4000) := $$PLSQL_UNIT_OWNER || '.' || $$PLSQL_UNIT;
-    v_handled_lines t_numbers := t_numbers(97, 201, 206, 211);
+    v_handled_lines t_numbers := t_numbers(102, 212, 217, 222);
+    
+    v_display_language log$.STRING;
     
     PROCEDURE reset IS
     BEGIN
@@ -68,35 +70,43 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
     BEGIN
         RETURN v_oracle_error_level;
     END;
-
+    
+    PROCEDURE set_display_language (
+        p_language IN VARCHAR2
+    ) IS
+    BEGIN
+        v_display_language := p_language;
+    END;
+    
+    FUNCTION get_display_language
+    RETURN VARCHAR2 IS
+    BEGIN
+        RETURN v_display_language;
+    END;
+    
     PROCEDURE raise (
         p_message IN VARCHAR2,
         p_arguments IN t_varchars := NULL,
         p_service_depth IN NATURALN := 0
     ) IS
-    
-        v_message log$.STRING;
-    
     BEGIN
     
-        v_message := log$.format_message(v_error_level, p_message, p_arguments);
-        
-        IF log$.handling(v_error_level) THEN
-        
-            log$.fill_call_stack(
-                p_service_depth => p_service_depth + 1,
-                p_reset_top => FALSE,
-                p_track_top => TRUE
-            );
-            
-            log$.handle_message(v_error_level, v_message);
-        
-        END IF;
+        log$.message(
+            v_error_level,
+            p_message,
+            p_arguments,
+            p_service_depth => p_service_depth + 1
+        );
     
         -- Handled!
         raise_application_error(
             -v_error_code, 
-            v_message
+            log$.cache_message(
+                v_error_level,
+                p_message,
+                v_display_language,
+                p_arguments
+            )
         );
          
     END;
@@ -158,7 +168,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         v_code PLS_INTEGER;
         v_message log$.STRING;
         
-        v_mapped_code PLS_INTEGER;
+        v_mapped_code log$.t_target_error_code;
         v_mapped_message log$.STRING;
     
     BEGIN
@@ -174,23 +184,24 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         
             IF NOT handled THEN
                 
-                IF log$.handling(v_oracle_error_level) THEN
-                    log$.fill_error_stack(p_service_depth + 1);
-                END IF;
-                
-                log$.map_oracle_error(v_code, v_mapped_code, v_mapped_message);
+                log$.oracle_error(
+                    v_oracle_error_level,
+                    p_service_depth + 1,
+                    v_mapped_code,
+                    v_mapped_message
+                );
             
                 IF v_mapped_code IS NOT NULL THEN
                 
-                    v_message := log$.format_message(v_oracle_error_level, v_mapped_message, t_varchars(v_code, v_message));
-                    log$.handle_message(v_oracle_error_level, v_message);
-                     
                     v_code := v_mapped_code;
                     
-                ELSE
+                    v_message := log$.format_message(
+                        v_oracle_error_level, 
+                        v_mapped_message, 
+                        v_display_language,
+                        t_varchars(v_code, v_message)
+                    );
                 
-                    log$.handle_message(v_oracle_error_level, 'ORA-' || v_code || ': ' || v_message);
-                    
                 END IF;     
             
             END IF;

@@ -122,8 +122,16 @@ CREATE OR REPLACE PACKAGE log$ IS
     );
 
     PROCEDURE add_message_handler (
-        p_handler IN t_log_message_handler
+        p_handler IN t_log_message_handler,
+        p_language IN VARCHAR2 := NULL
     );
+    
+    PROCEDURE set_default_language (
+        p_language IN VARCHAR2
+    );
+    
+    FUNCTION get_default_language
+    RETURN VARCHAR2;
     
     PROCEDURE add_oracle_error_mapper (
         p_mapper IN t_oracle_error_mapper
@@ -255,19 +263,32 @@ CREATE OR REPLACE PACKAGE log$ IS
     FUNCTION format_message (
         p_level IN t_message_log_level,
         p_message IN VARCHAR2,
+        p_language IN VARCHAR2 := NULL,
         p_arguments IN t_varchars := NULL
     )
     RETURN VARCHAR2;
+    
+    FUNCTION format_message (
+        p_level IN t_message_log_level,
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars
+    )
+    RETURN VARCHAR2;
+    
+    FUNCTION cache_message (
+        p_level IN t_message_log_level,
+        p_message IN VARCHAR2,
+        p_language IN VARCHAR2,
+        p_arguments IN t_varchars
+    )
+    RETURN VARCHAR2;
+    
+    PROCEDURE reset_message_cache;
     
     FUNCTION handling (
         p_level IN t_message_log_level
     )
     RETURN BOOLEAN;
-    
-    PROCEDURE handle_message (
-        p_level IN t_message_log_level,
-        p_message IN VARCHAR2
-    );
     
     PROCEDURE message (
         p_level IN t_message_log_level,
@@ -286,6 +307,13 @@ CREATE OR REPLACE PACKAGE log$ IS
         p_source_code IN NATURALN,
         p_target_code OUT t_target_error_code,
         p_target_message OUT VARCHAR2
+    );
+    
+    PROCEDURE oracle_error (
+        p_level IN t_message_log_level,
+        p_service_depth IN NATURALN,
+        p_mapped_code OUT t_target_error_code,
+        p_mapped_message OUT VARCHAR2
     );
     
     PROCEDURE oracle_error (

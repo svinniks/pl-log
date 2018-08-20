@@ -14,8 +14,7 @@ suite("Message resolving and formatting", function() {
         
             let message = database.call("log$.format_message", {
                 p_level: null,
-                p_message: null,
-                p_arguments: null
+                p_message: null
             });
         
         }).to.throw(/ORA-06502/);
@@ -28,8 +27,7 @@ suite("Message resolving and formatting", function() {
         
             let message = database.call("log$.format_message", {
                 p_level: ALL,
-                p_message: null,
-                p_arguments: null
+                p_message: null
             });
         
         }).to.throw(/ORA-06502/);
@@ -42,8 +40,7 @@ suite("Message resolving and formatting", function() {
         
             let message = database.call("log$.format_message", {
                 p_level: NONE,
-                p_message: null,
-                p_arguments: null
+                p_message: null
             });
         
         }).to.throw(/ORA-06502/);
@@ -58,8 +55,7 @@ suite("Message resolving and formatting", function() {
 
             let message = database.call("log$.format_message", {
                 p_level: INFO,
-                p_message: null,
-                p_arguments: null
+                p_message: null
             });
 
             expect(message).to.be(null);
@@ -73,6 +69,7 @@ suite("Message resolving and formatting", function() {
             let message = database.call("log$.format_message", {
                 p_level: INFO,
                 p_message: null,
+                p_language: null,
                 p_arguments: []
             });
 
@@ -87,6 +84,7 @@ suite("Message resolving and formatting", function() {
             let message = database.call("log$.format_message", {
                 p_level: INFO,
                 p_message: null,
+                p_language: null,
                 p_arguments: ["hello"]
             });
 
@@ -101,6 +99,7 @@ suite("Message resolving and formatting", function() {
             let message = database.call("log$.format_message", {
                 p_level: INFO,
                 p_message: null,
+                p_language: null,
                 p_arguments: ["hello", "world", "!"]
             });
 
@@ -115,6 +114,7 @@ suite("Message resolving and formatting", function() {
             let message = database.call("log$.format_message", {
                 p_level: INFO,
                 p_message: "Hello, World!",
+                p_language: null,
                 p_arguments: ["hello", "world", "!"]
             });
 
@@ -142,7 +142,8 @@ suite("Message resolving and formatting", function() {
                             RETURN self AS RESULT,
 
                             OVERRIDING MEMBER FUNCTION resolve_message (
-                                p_message IN VARCHAR2
+                                p_message IN VARCHAR2,
+                                p_language IN VARCHAR2 := NULL
                             )
                             RETURN VARCHAR2
 
@@ -159,7 +160,8 @@ suite("Message resolving and formatting", function() {
                             END;
 
                             OVERRIDING MEMBER FUNCTION resolve_message (
-                                p_message IN VARCHAR2
+                                p_message IN VARCHAR2,
+                                p_language IN VARCHAR2 := NULL
                             )
                             RETURN VARCHAR2 IS
                             BEGIN
@@ -218,8 +220,7 @@ suite("Message resolving and formatting", function() {
 
             let message = database.call("log$.format_message", {
                 p_level: INFO,
-                p_message: "hello, world!",
-                p_arguments: null
+                p_message: "hello, world!"
             });
 
             expect(message).to.be("HELLO, WORLD!");
@@ -238,8 +239,7 @@ suite("Message resolving and formatting", function() {
 
             let message = database.call("log$.format_message", {
                 p_level: DEBUG,
-                p_message: "hello, world!",
-                p_arguments: null
+                p_message: "hello, world!"
             });
 
             expect(message).to.be("hello, world!");
@@ -258,8 +258,7 @@ suite("Message resolving and formatting", function() {
 
             let message = database.call("log$.format_message", {
                 p_level: ERROR,
-                p_message: "hello, world!",
-                p_arguments: null
+                p_message: "hello, world!"
             });
 
             expect(message).to.be("HELLO, WORLD!");
@@ -278,8 +277,7 @@ suite("Message resolving and formatting", function() {
 
             let message = database.call("log$.format_message", {
                 p_level: ERROR,
-                p_message: "hello, world!",
-                p_arguments: null
+                p_message: "hello, world!"
             });
 
             expect(message).to.be("hello, world!");
@@ -299,8 +297,7 @@ suite("Message resolving and formatting", function() {
 
             let message = database.call("log$.format_message", {
                 p_level: ERROR,
-                p_message: "hello, world!",
-                p_arguments: null
+                p_message: "hello, world!"
             });
 
             expect(message).to.be("HELLO, WORLD!");
@@ -320,8 +317,7 @@ suite("Message resolving and formatting", function() {
 
             let message = database.call("log$.format_message", {
                 p_level: ERROR,
-                p_message: "hello, world!",
-                p_arguments: null
+                p_message: "hello, world!"
             });
 
             expect(message).to.be("HELLO, WORLD!");
@@ -362,6 +358,7 @@ suite("Message resolving and formatting", function() {
             let message = database.call("log$.format_message", {
                 p_level: INFO,
                 p_message: "Hello, :1!",
+                p_language: null, 
                 p_arguments: ["World"]
             });
 
@@ -396,6 +393,7 @@ suite("Message resolving and formatting", function() {
             let message = database.call("log$.format_message", {
                 p_level: INFO,
                 p_message: "MSG-00001",
+                p_language: null, 
                 p_arguments: ["World"]
             });
 
@@ -431,6 +429,7 @@ suite("Message resolving and formatting", function() {
             let message = database.call("log$.format_message", {
                 p_level: INFO,
                 p_message: "MSG-00001",
+                p_language: null, 
                 p_arguments: ["World"]
             });
 
@@ -459,6 +458,7 @@ suite("Message resolving and formatting", function() {
             let message = database.call("log$.format_message", {
                 p_level: INFO,
                 p_message: "MSG-00001",
+                p_language: null, 
                 p_arguments: ["World"]
             });
 

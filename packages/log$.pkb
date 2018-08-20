@@ -42,6 +42,16 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         TABLE OF t_log_message_handler;
     
     v_message_handlers t_log_message_handlers;
+    v_handler_languages t_varchars;
+    
+    v_default_language STRING;
+    
+    TYPE t_message_cache IS
+        TABLE OF STRING
+        INDEX BY STRING;
+        
+    v_message_cache t_message_cache;
+    v_null_language_message STRING;
     
     v_call_id NUMBER(30);    
     v_call_stack t_call_stack;
@@ -62,6 +72,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_oracle_error_mappers := t_oracle_error_mappers();
         
         v_message_handlers := t_log_message_handlers();
+        v_handler_languages := t_varchars();
         
         set_session_log_level(NULL);
         
@@ -72,8 +83,16 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
 
     PROCEDURE init IS
     BEGIN
+    
         reset;
-        log$init;
+        
+        BEGIN
+            EXECUTE IMMEDIATE 'BEGIN log$init; END;';
+        EXCEPTION
+            WHEN OTHERS THEN
+                NULL;
+        END;
+        
     END;
     
     /* Resolver and handler management */
@@ -116,15 +135,34 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     END;
     
     PROCEDURE add_message_handler (
-        p_handler IN t_log_message_handler
+        p_handler IN t_log_message_handler,
+        p_language IN VARCHAR2 := NULL
     ) IS
     BEGIN
     
         IF p_handler IS NOT NULL THEN
+        
             v_message_handlers.EXTEND(1);
             v_message_handlers(v_message_handlers.COUNT) := p_handler;
+            
+            v_handler_languages.EXTEND(1);
+            v_handler_languages(v_handler_languages.COUNT) := p_language;
+            
         END IF;
     
+    END;
+    
+    PROCEDURE set_default_language (
+        p_language IN VARCHAR2
+    ) IS
+    BEGIN
+        v_default_language := p_language; 
+    END;
+    
+    FUNCTION get_default_language
+    RETURN VARCHAR2 IS
+    BEGIN
+        RETURN v_default_language;
     END;
     
     PROCEDURE add_oracle_error_mapper (
@@ -888,6 +926,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     FUNCTION format_message (
         p_level IN t_message_log_level,
         p_message IN VARCHAR2,
+        p_language IN VARCHAR2 := NULL,
         p_arguments IN t_varchars := NULL
     )
     RETURN VARCHAR2 IS
@@ -901,7 +940,10 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
             IF p_level >= v_resolver_log_levels(v_i) THEN
             
-                v_message := v_message_resolvers(v_i).resolve_message(p_message);
+                v_message := v_message_resolvers(v_i).resolve_message(
+                    p_message, 
+                    NVL(p_language, v_default_language)
+                );
                 
                 IF v_message IS NOT NULL THEN
                     v_formatter := v_message_formatters(v_i);
@@ -951,6 +993,16 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         RETURN v_message;
         
     END;
+    
+    FUNCTION format_message (
+        p_level IN t_message_log_level,
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars
+    )
+    RETURN VARCHAR2 IS
+    BEGIN
+        RETURN format_message(p_level, p_message, NULL, p_arguments);
+    END;
 
     FUNCTION handling (
         p_level IN t_message_log_level
@@ -977,29 +1029,41 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
-    PROCEDURE handle_message (
+    FUNCTION cache_message (
         p_level IN t_message_log_level,
-        p_message IN VARCHAR2
-    ) IS
+        p_message IN VARCHAR2,
+        p_language IN VARCHAR2,
+        p_arguments IN t_varchars
+    )
+    RETURN VARCHAR2 IS
     BEGIN
     
-        FOR v_i IN 1..v_message_handlers.COUNT LOOP
+        IF p_language IS NULL THEN
         
-            IF p_level >= COALESCE(
-                v_message_handlers(v_i).get_log_level, 
-                get_session_log_level, 
-                get_system_log_level,
-                c_NONE
-            ) THEN
-            
-                v_message_handlers(v_i).handle_message(p_level, p_message);
-                
+            IF v_null_language_message IS NULL THEN
+                v_null_language_message := format_message(p_level, p_message, NULL, p_arguments);
             END IF;
+            
+            RETURN v_null_language_message;
         
-        END LOOP;
+        ELSE
+        
+            IF NOT v_message_cache.EXISTS(p_language) THEN
+                v_message_cache(p_language) := format_message(p_level, p_message, p_language, p_arguments);
+            END IF;
+            
+            RETURN v_message_cache(p_language);
+        
+        END IF;
     
     END;
-
+    
+    PROCEDURE reset_message_cache IS
+    BEGIN
+        v_message_cache.DELETE;
+        v_null_language_message := NULL;
+    END;
+    
     PROCEDURE message (
         p_level IN t_message_log_level,
         p_message IN VARCHAR2,
@@ -1016,10 +1080,30 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
                 p_track_top => TRUE
             );
             
-            handle_message(
-                p_level,
-                format_message(p_level, p_message, p_arguments)
-            );
+            reset_message_cache;
+            
+            FOR v_i IN 1..v_message_handlers.COUNT LOOP
+        
+                IF p_level >= COALESCE(
+                    v_message_handlers(v_i).get_log_level, 
+                    get_session_log_level, 
+                    get_system_log_level,
+                    c_NONE
+                ) THEN
+                
+                    v_message_handlers(v_i).handle_message(
+                        p_level, 
+                        cache_message(
+                            p_level, 
+                            p_message, 
+                            NVL(v_handler_languages(v_i), v_default_language),
+                            p_arguments
+                        )
+                    );
+                    
+                END IF;
+            
+            END LOOP;
             
         END IF;
        
@@ -1054,15 +1138,14 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     END;
     
     PROCEDURE oracle_error (
-        p_level IN t_message_log_level := c_FATAL,
-        p_service_depth IN NATURALN := 0
+        p_level IN t_message_log_level,
+        p_service_depth IN NATURALN,
+        p_mapped_code OUT t_target_error_code,
+        p_mapped_message OUT VARCHAR2
     ) IS
     
         v_code PLS_INTEGER;
         v_message STRING;
-        
-        v_mapped_code PLS_INTEGER;
-        v_mapped_message STRING;
         
     BEGIN
     
@@ -1077,18 +1160,52 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
                 v_message := SUBSTR(v_message, 1, LENGTH(v_message) - 1);
             $END
             
-            map_oracle_error(v_code, v_mapped_code, v_mapped_message);
+            map_oracle_error(v_code, p_mapped_code, p_mapped_message);
             
-            IF v_mapped_code IS NOT NULL THEN
-                v_message := format_message(p_level, v_mapped_message, t_varchars(v_code, v_message)); 
+            IF p_mapped_code IS NOT NULL THEN
+            
+                message(
+                    p_level,
+                    p_mapped_message,
+                    t_varchars(v_code, v_message),
+                    p_service_depth + 1
+                );
+             
             ELSE
-                v_message := 'ORA-' || v_code || ': ' || v_message;
+            
+                v_message := 'ORA-' || LPAD(v_code, 5, '0') || ': ' || v_message;
+                
+                FOR v_i IN 1..v_message_handlers.COUNT LOOP
+        
+                    IF p_level >= COALESCE(
+                        v_message_handlers(v_i).get_log_level, 
+                        get_session_log_level, 
+                        get_system_log_level,
+                        c_NONE
+                    ) THEN
+                    
+                        v_message_handlers(v_i).handle_message(p_level, v_message);
+                        
+                    END IF;
+                
+                END LOOP;
+                
             END IF;     
  
-            handle_message(p_level, v_message);
-            
         END IF;
     
+    END;
+    
+    PROCEDURE oracle_error (
+        p_level IN t_message_log_level := c_FATAL,
+        p_service_depth IN NATURALN := 0
+    ) IS
+    
+        v_mapped_code t_target_error_code;
+        v_mapped_message STRING;
+    
+    BEGIN
+        oracle_error(p_level, p_service_depth + 1, v_mapped_code, v_mapped_message);
     END;
     
     /* Shortcut message methods */
