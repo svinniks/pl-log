@@ -19,10 +19,19 @@ DROP PUBLIC SYNONYM error$
 DROP PUBLIC SYNONYM log$
 /
 
-DROP CONTEXT log$context
+DROP CONTEXT log$levels
 /
 
 DROP VIEW log$tail
+/
+
+DROP TYPE t_iso_language_mapper
+/
+
+DROP TABLE iso_language_map
+/
+
+DROP TYPE t_user_language_mapper
 /
 
 DROP TYPE t_dbms_output_handler
@@ -48,20 +57,9 @@ DROP PACKAGE error$
 DROP PACKAGE log$
 /
 
-DROP TYPE t_formatted_message_handler
-/
-DROP TYPE t_raw_message_handler
-/
 DROP TYPE t_log_message_handler
 /
-
 DROP TYPE t_log_message_resolver
 /
-
 DROP TYPE t_log_message_formatter
-/
-
-DROP TYPE t_varchars
-/
-DROP TYPE t_numbers
 /

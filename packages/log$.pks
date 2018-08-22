@@ -97,6 +97,11 @@ CREATE OR REPLACE PACKAGE log$ IS
     
     TYPE t_call_values IS
         TABLE OF t_values;
+     
+    SUBTYPE t_language_format IS
+        PLS_INTEGER
+            RANGE 1..2
+            NOT NULL;
     
     /* Initilalization methods */
     
@@ -135,6 +140,10 @@ CREATE OR REPLACE PACKAGE log$ IS
     
     PROCEDURE add_oracle_error_mapper (
         p_mapper IN t_oracle_error_mapper
+    );
+    
+    PROCEDURE set_user_language_mapper (
+        p_mapper IN t_user_language_mapper
     );
     
     /* System log level management */

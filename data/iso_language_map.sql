@@ -14,6 +14,14 @@
     limitations under the License.
 */
 
-CREATE OR REPLACE CONTEXT log$levels 
-    USING log$ 
-    ACCESSED GLOBALLY
+INSERT INTO iso_language_map VALUES ('ENG', 'ENGLISH')
+/
+INSERT INTO iso_language_map VALUES ('GER', 'GERMAN')
+/
+INSERT INTO iso_language_map VALUES ('FRA', 'FRENCH')
+/
+INSERT INTO iso_language_map VALUES ('ITA', 'ITALIAN')
+/
+
+COMMIT
+/

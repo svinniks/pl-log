@@ -1,5 +1,5 @@
 /* 
-    Copyright 2017 Sergejs Vinniks
+    Copyright 2018 Sergejs Vinniks
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -14,4 +14,8 @@
     limitations under the License.
 */
 
-CREATE OR REPLACE TYPE t_numbers IS TABLE OF NUMBER
+CREATE TABLE iso_language_map (
+    iso_language VARCHAR2(3) PRIMARY KEY,
+    nls_language VARCHAR2(50)
+)
+ORGANIZATION INDEX

@@ -16,22 +16,13 @@
 
 SET DEFINE OFF
 
-@@types/t_numbers.tps
-/
-@@types/t_varchars.tps
-/
-
 @@types/t_log_message_formatter.tps
 /
-
 @@types/t_log_message_resolver.tps
 /
-
 @@types/t_log_message_handler.tps
 /
-@@types/t_raw_message_handler.tps
-/
-@@types/t_formatted_message_handler.tps
+@@types/t_user_language_mapper.tps
 /
 
 @@packages/log$.pks
@@ -77,6 +68,15 @@ SET DEFINE OFF
 @@types/t_default_message_formatter.tps
 /
 @@types/t_default_message_formatter.tpb
+/
+
+@@tables/iso_language_map.tab
+/
+@@data/iso_language_map.sql
+
+@@types/t_iso_language_mapper.tps
+/
+@@types/t_iso_language_mapper.tpb
 /
 
 @@views/log$tail.vw

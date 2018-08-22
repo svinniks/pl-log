@@ -1,5 +1,5 @@
 /* 
-    Copyright 2017 Sergejs Vinniks
+    Copyright 2018 Sergejs Vinniks
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -14,4 +14,13 @@
     limitations under the License.
 */
 
-CREATE OR REPLACE TYPE t_varchars IS TABLE OF VARCHAR2(32000)
+CREATE OR REPLACE TYPE t_user_language_mapper IS OBJECT (
+    
+    dummy CHAR,
+    
+    NOT INSTANTIABLE MEMBER FUNCTION to_nls_language (
+        p_user_language IN VARCHAR2
+    )
+    RETURN VARCHAR2
+    
+) NOT INSTANTIABLE NOT FINAL;
