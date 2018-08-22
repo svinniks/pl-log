@@ -58,6 +58,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     v_call_stack t_call_stack;
     
     v_call_values t_call_values;   
+    
+    v_top_call t_top_call := t_top_call();
 
     /* Initialization methods */
 
@@ -445,8 +447,18 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     PROCEDURE call (
         p_service_depth IN NATURALN := 0
     ) IS
+        c t_call;
     BEGIN
         fill_call_stack(p_service_depth + 1, TRUE, TRUE);
+    END;
+    
+    FUNCTION call (
+        p_service_depth IN NATURALN := 0
+    )
+    RETURN t_top_call IS
+    BEGIN
+        fill_call_stack(p_service_depth + 1, TRUE, TRUE);
+        RETURN v_top_call;   
     END;
     
     PROCEDURE value (

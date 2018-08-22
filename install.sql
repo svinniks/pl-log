@@ -25,7 +25,12 @@ SET DEFINE OFF
 @@types/t_user_language_mapper.tps
 /
 
+@@types/t_top_call.tps
+/
 @@packages/log$.pks
+/
+
+@@types/t_top_call.tpb
 /
 @@packages/log$.pkb
 /

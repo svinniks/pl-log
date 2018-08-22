@@ -57,6 +57,9 @@ DROP PACKAGE error$
 DROP PACKAGE log$
 /
 
+DROP TYPE t_top_call
+/
+
 DROP TYPE t_log_message_handler
 /
 DROP TYPE t_log_message_resolver

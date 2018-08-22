@@ -192,6 +192,11 @@ CREATE OR REPLACE PACKAGE log$ IS
         p_service_depth IN NATURALN := 0
     );
     
+    FUNCTION call (
+        p_service_depth IN NATURALN := 0
+    )
+    RETURN t_top_call;
+    
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN VARCHAR2,
