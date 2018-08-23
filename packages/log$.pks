@@ -98,11 +98,13 @@ CREATE OR REPLACE PACKAGE log$ IS
     TYPE t_call_values IS
         TABLE OF t_values;
      
-    SUBTYPE t_language_format IS
-        PLS_INTEGER
-            RANGE 1..2
-            NOT NULL;
-    
+    TYPE t_call_stack_format_options IS
+        RECORD (
+            first_line_indent STRING,
+            indent STRING,
+            argument_notation BOOLEANN := FALSE
+        );
+        
     /* Initilalization methods */
     
     PROCEDURE reset;
@@ -250,7 +252,7 @@ CREATE OR REPLACE PACKAGE log$ IS
     );
     
     FUNCTION backtrace_unit (
-        p_depth IN PLS_INTEGER
+        p_depth IN POSITIVEN
     )
     RETURN VARCHAR2;
     
@@ -267,8 +269,7 @@ CREATE OR REPLACE PACKAGE log$ IS
     
     FUNCTION format_call_stack (
         p_length IN t_string_length := c_STRING_LENGTH,
-        p_first_line_indent IN VARCHAR2 := NULL,
-        p_indent IN VARCHAR2 := NULL
+        p_options IN t_call_stack_format_options := NULL
     )
     RETURN VARCHAR2;
     

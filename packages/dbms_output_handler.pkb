@@ -19,6 +19,8 @@ CREATE OR REPLACE PACKAGE BODY dbms_output_handler IS
     v_log_level log$.t_handler_log_level;
     v_call_stack_level log$.t_handler_log_level := log$.c_ERROR;
     
+    v_call_stack_format_options log$.t_call_stack_format_options;
+    
     PROCEDURE set_log_level (
         p_level IN log$.t_handler_log_level
     ) IS
@@ -43,6 +45,21 @@ CREATE OR REPLACE PACKAGE BODY dbms_output_handler IS
     RETURN log$.t_handler_log_level IS
     BEGIN
         RETURN v_call_stack_level;
+    END;
+    
+    PROCEDURE set_argument_notation (
+        p_value IN log$.BOOLEANN
+    ) IS
+    BEGIN
+        v_call_stack_format_options.argument_notation := p_value;
+    END;
+    
+    FUNCTION get_argument_notation (
+        p_value IN log$.BOOLEANN
+    ) 
+    RETURN log$.BOOLEANN IS
+    BEGIN
+        RETURN v_call_stack_format_options.argument_notation;
     END;
     
     PROCEDURE handle_message (
@@ -78,8 +95,7 @@ CREATE OR REPLACE PACKAGE BODY dbms_output_handler IS
         
             DBMS_OUTPUT.PUT_LINE(
                 log$.format_call_stack(
-                    p_first_line_indent => 'at: ',
-                    p_indent => '    '
+                    p_options => v_call_stack_format_options
                 )
             );
         
@@ -87,4 +103,7 @@ CREATE OR REPLACE PACKAGE BODY dbms_output_handler IS
     
     END;
     
+BEGIN
+    v_call_stack_format_options.first_line_indent := 'at: ';
+    v_call_stack_format_options.indent := '    ';
 END;

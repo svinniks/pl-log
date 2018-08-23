@@ -16,6 +16,9 @@
 
 SET DEFINE OFF
 
+@@tables/log$events.tab
+/
+
 @@types/t_log_message_formatter.tps
 /
 @@types/t_log_message_resolver.tps

@@ -16,6 +16,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         limitations under the License.
     */
 
+    SUBTYPE CHARN IS CHAR NOT NULL;
+
     v_session_serial# t_session_serial# := DBMS_DEBUG_JDWP.CURRENT_SESSION_SERIAL;
 
     TYPE t_message_resolvers IS 
@@ -59,8 +61,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     v_call_values t_call_values;   
     
-    v_top_call t_top_call := t_top_call();
-
+    v_top_call CONSTANT t_top_call := t_top_call();
+    
     /* Initialization methods */
 
     PROCEDURE reset IS
@@ -98,6 +100,54 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
     END;
     
+    /* Logger internal warnings and errors */
+    
+    PROCEDURE log_event (
+        p_level IN CHARN,
+        p_message IN STRINGN,
+        p_details IN VARCHAR2 := NULL
+    ) IS
+        PRAGMA AUTONOMOUS_TRANSACTION;
+    BEGIN
+        
+        INSERT INTO log$events (
+            "LEVEL",
+            message,
+            details
+        ) VALUES (
+            p_level,
+            p_message,
+            p_details
+        );
+        
+        COMMIT;
+    
+    END;
+    
+    PROCEDURE log_error (
+        p_message IN STRINGN
+    ) IS
+        v_details VARCHAR2(4000);
+    BEGIN
+    
+        v_details := SQLERRM;
+        
+        IF SUBSTR(v_details, -1) != CHR(10) THEN
+            v_details := v_details || CHR(10);
+        END IF;
+        
+        v_details := 
+            v_details || 
+            SUBSTR(
+                DBMS_UTILITY.FORMAT_ERROR_BACKTRACE,
+                1,
+                4000 - LENGTH(v_details)
+            );    
+            
+        log_event('E', p_message, v_details);
+    
+    END;
+    
     /* Resolver and handler management */
     
     PROCEDURE add_message_resolver (
@@ -107,7 +157,11 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     ) IS
     BEGIN
     
-        IF p_resolver IS NOT NULL THEN
+        IF p_resolver IS NULL THEN
+        
+            log_event('W', 'Attempted to register NULL message resolver!');
+        
+        ELSE
     
             v_message_resolvers.EXTEND(1);
             v_message_resolvers(v_message_resolvers.COUNT) := p_resolver;
@@ -143,7 +197,11 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     ) IS
     BEGIN
     
-        IF p_handler IS NOT NULL THEN
+        IF p_handler IS NULL THEN
+        
+            log_event('W', 'Attempted to register NULL message handler!');
+        
+        ELSE
         
             v_message_handlers.EXTEND(1);
             v_message_handlers(v_message_handlers.COUNT) := p_handler;
@@ -173,9 +231,15 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     ) IS
     BEGIN
     
-        IF p_mapper IS NOT NULL THEN
+        IF p_mapper IS NULL THEN
+        
+            log_event('W', 'Attempted to register NULL oracle error mapper!');
+        
+        ELSE
+        
             v_oracle_error_mappers.EXTEND(1);
             v_oracle_error_mappers(v_oracle_error_mappers.COUNT) := p_mapper;
+            
         END IF;
     
     END;
@@ -200,38 +264,24 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     ) IS
     BEGIN
         DBMS_SESSION.SET_CONTEXT('LOG$LEVELS', 'SYSTEM', p_level);
+        DBMS_SESSION.SET_CONTEXT('LOG$LEVELS', 'SYSTEM_INITIALIZED', 'TRUE');
     END;       
     
     PROCEDURE init_system_log_level (
         p_level IN t_handler_log_level
     ) IS
-         
-        v_dummy NUMBER;
-        
-        CURSOR c_context_variable IS
-            SELECT 1
-            FROM global_context
-            WHERE namespace = 'LOG$LEVELS'
-                  AND attribute = 'SYSTEM';
-        
     BEGIN
     
-        OPEN c_context_variable;
-        
-        FETCH c_context_variable
-        INTO v_dummy;
-        
-        IF c_context_variable%NOTFOUND THEN
+        IF SYS_CONTEXT('LOG$LEVELS', 'SYSTEM_INITIALIZED') IS NULL THEN
             set_system_log_level(p_level);
         END IF;
-        
-        CLOSE c_context_variable;
     
     END;
     
     PROCEDURE reset_system_log_level IS
     BEGIN
         DBMS_SESSION.CLEAR_CONTEXT('LOG$LEVELS', NULL, 'SYSTEM');
+        DBMS_SESSION.CLEAR_CONTEXT('LOG$LEVELS', NULL, 'SYSTEM_INITIALIZED');
     END;
         
     FUNCTION get_session_log_level (
@@ -639,10 +689,14 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     END;
     
     FUNCTION backtrace_unit (
-        p_depth IN PLS_INTEGER
+        p_depth IN POSITIVEN
     )
     RETURN VARCHAR2 IS
     BEGIN
+    
+        IF p_depth > utl_call_stack.backtrace_depth THEN
+            RAISE utl_call_stack.bad_depth_indicator;
+        END IF;
     
         $IF DBMS_DB_VERSION.VERSION = 12 AND DBMS_DB_VERSION.RELEASE = 1 $THEN
         
@@ -650,13 +704,10 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             
         $ELSE
 
-            DECLARE
-                e_bad_depth_indicator EXCEPTION;
-                PRAGMA EXCEPTION_INIT(e_bad_depth_indicator, -64610);        
             BEGIN
                 RETURN utl_call_stack.backtrace_unit(p_depth);
             EXCEPTION
-                WHEN e_bad_depth_indicator THEN
+                WHEN utl_call_stack.bad_depth_indicator THEN
                     RETURN '__anonymous_block';
             END;
             
@@ -831,8 +882,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     FUNCTION format_call_stack (
         p_length IN t_string_length := c_STRING_LENGTH,
-        p_first_line_indent IN VARCHAR2 := NULL,
-        p_indent IN VARCHAR2 := NULL
+        p_options IN t_call_stack_format_options := NULL
     )
     RETURN VARCHAR2 IS
     
@@ -868,9 +918,9 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         FOR v_i IN REVERSE 1..v_call_stack.COUNT LOOP
 
             IF v_i = v_call_stack.COUNT THEN
-                put(p_first_line_indent);
+                put(p_options.first_line_indent);
             ELSE
-                put(p_indent);
+                put(p_options.indent);
             END IF;
                 
             put_line(v_call_stack(v_i).unit || ' (line ' || v_call_stack(v_i).line || ')');
@@ -879,10 +929,15 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
                 
             WHILE v_name IS NOT NULL LOOP
                 
-                put(p_indent);
+                put(p_options.indent);
                 put('    ');
                 put(v_name);
-                put(': ');
+                
+                IF p_options.argument_notation THEN
+                    put(' => ');
+                ELSE
+                    put(': ');
+                END IF;
                     
                 CASE v_call_values(v_i)(v_name).type
                     
@@ -893,42 +948,48 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
                         ELSE
                             put('''');
                             put(REPLACE(v_call_values(v_i)(v_name).varchar2_value, '''', ''''''));
-                            put_line('''');
+                            put('''');
                         END IF;
                             
                     WHEN 'NUMBER' THEN
                         
                         IF v_call_values(v_i)(v_name).number_value IS NULL THEN
-                            put_line('NULL');
+                            put('NULL');
                         ELSE
-                            put_line(TO_CHAR(v_call_values(v_i)(v_name).number_value, 'TM', 'NLS_NUMERIC_CHARACTERS=''.,'''));
+                            put(TO_CHAR(v_call_values(v_i)(v_name).number_value, 'TM', 'NLS_NUMERIC_CHARACTERS=''.,'''));
                         END IF;
                             
                     WHEN 'BOOLEAN' THEN
                         
                         IF v_call_values(v_i)(v_name).boolean_value IS NULL THEN
-                            put_line('NULL');
+                            put('NULL');
                         ELSIF v_call_values(v_i)(v_name).boolean_value IS NULL THEN
-                            put_line('TRUE');
+                            put('TRUE');
                         ELSE
-                            put_line('FALSE');
+                            put('FALSE');
                         END IF;
                             
                     WHEN 'DATE' THEN
                         
                         IF v_call_values(v_i)(v_name).date_value IS NULL THEN
-                            put_line('NULL');
+                            put('NULL');
                         ELSE
-                            put_line('TIMESTAMP ''' || TO_CHAR(v_call_values(v_i)(v_name).date_value, 'YYYY-MM-DD HH24:MI:SS') || '''');
+                            put('TIMESTAMP ''' || TO_CHAR(v_call_values(v_i)(v_name).date_value, 'YYYY-MM-DD HH24:MI:SS') || '''');
                         END IF;
                         
                     ELSE
                             
-                        put_line;
+                        NULL;
                             
                 END CASE;
                 
                 v_name := v_call_values(v_i).NEXT(v_name);
+                
+                IF v_name IS NOT NULL AND p_options.argument_notation THEN
+                    put(',');
+                END IF;
+                
+                put_line;
                 
             END LOOP;
             
@@ -953,6 +1014,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
         v_message STRING;
         v_formatter t_log_message_formatter;
+        v_formatted BOOLEAN;
     
     BEGIN
      
@@ -960,10 +1022,15 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
             IF p_level >= v_resolver_log_levels(v_i) THEN
             
-                v_message := v_message_resolvers(v_i).resolve_message(
-                    p_message, 
-                    NVL(p_language, v_default_language)
-                );
+                BEGIN
+                    v_message := v_message_resolvers(v_i).resolve_message(
+                        p_message, 
+                        NVL(p_language, v_default_language)
+                    );
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        log_error('An error occurred while resolving a message!');                        
+                END;
                 
                 IF v_message IS NOT NULL THEN
                     v_formatter := v_message_formatters(v_i);
@@ -980,11 +1047,21 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             v_formatter := v_default_message_formatter;
         END IF;
     
+        v_formatted := FALSE;
+    
         IF v_formatter IS NOT NULL THEN
         
-            v_message := v_formatter.format_message(v_message, p_arguments);
+            BEGIN
+                v_message := v_formatter.format_message(v_message, p_arguments);
+                v_formatted := TRUE;
+            EXCEPTION
+                WHEN OTHERS THEN
+                    log_error('An error occurred while formatting a message!');
+            END;
             
-        ELSE    
+        END IF;
+        
+        IF NOT v_formatted THEN    
         
             IF p_arguments IS NOT NULL AND p_arguments.COUNT > 0 THEN
 
@@ -1025,6 +1102,32 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     END;
 
     FUNCTION handling (
+        p_handler_i IN NATURALN,
+        p_level IN t_message_log_level
+    )
+    RETURN BOOLEAN IS
+    
+        v_handler_log_level t_handler_log_level;
+        
+    BEGIN
+    
+        BEGIN
+            v_handler_log_level := v_message_handlers(p_handler_i).get_log_level;
+        EXCEPTION
+            WHEN OTHERS THEN
+                log_error('An error occured while determining log level of a message handler!');
+        END;
+        
+        RETURN p_level >= COALESCE(
+            v_handler_log_level, 
+            get_session_log_level, 
+            get_system_log_level,
+            c_NONE
+        );
+            
+    END;
+
+    FUNCTION handling (
         p_level IN t_message_log_level
     )
     RETURN BOOLEAN IS
@@ -1032,15 +1135,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
         FOR v_i IN 1..v_message_handlers.COUNT LOOP
         
-            IF p_level >= COALESCE(
-                v_message_handlers(v_i).get_log_level, 
-                get_session_log_level, 
-                get_system_log_level,
-                c_NONE
-            ) THEN
-            
+            IF handling(v_i, p_level) THEN
                 RETURN TRUE;
-                
             END IF;
         
         END LOOP;
@@ -1104,22 +1200,24 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             
             FOR v_i IN 1..v_message_handlers.COUNT LOOP
         
-                IF p_level >= COALESCE(
-                    v_message_handlers(v_i).get_log_level, 
-                    get_session_log_level, 
-                    get_system_log_level,
-                    c_NONE
-                ) THEN
+                IF handling(v_i, p_level) THEN
                 
-                    v_message_handlers(v_i).handle_message(
-                        p_level, 
-                        cache_message(
+                    BEGIN
+                    
+                        v_message_handlers(v_i).handle_message(
                             p_level, 
-                            p_message, 
-                            NVL(v_handler_languages(v_i), v_default_language),
-                            p_arguments
-                        )
-                    );
+                            cache_message(
+                                p_level, 
+                                p_message, 
+                                NVL(v_handler_languages(v_i), v_default_language),
+                                p_arguments
+                            )
+                        );
+                        
+                    EXCEPTION
+                        WHEN OTHERS THEN    
+                            log_error('An error occured while handling a message!');
+                    END;
                     
                 END IF;
             
@@ -1147,7 +1245,12 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
         FOR v_i IN 1..v_oracle_error_mappers.COUNT LOOP
         
-            v_oracle_error_mappers(v_i).map_oracle_error(p_source_code, p_target_code, p_target_message);
+            BEGIN
+                v_oracle_error_mappers(v_i).map_oracle_error(p_source_code, p_target_code, p_target_message);
+            EXCEPTION
+                WHEN OTHERS THEN
+                    log_error('An error occured while mapping oracle error!');
+            END;
             
             IF p_target_code IS NOT NULL THEN
                 RETURN;
@@ -1324,9 +1427,18 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         ELSE
         
             IF v_user_language_mapper IS NULL THEN
+            
                 v_target_nls_language := p_language;
+                
             ELSE
-                v_target_nls_language := v_user_language_mapper.to_nls_language(p_language);
+            
+                BEGIN    
+                    v_target_nls_language := v_user_language_mapper.to_nls_language(p_language);
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        log_error('An error occurred while mapping user language to NLS_LANGUAGE');
+                END;    
+                    
             END IF;
             
             IF v_target_nls_language IS NOT NULL THEN
@@ -1398,21 +1510,23 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
                                 
                 FOR v_i IN 1..v_message_handlers.COUNT LOOP
         
-                    IF p_level >= COALESCE(
-                        v_message_handlers(v_i).get_log_level, 
-                        get_session_log_level, 
-                        get_system_log_level,
-                        c_NONE
-                    ) THEN
+                    IF handling(v_i, p_level) THEN
                     
-                        v_message_handlers(v_i).handle_message(
-                            p_level,
-                            translate_oracle_error(
-                                v_code,
-                                v_message,
-                                NVL(v_handler_languages(v_i), v_default_language)
-                            )
-                        );
+                        BEGIN
+                        
+                            v_message_handlers(v_i).handle_message(
+                                p_level,
+                                translate_oracle_error(
+                                    v_code,
+                                    v_message,
+                                    NVL(v_handler_languages(v_i), v_default_language)
+                                )
+                            );
+                            
+                        EXCEPTION    
+                            WHEN OTHERS THEN
+                                log_error('An error occurred while handling a message!');
+                        END;
                         
                     END IF;
                 
@@ -1914,8 +2028,6 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     END;
     
 BEGIN
-
     init;    
-    
 END;
 

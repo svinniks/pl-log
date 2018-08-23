@@ -30,6 +30,15 @@ CREATE OR REPLACE PACKAGE dbms_output_handler IS
     FUNCTION get_call_stack_level
     RETURN log$.t_handler_log_level;
     
+    PROCEDURE set_argument_notation (
+        p_value IN log$.BOOLEANN
+    );
+    
+    FUNCTION get_argument_notation (
+        p_value IN log$.BOOLEANN
+    ) 
+    RETURN log$.BOOLEANN;
+    
     PROCEDURE handle_message (
         p_level IN log$.t_message_log_level,
         p_message IN VARCHAR2

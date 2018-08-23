@@ -66,3 +66,6 @@ DROP TYPE t_log_message_resolver
 /
 DROP TYPE t_log_message_formatter
 /
+
+DROP TABLE log$events
+/
