@@ -10,4 +10,54 @@ PL-LOG can be configured with unlimited number or message resolvers/formatters/h
 
 Additional useful features include __call stack tracking__ with subprogram __argument and variable value logging__, ORA- error __translating__ and __mapping__ to custom business errors upon reraise, custom language code handling.
 
-PL-LOG is based on the [UTL_CALL_STACK](https://docs.oracle.com/database/121/ARPLS/u_call_stack.htm#ARPLS74078]) package and therefore is only available on Oracle 12c R1 and up. Oracle abstract [object types](https://docs.oracle.com/database/121/ADOBJ/adobjint.htm#ADOBJ00101) are used to implement extensible plugin API, so getting familiar with the OOP concepts is advisable before using the framework.
+PL-LOG is based on the [`UTL_CALL_STACK`](https://docs.oracle.com/database/121/ARPLS/u_call_stack.htm#ARPLS74078]) package and therefore is only available on Oracle 12c R1 and up. Oracle abstract [object types](https://docs.oracle.com/database/121/ADOBJ/adobjint.htm#ADOBJ00101) are used to implement extensible plugin API, so getting familiar with the OOP concepts is advisable before using the framework.
+
+Below is a shot example of how some PL-LOG using look like:
+
+```
+CREATE OR REPLACE 
+PROCEDURE owner.register_person (
+    p_name IN VARCHAR2,
+    p_birth_date IN DATE
+) IS
+BEGIN
+
+    -- Help PL-LOG to track the call stack and 
+    -- associate argument values with the current call.
+    log$.call()
+        .param('p_name', p_name)
+        .param('p_birth_date', p_birth_date);
+        
+    -- Log begining of the person registration routine
+    log$.debug('Registering of a person started.');
+    
+    -- Check if P_NAME has been supplied and raise a codified business error if not.
+    IF p_name IS NULL THEN
+        -- :1 is not specified!
+        error$.raise('MSG-00001', 'name');
+    END IF;
+
+END;
+
+-- Call the procedure from an anonymous block:
+BEGIN
+    register_person(NULL, SYSDATE);
+END;
+```
+
+Providing that `DBMS_OUTPUT` handler is enabled and configured to accept all level messages, the following exception will be raised:
+
+```
+ORA-20000: MSG-00001: name is not specified!
+```
+
+and the following lines will be fetched from `DBMS_OUTPUT`:
+
+```
+23:57:48.268 [DEBUG  ] Registering of a person started.
+23:57:48.268 [ERROR  ] MSG-00001: name is not specified!
+at: OWNER.REGISTER_PERSON (line 19)
+        p_birth_date: TIMESTAMP '2018-08-23 23:57:48'
+        p_name: NULL
+    __anonymous_block (line 2)
+```
