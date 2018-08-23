@@ -28,7 +28,7 @@ BEGIN
         .param('p_name', p_name)
         .param('p_birth_date', p_birth_date);
         
-    -- Log begining of the person registration routine
+    -- Log beginning of the person registration routine
     log$.debug('Registering of a person started.');
     
     -- Check if P_NAME has been supplied and raise a codified business error if not.
