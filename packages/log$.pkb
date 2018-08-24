@@ -944,7 +944,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
                     WHEN 'VARCHAR2' THEN
                         
                         IF v_call_values(v_i)(v_name).varchar2_value IS NULL THEN
-                            put_line('NULL');
+                            put('NULL');
                         ELSE
                             put('''');
                             put(REPLACE(v_call_values(v_i)(v_name).varchar2_value, '''', ''''''));
