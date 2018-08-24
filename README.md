@@ -1,7 +1,6 @@
 # Summary
 
 PL-LOG introduces a set of APIs to enable PL/SQL code instrumentation with log messages of different levels (e.g. DEBUG, INFO, ERROR etc.), custom business error raising and unexpected Oracle error handling. 
-  
 Log and error messages can be codified, translated into different languages, stored in arbitrary locations and later loaded by pluggable message __resolvers__. Both codified and free-text messages may act as template strings with argument placeholders, which are later replaced with actual values using pluggable __formatters__.
 
 All formatted messages are finally directed to (also pluggable) __handlers__ which store or forward them according to the user and developer needs. Each handler can be configured to process messages in a different language - this can be useful, for example, in a multi-language user environment to store all log entries only in english, but to display messages to the users in their preferred language.
@@ -19,7 +18,6 @@ CREATE OR REPLACE
 PROCEDURE owner.register_person (
     p_name IN VARCHAR2,
     p_birth_date IN DATE
-) IS
 BEGIN
 
     -- Help PL-LOG to track the call stack and 
@@ -61,3 +59,44 @@ at: OWNER.REGISTER_PERSON (line 19)
         p_name: NULL
     __anonymous_block (line 2)
 ```
+# Prerequisites
+
+- PL-LOG only supports Oracle database 12c Release 1 and higher as it uses the ```UTL_CALL_STACK``` package, which first appeared in 12c R1.
+- It is advisable to install PL-LOG in a separate schema to avoid object naming conflicts. The user must at least have the following privileges:
+
+    ```
+    CREATE USER pllog IDENTIFIED BY "password"
+    /
+
+    GRANT 
+        CONNECT,
+        CREATE SEQUENCE,
+        CREATE TABLE,
+        UNLIMITED TABLESPACE,
+        CREATE PROCEDURE,
+        CREATE VIEW,
+        CREATE ANY CONTEXT,
+        DROP ANY CONTEXT,
+        CREATE TYPE
+    TO pllog
+    /
+
+    GRANT SELECT ON v$session TO pllog
+    /
+    ```
+- [PL-COMMONS](https://github.com/svinniks/pl-commons) must be installed as PL-LOG depends on the ```T_VARCHARS``` type. The type must be installed either in the same schema as PL-LOG itself, or it must be made accessible to the PL-LOG user via a synonym. Note however, that you will need to access ```T_VARCHARS``` from your code in order to pass argument lists to the message formatting routines.
+
+# Installation
+
+To install PL-LOG, connect to the database as the desired user/schema and run ```install.sql```.
+After installation you may want to make PL-LOG accessible to other users: 
+
+```
+GRANT EXECUTE ON log$ TO <PUBLIC|any_separate_user_or_role>
+/
+GRANT EXECUTE ON error$ TO <PUBLIC|any_separate_user_or_role>
+/
+```
+
+It is also recommended to create __public synonyms__ for these objects to keep call statements as short as possible.
+

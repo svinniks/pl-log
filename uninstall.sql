@@ -14,11 +14,6 @@
     limitations under the License.
 */
 
-DROP PUBLIC SYNONYM error$
-/
-DROP PUBLIC SYNONYM log$
-/
-
 DROP CONTEXT log$levels
 /
 
@@ -60,6 +55,8 @@ DROP PACKAGE log$
 DROP TYPE t_top_call
 /
 
+DROP TYPE t_oracle_error_mapper
+/
 DROP TYPE t_log_message_handler
 /
 DROP TYPE t_log_message_resolver

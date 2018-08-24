@@ -27,6 +27,8 @@ SET DEFINE OFF
 /
 @@types/t_user_language_mapper.tps
 /
+@@types/t_oracle_error_mapper.tps
+/
 
 @@types/t_top_call.tps
 /
@@ -92,5 +94,3 @@ SET DEFINE OFF
 
 @@contexts/log$levels.ctx
 /
-
-@@synonyms/public_synonyms.sql
