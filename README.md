@@ -11,7 +11,7 @@ Additional useful features include __call stack tracking__ with subprogram __arg
 
 PL-LOG is based on the [`UTL_CALL_STACK`](https://docs.oracle.com/database/121/ARPLS/u_call_stack.htm#ARPLS74078]) package and therefore is only available on Oracle 12c R1 and up. Oracle abstract [object types](https://docs.oracle.com/database/121/ADOBJ/adobjint.htm#ADOBJ00101) are used to implement extensible plugin API, so getting familiar with the OOP concepts is advisable before using the framework.
 
-Below is a shot example of how some PL-LOG using look like:
+Below is a short example of how some PL-LOG using looks like:
 
 ```
 CREATE OR REPLACE 
@@ -89,7 +89,7 @@ at: OWNER.REGISTER_PERSON (line 19)
 # Installation
 
 To install PL-LOG, connect to the database as the desired user/schema and run ```install.sql```.
-After installation you may want to make PL-LOG API accessible to the other users. At the very minimum you should: 
+After installation you may want to make PL-LOG API accessible to other users. At the very minimum you should: 
 
 ```
 GRANT EXECUTE ON log$ TO <PUBLIC|any_separate_user_or_role>
@@ -135,11 +135,11 @@ NOT INSTANTIABLE NOT FINAL
 
 The field ```dummy``` is there only because Oracle doesn't allow to create object types without fields.
 
-While developing custom message handlers, user must extend the ```T_LOG_MESSAGE_HANDLER``` type and implement two methods ```GET_LOG_LEVEL``` and ```HANDLE_MESSAGE```.
+While creating custom message handlers, developer must extend ```T_LOG_MESSAGE_HANDLER``` and implement two methods: ```GET_LOG_LEVEL``` and ```HANDLE_MESSAGE```.
 
-```GET_LOG_LEVEL``` must return threshold log level of the handler. PL-LOG will call the method while deciding whether to call the handler's ```HANDLE_MESSAGE``` method or not. It's up to the developer to decide where the return value for ```GET_LOG_LEVEL``` come from. It may be a simple session-wide package global variable or a system-wide global value stored in a globally accessed context.
+```GET_LOG_LEVEL``` must return threshold log level of the handler. PL-LOG will call the method while deciding whether to call the handler's ```HANDLE_MESSAGE``` method or not. It's up to the developer to decide where the return value for ```GET_LOG_LEVEL``` comes from. It may be a simple session-wide package global variable or a system-wide global value stored in a globally accessed context.
 
-```HANDLE_MESSAGE``` is called by PL-LOG when the message passes the level threshold discussed and should be persisted. The message text passed is already __formatted__, so the handler must just save, display or forward it.
+```HANDLE_MESSAGE``` is called by PL-LOG when the message passes the level threshold and should be persisted. The message text passed is already __translated and formatted__, so the handler must just save, display or forward it.
 
 Please refer to the [```CREATE TYPE```](https://docs.oracle.com/database/121/LNPLS/create_type.htm) documentation to get familiar with how object type inheritance works in Oracle.
 
@@ -163,8 +163,8 @@ There are two message handlers PL-LOG comes bundled with:
 ```T_DBMS_OUTPUT_HANDLER``` writes log messages to ```DBMS_OUTPUT```. Just like for the default message handler, there is an implementation package called ```DBMS_OUTPUT_HANDLER```.
 
 - Log level threshold can be changed by calling ```DBMS_OUTPUT_HANDLER.SET_LOG_LEVEL``` (also only for the current session).
-- Be default the handler will output callstack for all messages with level 400 (```ERROR```) or higher. To lower or raise call stack display level threshold call ```DBMS_OUTPUT_HANDLER.SET_CALL_STACK_LEVEL```.
-- While displaying the call stack, tracked subprogram argument values will by default be displayed using colon as a sepoarator:
+- By default the handler will output callstack for all messages with level 400 (```ERROR```) or higher. To lower or to raise call stack display level threshold call ```DBMS_OUTPUT_HANDLER.SET_CALL_STACK_LEVEL```.
+- While displaying the call stack, tracked subprogram argument values will by default be displayed using colon as a separator:
 
     ```
     23:57:48.268 [ERROR  ] MSG-00001: name is not specified!
@@ -174,7 +174,7 @@ There are two message handlers PL-LOG comes bundled with:
         __anonymous_block (line 2)
     ```
 
-    It is possible, however, to make ```DBMS_OUTPUT_HANDLER``` display parameters in PL/SQL named notation, by issuing ```DBMS_OUTPUT_HANDLER.SET_ARGUMENT_NOTATION(TRUE)```:
+    It is possible, however, to make ```DBMS_OUTPUT_HANDLER``` display parameters using PL/SQL named notation, by issuing ```DBMS_OUTPUT_HANDLER.SET_ARGUMENT_NOTATION(TRUE)```:
     ```
     23:57:48.268 [ERROR  ] MSG-00001: name is not specified!
     at: OWNER.REGISTER_PERSON (line 19)
