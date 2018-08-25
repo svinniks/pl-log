@@ -135,17 +135,17 @@ NOT INSTANTIABLE NOT FINAL
 
 The field ```dummy``` is there only because Oracle doesn't allow to create object types without fields.
 
-While developing custom message handlers, user must extend the ```T_LOG_MESSAGE_HANDLER``` types and implement two methods - ```GET_LOG_LEVEL``` and ```HANDLE_MESSAGE```.
+While developing custom message handlers, user must extend the ```T_LOG_MESSAGE_HANDLER``` type and implement two methods ```GET_LOG_LEVEL``` and ```HANDLE_MESSAGE```.
 
-```GET_LOG_LEVEL``` must return threshold log level of the handler. PL-LOG will call the method while deciding whether to call the handler's ```HANDLE_MESSAGE``` method or not. It's up to the developed to decide where the return value for ```GET_LOG_LEVEL``` come from. It may be a simple session-wide package global variable or it may be a system-wide global value stored in a globally accessed context.
+```GET_LOG_LEVEL``` must return threshold log level of the handler. PL-LOG will call the method while deciding whether to call the handler's ```HANDLE_MESSAGE``` method or not. It's up to the developer to decide where the return value for ```GET_LOG_LEVEL``` come from. It may be a simple session-wide package global variable or a system-wide global value stored in a globally accessed context.
 
-```HANDLE_MESSAGE``` is called by PL-LOG when the message passes the level threshold discussed before. The message text passed is already __formatted__, so the handler must just save, display or forward it.
+```HANDLE_MESSAGE``` is called by PL-LOG when the message passes the level threshold discussed and should be persisted. The message text passed is already __formatted__, so the handler must just save, display or forward it.
 
 Please refer to the [```CREATE TYPE```](https://docs.oracle.com/database/121/LNPLS/create_type.htm) documentation to get familiar with how object type inheritance works in Oracle.
 
 Message handlers must be added to PL-LOG by the [configuration procedure]() discussed later.
 
-### Built-in message handler
+### Built-in message handlers
 
 There are two message handlers PL-LOG comes bundled with:
 
@@ -159,6 +159,33 @@ There are two message handlers PL-LOG comes bundled with:
 - Size of the buffer can be changed by calling ```DEFAULT_MESSAGE_HANDLER.SET_CAPACITY```.
 
 - Log level threshold of the default message handler is set via ```DEFAULT_MESSAGE_HANDLER.SET_LOG_LEVEL``` and works only in context of the session.
+
+```T_DBMS_OUTPUT_HANDLER``` writes log messages to ```DBMS_OUTPUT```. Just like for the default message handler, there is an implementation package called ```DBMS_OUTPUT_HANDLER```.
+
+- Log level threshold can be changed by calling ```DBMS_OUTPUT_HANDLER.SET_LOG_LEVEL``` (also only for the current session).
+- Be default the handler will output callstack for all messages with level 400 (```ERROR```) or higher. To lower or raise call stack display level threshold call ```DBMS_OUTPUT_HANDLER.SET_CALL_STACK_LEVEL```.
+- While displaying the call stack, tracked subprogram argument values will by default be displayed using colon as a sepoarator:
+
+    ```
+    23:57:48.268 [ERROR  ] MSG-00001: name is not specified!
+    at: OWNER.REGISTER_PERSON (line 19)
+            p_birth_date: TIMESTAMP '2018-08-23 23:57:48'
+            p_name: NULL
+        __anonymous_block (line 2)
+    ```
+
+    It is possible, however, to make ```DBMS_OUTPUT_HANDLER``` display parameters in PL/SQL named notation, by issuing ```DBMS_OUTPUT_HANDLER.SET_ARGUMENT_NOTATION(TRUE)```:
+    ```
+    23:57:48.268 [ERROR  ] MSG-00001: name is not specified!
+    at: OWNER.REGISTER_PERSON (line 19)
+            p_birth_date => TIMESTAMP '2018-08-23 23:57:48',
+            p_name => NULL
+        __anonymous_block (line 2)
+    ```
+
+    This feature can be useful to ease rerunning failed subprogram by just copy-pasting the argument values into your PL/SQL IDE. 
+    
+    Please note that argument values as displayed as valid __PL/SQL literals__ for ```VARCHAR2```, ```NUMBER```, ```DATE```, ```BOOLEAN``` and compatible type arguments.
 
 ## Public API
 
