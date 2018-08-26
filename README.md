@@ -245,6 +245,25 @@ END;
 
 ## Message formatters
 
+Formatting is the process of replacing special placeholders in a message text with the actual argument values. This feature allows to define log messages not only as constant strings, but also as templates, which are later filled with data to provide end users more detailed information of what has happened in the system. 
+
+PL-LOG doesn't define any specific message template formats, instead it provides and abstract object type called ```T_LOG_MESSAGE_FORMATTER``` which implements the formatter concept:
+
+```
+CREATE OR REPLACE TYPE t_log_message_formatter IS OBJECT (
+
+    dummy CHAR,
+        
+    NOT INSTANTIABLE MEMBER FUNCTION format_message (
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars
+    )
+    RETURN VARCHAR2
+    
+) 
+NOT INSTANTIABLE NOT FINAL
+```
+
 # Configuration API
 
 # Instrumentation API
