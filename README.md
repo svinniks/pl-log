@@ -284,13 +284,91 @@ PL-LOG public API consists of two packages: ```LOG$``` and ```ERROR$```.
 
 ```LOG$``` provides methods for log message formatting and dispatching, call stack and subprogram argument tracking, unexpected Oracle error handling, threshold log level manipulation and PL-LOG framework configuration. Constants for the predefined log levels are also defined in the ```LOG$``` package.
 
-```ERROR$``` is used for both free-text and codified businness error raising and Oracle build-in error reraising after handling. The package ensures that any error will be forwarded to the handlers for storing only once.
+```ERROR$``` is used for both free-text and codified businness error raising and Oracle build-in error reraising after handling. The package ensures that any error will be dispatched to the handlers only once.
 
 ## Configuration
 
 All PL-LOG configuration, namely message resolvers, formatters, handlers and log level thresholds, is stored in ```LOG$``` package variables, is local to the session and therefore must be initialized upon session creation. The default entry point for configuring PL-LOG is a special schema-level procedure called ```LOG$INIT```. ```LOG$``` will try to run this procedure from it's initialization block dynamically, using ```EXECUTE IMMEDIATE```. Procedure must either reside in the same schema as PL-LOG does or to be resolvable via a synonym.
 
+### Log level threshold control
 
+System and session log level thresholds are manipulated using the following ```LOG$``` subprograms:
+
+```
+PROCEDURE set_system_log_level (
+    p_level IN t_handler_log_level
+);  
+    
+PROCEDURE init_system_log_level (
+    p_level IN t_handler_log_level
+);      
+
+PROCEDURE reset_system_log_level;
+
+PROCEDURE set_session_log_level (
+    p_level IN t_handler_log_level
+);
+
+PROCEDURE set_session_log_level (
+    p_session_serial# IN t_session_serial#,
+    p_level IN t_handler_log_level
+);
+```
+
+```T_HANDLER_LOG_LEVEL``` and ```T_SESSION_SERIAL#``` are defined in ```LOG$``` as:
+
+```
+SUBTYPE t_handler_log_level IS 
+    PLS_INTEGER 
+        RANGE 0..601;
+
+SUBTYPE t_session_serial# IS
+    NUMBER NOT NULL;
+```
+
+- ```SET_SYSTEM_LOG_LEVEL``` changes __system__ log level threshold. The change becomes immediately available to all sessions.
+
+- ```INIT_SYSTEM_LOG_LEVEL``` must be used to initialize the default system log level threshold when the database instance is started. When included into the ```LOG$INIT``` procedure, the first session which uses ```LOG$``` will set the initial system level threshold. All subsequent calls to ```INIT_SYSTEM_LOG_LEVEL``` won't make any effect to the setting.
+
+- ```RESET_SYSTEM_LOG_LEVEL``` puts the system log level threshold back to the unitialized state, so that the first session to call ```INIT_SYSTEM_LOG_LEVEL``` or ```SET_SYSTEM_LOG_LEVEL``` would initialize it again.
+
+- ```SET_SESSION_LOG_LEVEL``` allows to set log level to the current (the first overload) or to __any other session__ (the second one), by providing a valid session ```SERIAL#``` (unlike ```SID```s, session serial numbers are not reused by the database instance and can be used to uniquely identify sessions).
+
+Unitialized log level threshold equals to and gets handled as ```NULL```.
+
+### Message resolver and handler registration
+
+To register log message resolvers, formatters and handlers into PL-LOG, the following ```LOG$``` methods must be used in the configuration procedure:
+
+```
+PROCEDURE add_message_resolver (
+    p_resolver IN t_log_message_resolver,
+    p_level IN t_resolver_log_level := c_ALL,
+    p_formatter IN t_log_message_formatter := NULL
+);
+
+PROCEDURE add_message_resolver (
+    p_resolver IN t_log_message_resolver,
+    p_formatter IN t_log_message_formatter
+);
+
+PROCEDURE set_default_message_formatter (
+    p_formatter IN t_log_message_formatter
+);
+
+PROCEDURE add_message_handler (
+    p_handler IN t_log_message_handler,
+    p_language IN VARCHAR2 := NULL
+);
+```
+
+- ```ADD_MESSAGE_RESOLVER``` registers a message resolver, optionally sets it's log level threshold and associates a message formatter which will exclusively be used in pair with the resolver. 
+    
+    Usually only messages visible to the end users are codified and need a resolver to be retrieved. Debug level messages will most probably be included in the code in a free-text form. Setting resolver's log level threshold may help to increase performance while processing large amounts of debug messages.
+
+    PL-LOG allows to register more than one message resolvers, each of which may lookup messages in different stores and return templates of different formats. It is possible to associate different formatters for each resolver registered. If no formatter has been assigned to the resolver, then the default one will be used, if such is configured.
+
+- ```SET_DEFAULT_MESSAGE_FORMATTER``` is used to set a message formatter which will be used to
 
 ## Instrumentation
 
