@@ -245,9 +245,9 @@ END;
 
 ## Message formatters
 
-Formatting is the process of replacing special placeholders in a message text with the actual argument values. This feature allows to define log messages not only as constant strings, but also as templates, which are later filled with data to provide end users more detailed information of what has happened in the system. 
+Formatting is the process of replacing special placeholders in a message text with the provided values. This feature allows to define log messages not only as constant strings, but also as templates, which are later filled with data to provide end users more detailed information of what has happened in the system. 
 
-PL-LOG doesn't define any specific message template formats, instead it provides and abstract object type called ```T_LOG_MESSAGE_FORMATTER``` which implements the formatter concept:
+PL-LOG doesn't define any specific message template format, instead it provides an abstract object type called ```T_LOG_MESSAGE_FORMATTER``` which implements the formatter concept:
 
 ```
 CREATE OR REPLACE TYPE t_log_message_formatter IS OBJECT (
@@ -266,7 +266,7 @@ NOT INSTANTIABLE NOT FINAL
 
 Single method ```FORMAT_MESSAGE``` must be implemented to create a custom message formatter. The method accepts a template string and an array of ```VARCHAR2``` argument values and must return a fully formatted message text.
 
-There is one message formatter included in PL-LOG by default, which is called ```T_DEFAULT_MESSAGE_FORMATTER```. It allows to include sequential numbers of arguments as value placeholders, prefixed with at most one special character. For example, if a developer chooses to use colon ```':'``` as the prefix, valid template string would look like:
+There is one message formatter included in PL-LOG by default, which is called ```T_DEFAULT_MESSAGE_FORMATTER```. It allows to include sequential numbers of arguments as value placeholders, prefixed with at most one special character. For example, if a developer chooses to use colon ```':'``` as the prefix, valid message templates would look like:
 
 ```
 User :1 has no privileges to run service :2!
@@ -278,15 +278,20 @@ The prefix character can be defined while constructing a ```T_DEFAULT_MESSAGE_FO
 ```
 t_default_message_formatter(':');
 ```
+# Public API
 
-# Configuration API
+PL-LOG public API consists of two packages: ```LOG$``` and ```ERROR$```. 
 
-# Instrumentation API
-
-PL-LOG public instrumentation API consists of two packages: ```LOG$``` and ```ERROR$```. 
-
-```LOG$``` containts methods for log message formatting and dispatching to be stored, call stack subprogram argument tracking, unexpected Oracle built-in error handling, threshold log level manipulation and PL-LOG framework configuration. Constants for the predefined log levels ```c_DEBUG```, ```c_INFO```, ```c_WARNING```, ```c_ERROR``` and ```c_FATAL``` are also defined in the ```LOG$``` package.
+```LOG$``` provides methods for log message formatting and dispatching, call stack and subprogram argument tracking, unexpected Oracle error handling, threshold log level manipulation and PL-LOG framework configuration. Constants for the predefined log levels are also defined in the ```LOG$``` package.
 
 ```ERROR$``` is used for both free-text and codified businness error raising and Oracle build-in error reraising after handling. The package ensures that any error will be forwarded to the handlers for storing only once.
 
-# Exception handling API
+## Configuration
+
+All PL-LOG configuration, namely message resolvers, formatters, handlers and log level thresholds, is stored in ```LOG$``` package variables, is local to the session and therefore must be initialized upon session creation. The default entry point for configuring PL-LOG is a special schema-level procedure called ```LOG$INIT```. ```LOG$``` will try to run this procedure from it's initialization block dynamically, using ```EXECUTE IMMEDIATE```. Procedure must either reside in the same schema as PL-LOG does or to be resolvable via a synonym.
+
+
+
+## Instrumentation
+
+## Exception handling
