@@ -6,9 +6,7 @@
 * [Architecture](#architecture)
     * [Log levels](#log-levels)
     * [Message handlers](#message-handlers)
-        * [Built-in handlers](#built-in-handlers)
     * [Message resolvers](#message-resolvers)
-        * [Built-in resolvers](#built-in-resolvers)
     * [Message formatters](#message-formatters)
 * [Public API](#public-api)
     * [Configuration](#configuration)
@@ -16,6 +14,7 @@
         * [Message resolver and handler registration](#message-resolver-and-handler-registration)
         * [Configuration procedure example](#configuration-procedure-example)
     * [Code instrumentation](#code-instrumentation)
+    * [Call stack tracking](#call-stack-tracking)
     * [Exception handling](#exception-handling)
 
 # Summary
@@ -435,5 +434,7 @@ END;
 ```
 
 ## Code instrumentation
+
+## Call stack tracking
 
 ## Exception handling
