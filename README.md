@@ -264,6 +264,21 @@ CREATE OR REPLACE TYPE t_log_message_formatter IS OBJECT (
 NOT INSTANTIABLE NOT FINAL
 ```
 
+Single method ```FORMAT_MESSAGE``` must be implemented to create a custom message formatter. The method accepts a template string and an array of ```VARCHAR2``` argument values and must return a fully formatted message text.
+
+There is one message formatter included in PL-LOG by default, which is called ```T_DEFAULT_MESSAGE_FORMATTER```. It allows to include sequential numbers of arguments as value placeholders, prefixed with at most one special character. For example, if a developer chooses to use colon ```':'``` as the prefix, valid template string would look like:
+
+```
+User :1 has no privileges to run service :2!
+File :1 could not be found!
+```
+
+The prefix character can be defined while constructing a ```T_DEFAULT_MESSAGE_FORMATTER``` instance:
+
+```
+t_default_message_formatter(':');
+```
+
 # Configuration API
 
 # Instrumentation API
