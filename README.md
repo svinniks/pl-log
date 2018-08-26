@@ -191,7 +191,7 @@ There are two message handlers PL-LOG comes bundled with:
 
 It is a common practice to codify all the messages in the system, especially those which are displayed to the end users. Codifying means assigning each message a unique code and storing the texts somwhere outside the PL/SQL code, for example in a table. This approach enables multi-language message support, eases reusing and sistematizaion of the system's messages.
 
-In PL-LOG, external message store concept is implemented via the __message resolvers__ and the ```T_LOG_MESSAGE_RESOLVER`` abstract object type:
+In PL-LOG, external message store concept is implemented via __message resolvers__ and the ```T_LOG_MESSAGE_RESOLVER`` abstract object type:
 
 ```
 CREATE OR REPLACE TYPE t_log_message_resolver IS OBJECT (
@@ -207,22 +207,52 @@ CREATE OR REPLACE TYPE t_log_message_resolver IS OBJECT (
 ) NOT INSTANTIABLE NOT FINAL
 ```
 
-The only method that needs to be implemented in custom resolvers is ```RESOLVE_MESSAGE```. The method is given a ```P_MESSAGE``` to resolve and an optional ```P_LANGUAGE```. If language is not specified then it's up to the resolver implementation to decide which language to return the resolved message in (one of the options can be the default system language, another is to use current session ```NLS_LANGUAGE```). ```P_MESSAGE``` format is also not strictly defined. While integrating PL-LOG into an existing system developers might want to implement a resolver based on the existing message definition table.
+The only method that needs to be implemented in a custom resolver is ```RESOLVE_MESSAGE```. The method is given a ```P_MESSAGE``` to resolve and an optional ```P_LANGUAGE```. If language is not specified then it's up to the resolver implementation to decide which language to return the resolved message in (one of the options can be the default system language, another is to use current session ```NLS_LANGUAGE```). ```P_MESSAGE``` format is also not strictly defined. While integrating PL-LOG into an existing system developers might want to implement a resolver based on the existing message definition table.
 
-If the message has been successfully resolved, then the text must be returned from the function. Please note, tah PL-LOG __will not add the original message__ code to the resolved text. For example, if there is a message with the code ```'MSG-00001'``` which resolves to the text ```'Invalid value!'```, the resolver might consider to concatenate them together before returning: ```'MSG-00001: Invalid value!'```.
+If the message has been successfully resolved, then the text must be returned from the function. Please note, that PL-LOG __will not add the original message__ code to the resolved text. For example, if there is a message with the code ```'MSG-00001'``` which resolves to the text ```'Invalid value!'```, the resolver might consider to concatenate them together before returning: ```'MSG-00001: Invalid value!'```.
 
 If the message could not be resolved, ```NULL``` must be returned from ```RESOLVE_MESSAGE```. PL-LOG allows to define multiple resolvers. These resolvers will be called by the framework in the same order they have been registered. The firts one which returns a non-NULL value will "win", so no other resolver will be called.
 
 In case the message could not be resolved by any of the registered resolvers, the original text will be passed to the handlers.
 
+### Built-in resolvers
+
+PL-LOG comes bundled with one message resolver ```T_DEFAULT_MESSAGE_RESOLVER```, which is based on an associative array package variable and does not support multi-language messages. However, it can be useful if you are planning to create a reusable package which is message store agnostic and comes bundled with all the messages it is using. Consider the following example:
+
+```
+CREATE POR REPLACE PACKAGE a_very_useful_package IS
+    /* Subprogram declarations */
+    ...
+END;
+
+CREATE POR REPLACE PACKAGE BODY a_very_useful_package IS
+    
+    PROCEDURE register_messages I
+    BEGIN
+        default_message_handler.register_message('MSG-00001', 'Not all parameters have been filled correctly!');
+        default_message_handler.register_message('MSG-00002', 'Insufficient privileges to run :1!');
+    END;
+
+    /* Subprogram implementations */
+    ...
+
+BEGIN
+    register_messages;
+END;
+```
+
+```REGISTER_MESSAGES``` is called from the initialization block of ```A_VERY_USEFUL_PACKAGE``` and registers all the necessary messages by issuing ```DEFAULT_MESSAGE_HANDLER.REGISTER_MESSAGE```.
+
 ## Message formatters
 
-## Oracle error mappers
+# Configuration API
 
-## Instrumentation API
+# Instrumentation API
 
 PL-LOG public instrumentation API consists of two packages: ```LOG$``` and ```ERROR$```. 
 
 ```LOG$``` containts methods for log message formatting and dispatching to be stored, call stack subprogram argument tracking, unexpected Oracle built-in error handling, threshold log level manipulation and PL-LOG framework configuration. Constants for the predefined log levels ```c_DEBUG```, ```c_INFO```, ```c_WARNING```, ```c_ERROR``` and ```c_FATAL``` are also defined in the ```LOG$``` package.
 
 ```ERROR$``` is used for both free-text and codified businness error raising and Oracle build-in error reraising after handling. The package ensures that any error will be forwarded to the handlers for storing only once.
+
+# Exception handling API
