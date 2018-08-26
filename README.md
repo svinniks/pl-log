@@ -1,3 +1,23 @@
+# Table of contents
+
+* [Summary](#summary)
+* [Prerequisites](#prerequisites)
+* [Installation](#installation)
+* [Architecture](#architecture)
+    * [Log levels](#log-levels)
+    * [Message handlers](#message-handlers)
+        * [Built-in handlers](#built-in-handlers)
+    * [Message resolvers](#message-resolvers)
+        * [Built-in resolvers](#built-in-resolvers)
+    * [Message formatters](#message-formatters)
+* [Public API](#public-api)
+    * [Configuration](#configuration)
+        * [Log level threshold control](#log-level-threshold-control)
+        * [Message resolver and handler registration](#message-resolver-and-handler-registration)
+        * [Configuration procedure example](#configuration-procedure-example)
+    * [Code instrumentation](#code-instrumentation)
+    * [Exception handling](#exception-handling)
+
 # Summary
 
 PL-LOG introduces a set of APIs to enable PL/SQL code instrumentation with log messages of different levels (e.g. DEBUG, INFO, ERROR etc.), custom business error raising and unexpected Oracle error handling. 
@@ -59,6 +79,7 @@ at: OWNER.REGISTER_PERSON (line 19)
         p_name: NULL
     __anonymous_block (line 2)
 ```
+
 # Prerequisites
 
 - PL-LOG only supports Oracle database 12c Release 1 and higher as it uses the ```UTL_CALL_STACK``` package, which first appeared in 12c R1.
@@ -145,7 +166,7 @@ Please refer to the [```CREATE TYPE```](https://docs.oracle.com/database/121/LNP
 
 Message handlers must be added to PL-LOG by the [configuration procedure]() discussed later.
 
-### Built-in message handlers
+### Built-in handlers
 
 There are two message handlers PL-LOG comes bundled with:
 
@@ -336,6 +357,8 @@ SUBTYPE t_session_serial# IS
 
 Unitialized log level threshold equals to and gets handled as ```NULL```.
 
+Special log level threshold values ```ALL = 0``` and ```NONE = 601``` can be used to allow, respectively, any or none of the messages to be handled.
+
 ### Message resolver and handler registration
 
 To register log message resolvers, formatters and handlers into PL-LOG, the following ```LOG$``` methods must be used in the configuration procedure:
@@ -360,6 +383,10 @@ PROCEDURE add_message_handler (
     p_handler IN t_log_message_handler,
     p_language IN VARCHAR2 := NULL
 );
+
+PROCEDURE set_default_language (
+    p_language IN VARCHAR2
+);
 ```
 
 - ```ADD_MESSAGE_RESOLVER``` registers a message resolver, optionally sets it's log level threshold and associates a message formatter which will exclusively be used in pair with the resolver. 
@@ -368,8 +395,45 @@ PROCEDURE add_message_handler (
 
     PL-LOG allows to register more than one message resolvers, each of which may lookup messages in different stores and return templates of different formats. It is possible to associate different formatters for each resolver registered. If no formatter has been assigned to the resolver, then the default one will be used, if such is configured.
 
-- ```SET_DEFAULT_MESSAGE_FORMATTER``` is used to set a message formatter which will be used to
+- ```SET_DEFAULT_MESSAGE_FORMATTER``` sets a message formatter which will be used to format messages which could not be resolved or the ones from the resolvers without associated formatter.
 
-## Instrumentation
+- ```ADD_MESSAGE_HANDLER``` registers a log message handler and optionally sets a language which the handler "would like" to receive messages in. When dispatching a message, PL-LOG will iterate over all active handlers and try to resolve the message in all languages requested. By calling ```SET_DEFAULT_LANGUAGE``` it is possible to set a language which will be used to resolve messages if no language has been provided while registering the handler.
+
+### Configuration procedure example
+
+Below is a (commented) example of how the PL-LOG configuration procedure ```LOG$INIT``` might look like:
+
+```
+CREATE OR REPLACE PROCEDURE log$init IS
+BEGIN
+
+    -- Default system log level threshold is INFO.
+    log$.init_system_log_level(log$.c_INFO);
+
+    -- Registers a default message resolver.
+    -- The default formatter will be used for this resolver.
+    -- Only the messages of the INFO level or higher will be resolved.
+    log$.add_message_resolver(t_default_message_resolver, log$.c_INFO);
+
+    -- Sets the default formatter.
+    -- Message argument placeholders must be prefixed with a colon.
+    log$.set_default_message_formatter(t_default_message_formatter(':'));
+
+    -- Adds circular buffer message handler and sets 
+    -- the language accepted to english.
+    -- Log level threshold will be inherited from the system's or session's one.
+    log$.add_message_handler(t_default_message_handler(), 'ENG');
+
+    -- Adds DBMS_OUTPUT buffer message handler and sets 
+    -- the language accepted to english.
+    -- By default DBMS_OUTPUT handler will not accept any messages to keep
+    -- output clean unless necessary.
+    log$.add_message_handler(t_dbms_output_handler(), 'ENG');
+    dbms_output_handler.set_log_level(log$.c_NONE);
+
+END;
+```
+
+## Code instrumentation
 
 ## Exception handling
