@@ -529,7 +529,7 @@ Sometimes it is very helpful to store contents of the call stack alongside with 
 
 Message handlers can use ```DBMS_UTILITY``` or ```UTL_CALL_STACK``` directly to format and persist contents of the call stack as needed. PL-LOG, however, brings call stack tracking to a higher level, allowing to:
 
-- Hide irrelevant (service) top entries from the stack, leaving only the one of the business code.
+- Hide irrelevant (service) top entries from the stack, leaving only the ones of the business code.
 - Associate one or more named values with any call stack entry (useful to log subprogram arguments or loop variables).
 - Get the fullest information of where an unexpected Oracle error has occured, by merging the most recently tracked call stack and the error backtrace.
 
@@ -593,6 +593,16 @@ PL-SQL has a built-in call stack tracking mechanism, based on the ```UTL_CALL_ST
 Unfortunately, ```UTL_CALL_STACK``` is still quite limited in functionality, namely it's resolution is one code line (not one character!) which makes it impossible to distinguish two calls on the same line. The package also doesn't provide any means to identify subsequent calls of the same PL/SQL subprogram.
 
 As a consequence of the foregoing, to avoid strange and undesirable behavior, developers must be careful and obey some rules while working with the ```LOG$``` call stack tracking subprograms.
+
+The most reliable way of tracking call stack correctly is to make call to ```LOG$.CALL``` the first statement of each businness subprogram:
+
+```
+PROCEDURE call (
+    p_service_depth IN NATURALN := 0
+);
+```
+
+```CALL``` will make sure that the tracked call stack is actualized and synchronized with ```UTL_CALL_STACK```. Also the collection of the named values associated to the actual call will be cleared. Line number the call to ```LOG$.CALL``` is located at will be written into the ```FIRST_TRACKED_LINE``` field of the top stack entry.
 
 ### Obtaining and formatting call stack
 
