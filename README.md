@@ -588,6 +588,12 @@ TYPE t_call_values IS
 
 ### Tracking calls and named values
 
+PL-SQL has a built-in call stack tracking mechanism, based on the ```UTL_CALL_STACK``` package. The goal of developing such mechanism was to provide a possibility to log actual argument values passed to the subprograms in the call stack. Additional idea was to make the whole call stack with all the argument values available for logging as early as possible - ideally at the moment of an instrumentation method call.
+
+Unfortunately, ```UTL_CALL_STACK``` is still quite limited in functionality, namely it's resolution is one code line (not one character!) which makes it impossible to distinguish two calls on the same line. The package also doesn't provide any means to identify subsequent calls of the same PL/SQL subprogram.
+
+As a consequence of the foregoing, to avoid strange and undesirable behavior, developers must be careful and obey some rules while working with the ```LOG$``` call stack tracking subprograms.
+
 ### Obtaining and formatting call stack
 
 There is a procedure called ```GET_CALL_STACK``` in the ```LOG$``` package, which should be called from within the message handlers to obtain the most recent contents of the call stack:
@@ -641,7 +647,7 @@ Below is an example of how ```FORMAT_CALL_STACK``` is called withing the built-i
 DECLARE
 
     v_call_stack_format_options log$.t_call_stack_format_options;
-    
+
 BEGIN
 
     v_call_stack_format_options.first_line_indent := 'at: ';
