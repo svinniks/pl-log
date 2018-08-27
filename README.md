@@ -15,6 +15,9 @@
         * [Configuration procedure example](#configuration-procedure-example)
     * [Code instrumentation](#code-instrumentation)
     * [Call stack tracking](#call-stack-tracking)
+        * [Data types for storing call stack](#data-types-for-storing-call-stack)
+        * [Tracking calls and named values](#tracking-calls-and-named-values)
+        * [Obtaining and formatting call stack](#obtaining-and-formatting-call-stack)
     * [Exception handling](#exception-handling)
 
 # Summary
@@ -412,7 +415,7 @@ BEGIN
     -- Registers a default message resolver.
     -- The default formatter will be used for this resolver.
     -- Only the messages of the INFO level or higher will be resolved.
-    log$.add_message_resolver(t_default_message_resolver, log$.c_INFO);
+    log$.add_message_resolver(t_default_message_resolver(), log$.c_INFO);
 
     -- Sets the default formatter.
     -- Message argument placeholders must be prefixed with a colon.
@@ -519,5 +522,102 @@ END;
 ```
 
 ## Call stack tracking
+
+PL/SQL has a built-in ability to report contents of the call stack. Before 12c, developers relied on [```DBMS_UTILITY.FORMAT_CALL_STACK```](https://docs.oracle.com/database/121/ARPLS/d_util.htm#ARPLS73240), which would return a single string value, containing a list of subprograms currently in the call stack. Starting from 12c Release 1, there is a new package called ```UTL_CALL_STACK```, which allows to observe the call stack in a structured way, entry by entry.
+
+Sometimes it is very helpful to store contents of the call stack alongside with the log message. Most often it is required when storing error messages - developers would very much like to know where exactly the error has occured. 
+
+Message handlers can use ```DBMS_UTILITY``` or ```UTL_CALL_STACK``` directly to format and persist contents of the call stack as needed. PL-LOG, however, brings call stack tracking to a higher level, allowing to:
+
+- Hide irrelevant (service) top entries from the stack, leaving only the one of the business code.
+- Associate one or more named values with any call stack entry (useful to log subprogram arguments or loop variables).
+- Get the fullest information of where an unexpected Oracle error has occured, by concacenating the most recently tracked call stack and the error backtrace.
+
+### Data types for storing call stack
+
+PL-LOG stores it's own representation of the most recent call stack in a set of package variables of the following data types:
+
+```
+TYPE t_call IS
+    RECORD (
+        id NUMBER(30),
+        unit STRING,
+        line PLS_INTEGER,
+        first_tracked_line PLS_INTEGER
+    );
+    
+TYPE t_call_stack IS
+    TABLE OF t_call;
+
+TYPE t_value IS
+    RECORD (
+        type VARCHAR2(9),
+        varchar2_value STRING,
+        number_value NUMBER,
+        boolean_value BOOLEAN,
+        date_value DATE
+    );
+
+TYPE t_values IS
+    TABLE OF t_value
+    INDEX BY STRING;
+
+TYPE t_call_values IS
+    TABLE OF t_values;
+```
+
+```T_CALL``` represents one entry in the call stack:
+
+-  ```ID``` is an internal unique identifier of the call the entry's subprogram, which is being "guessed" by PL-LOG as precisely as possible;
+
+- ```UNIT``` is a fully qualified name of the unit. In case of successfull flow or a businness error raised by PL-LOG itself, ```UNIT``` will resolve down to the subprogram of the package being called. In case of an unexpected Oracle error (eg. ```NO_DATA_FOUND```), some upper entries of the call stack may be resolved until the package, because of the ```UTL_CALL_STACK``` limitations.
+
+- ```LINE``` contains number of the line in the __top level unit__ (package or object type) the call has occured on, that is even when ```UNIT``` resolves to the very packaged procedure, ```LINE``` will still store line number in the package itself.
+
+- ```FIRST_TRACKED_LINE``` is used by PL-LOG call stack tracking subsystem to identify whether a new call of the same subprogram has started or it is just another instrumentation call in the same call. This field is considered to be an internal one and should be igrnored.
+
+```T_CALL_STACK``` represents contents of the whole call stack. The first element is the deepest entry of the stack.
+
+```T_CALL_VALUES``` represents named values associated with the call stack entries. 
+
+- Each element of ```T_CALL_VALUES``` is a ```VARCHAR2``` indexed (the name) associative array of ```T_VALUE``` (the value) and represents the set of values associated with one call stack entry. 
+
+- ```T_CALL_STACK``` and ```T_CALL_VALUES``` variables always contain the same number of elements. The first element of ```T_CALL_VALUES``` corresponds to the first element of ```T_CALL_STACK```, the second corresponds to the second and so on. 
+
+- Possible values of ```T_VALUE.TYPE``` are ```'VARCHAR2'```, ```'NUMBER'```, ```'BOOLEAN'``` and ```'DATE'```. Depending on the type, one of ```VARCHAR2_VALUE```, ```NUMBER_VALUE```, ```BOOLEAN_VALUE``` and ```DATE_VALUE``` is filled with the actual value.
+
+### Tracking calls and named values
+
+### Obtaining and formatting call stack
+
+There is a procedure called ```GET_CALL_STACK``` in the ```LOG$``` package, which should be called from within the message handlers to obtain the most recent contents of the call stack:
+
+```
+PROCEDURE get_call_stack (
+    p_calls OUT t_call_stack,
+    p_values OUT t_call_values 
+);
+```
+
+All the instrumentation calls will always update the internal representation of the call stack, taking in the account any user specified service depth. All internal calls to PL-LOG are considered to be the service ones and normally won't appear in the call stack.
+
+```LOG$``` also contains a helper method ```FORMAT_CALL_STACK```, which allows to create fromatted representation of the call stack contents ready to be presented or stored in a ```VARCHAR2``` column:
+
+```
+c_STRING_LENGTH CONSTANT PLS_INTEGER := 32767;
+
+TYPE t_call_stack_format_options IS
+    RECORD (
+        first_line_indent STRING,
+        indent STRING,
+        argument_notation BOOLEANN := FALSE
+    );
+
+FUNCTION format_call_stack (
+    p_length IN t_string_length := c_STRING_LENGTH,
+    p_options IN t_call_stack_format_options := NULL
+)
+RETURN VARCHAR2;
+```
 
 ## Exception handling
