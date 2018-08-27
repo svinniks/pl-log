@@ -48,18 +48,14 @@ CREATE OR REPLACE PACKAGE BODY default_message_handler IS
     FUNCTION get_log_level
     RETURN log$.t_handler_log_level IS
     BEGIN
-    
         RETURN v_log_level;
-    
     END;
     
     PROCEDURE set_log_level (
         p_level IN log$.t_handler_log_level
     ) IS
     BEGIN
-    
         v_log_level := p_level;
-    
     END;
     
     PROCEDURE reset IS

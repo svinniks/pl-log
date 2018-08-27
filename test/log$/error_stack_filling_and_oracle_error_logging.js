@@ -133,50 +133,6 @@ suite("Error stack filling and oracle error logging", function() {
     
     });
 
-    test("Check if call stack isn't affected when there is no error", function() {
-    
-        resetPackage();
-
-        database.run(`
-            DECLARE
-                
-                PROCEDURE proc1 IS
-                BEGIN
-                    log$.call;
-                END;
-
-            BEGIN
-                log$.call;
-                proc1;
-                log$.fill_error_stack;
-            END;
-        `);
-
-        let callStack = getCallStack();
-
-        expect(callStack).to.eql({
-            p_calls: [
-                {
-                    id: 1,
-                    unit: "__anonymous_block",
-                    line: 11,
-                    first_tracked_line: 10
-                },
-                {
-                    id: 2,
-                    unit: "__anonymous_block.PROC1",
-                    line: 6,
-                    first_tracked_line: 6
-                }
-            ],
-            "p_values": [
-                {},
-                {}
-            ]
-        });
-    
-    });
-    
     test("Anonymous block, call stack depth 1, tracked depth 0, backtrace depth 1", function() {
     
         resetPackage();
@@ -186,7 +142,7 @@ suite("Error stack filling and oracle error logging", function() {
                 RAISE NO_DATA_FOUND;
             EXCEPTION
                 WHEN OTHERS THEN
-                    log$.fill_error_stack;
+                    log$.fill_error_stack(0);
             END;
         `);
 
@@ -218,7 +174,7 @@ suite("Error stack filling and oracle error logging", function() {
                 RAISE NO_DATA_FOUND;
             EXCEPTION
                 WHEN OTHERS THEN
-                    log$.fill_error_stack;
+                    log$.fill_error_stack(0);
             END;
         `);
 
@@ -270,7 +226,7 @@ suite("Error stack filling and oracle error logging", function() {
                 proc1;
             EXCEPTION
                 WHEN OTHERS THEN
-                    log$.fill_error_stack;
+                    log$.fill_error_stack(0);
             END;
         `);
 
@@ -337,7 +293,7 @@ suite("Error stack filling and oracle error logging", function() {
                 proc1;
             EXCEPTION
                 WHEN OTHERS THEN
-                    log$.fill_error_stack;
+                    log$.fill_error_stack(0);
             END;
         `);
 
@@ -404,7 +360,7 @@ suite("Error stack filling and oracle error logging", function() {
                 proc2;
             EXCEPTION
                 WHEN OTHERS THEN
-                    log$.fill_error_stack;
+                    log$.fill_error_stack(0);
             END;
         `);
 
@@ -475,7 +431,7 @@ suite("Error stack filling and oracle error logging", function() {
                 proc1;
             EXCEPTION
                 WHEN OTHERS THEN
-                    log$.fill_error_stack;
+                    log$.fill_error_stack(0);
             END;
         `);
     
@@ -548,7 +504,7 @@ suite("Error stack filling and oracle error logging", function() {
                     proc3;
                 EXCEPTION
                     WHEN OTHERS THEN
-                        log$.fill_error_stack;
+                        log$.fill_error_stack(0);
                 END;
     
                 PROCEDURE proc1 IS
@@ -713,13 +669,10 @@ suite("Error stack filling and oracle error logging", function() {
 
     test("Check if nothing is logged if there is no error", function() {
         
-        database.call("log$.reset");
-        database.call("log$.set_system_log_level", {
-            p_level: ERROR
-        });
-
         database.run(`
             BEGIN
+                log$.reset;
+                log$.set_system_log_level(log$.c_ERROR);
                 log$.add_message_handler("${handlerTypeName}"(NULL, 0));    
             END;
         `);
@@ -753,13 +706,10 @@ suite("Error stack filling and oracle error logging", function() {
 
     test("Log oracle error with NULL handler, session and system level", function() {
         
-        database.call("log$.reset");
-        database.call("log$.set_system_log_level", {
-            p_level: null
-        });
-
         database.run(`
             BEGIN
+                log$.reset;
+                log$.set_system_log_level(NULL);
                 log$.add_message_handler("${handlerTypeName}"(NULL, NULL));    
                 log$.set_default_message_formatter(t_default_message_formatter(':'));
                 "${handlerPackageName}".reset;
@@ -808,13 +758,10 @@ suite("Error stack filling and oracle error logging", function() {
 
     test("Log oracle error with NULL handler and session level, ERROR system level", function() {
         
-        database.call("log$.reset");
-        database.call("log$.set_system_log_level", {
-            p_level: ERROR
-        });
-
         database.run(`
             BEGIN
+                log$.reset;
+                log$.set_system_log_level(log$.c_ERROR);
                 log$.add_message_handler("${handlerTypeName}"(NULL, NULL));    
             END;
         `);
@@ -869,15 +816,13 @@ suite("Error stack filling and oracle error logging", function() {
 
     test("Log oracle error with NULL handler level, INFO session level, NONE system level", function() {
         
-        database.call("log$.reset");
-
-        database.call("log$.set_system_log_level", {
-            p_level: NONE
-        });
-
-        database.call("log$.set_session_log_level", {
-            p_level: INFO
-        });
+        database.run(`
+            BEGIN
+                log$.reset;                
+                log$.set_system_log_level(log$.c_NONE);
+                log$.set_session_log_level(log$.c_INFO);
+            END;
+        `);
 
         database.run(`
             BEGIN
@@ -935,24 +880,12 @@ suite("Error stack filling and oracle error logging", function() {
 
     test("Log oracle error with INFO handler level, NONE session level and system level", function() {
         
-        database.call("log$.reset");
-
-        database.call("log$.set_system_log_level", {
-            p_level: NONE
-        });
-        
-        database.call("log$.set_session_log_level", {
-            p_level: NONE
-        });
-
         database.run(`
             BEGIN
+                log$.reset;                
+                log$.set_system_log_level(log$.c_NONE);
+                log$.set_session_log_level(log$.c_NONE);
                 log$.add_message_handler("${handlerTypeName}"(NULL, ${INFO}));    
-            END;
-        `);
-
-        database.run(`
-            BEGIN
                 log$.set_default_message_formatter(t_default_message_formatter(':'));
             END;
         `);
@@ -1001,24 +934,12 @@ suite("Error stack filling and oracle error logging", function() {
 
     test("Log oracle error custom message level", function() {
         
-        database.call("log$.reset");
-
-        database.call("log$.set_system_log_level", {
-            p_level: NONE
-        });
-        
-        database.call("log$.set_session_log_level", {
-            p_level: NONE
-        });
-
         database.run(`
             BEGIN
+                log$.reset;                
+                log$.set_system_log_level(log$.c_NONE);
+                log$.set_session_log_level(log$.c_NONE);
                 log$.add_message_handler("${handlerTypeName}"(NULL, ${INFO}));    
-            END;
-        `);
-
-        database.run(`
-            BEGIN
                 log$.set_default_message_formatter(t_default_message_formatter(':'));
             END;
         `);
@@ -1067,19 +988,13 @@ suite("Error stack filling and oracle error logging", function() {
 
     test("Log oracle error, hide one stack level", function() {
         
-        database.call("log$.reset");
-
-        database.call("log$.set_system_log_level", {
-            p_level: NONE
-        });
-        
-        database.call("log$.set_session_log_level", {
-            p_level: NONE
-        });
-
         database.run(`
             BEGIN
+                log$.reset;                
+                log$.set_system_log_level(log$.c_NONE);
+                log$.set_session_log_level(log$.c_NONE);
                 log$.add_message_handler("${handlerTypeName}"(NULL, ${INFO}));    
+                log$.set_default_message_formatter(t_default_message_formatter(':'));
             END;
         `);
 

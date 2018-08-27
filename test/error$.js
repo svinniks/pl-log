@@ -44,7 +44,11 @@ setup("Create wrapper for LOG$.GET_CALL_STACK to handle associative array argume
 
 setup("Setup logger and error handler", function() {
 
-    database.call("log$.reset");
+    database.run(`
+        BEGIN
+            log$.reset;
+        END;
+    `);
 
     database.run(`
         BEGIN

@@ -392,8 +392,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
     PROCEDURE fill_call_stack (
         p_service_depth IN NATURALN,
-        p_reset_top IN BOOLEANN,
-        p_track_top IN BOOLEANN
+        p_reset_top IN BOOLEAN,
+        p_track_top IN BOOLEAN
     ) IS
     
         v_dynamic_depth PLS_INTEGER;

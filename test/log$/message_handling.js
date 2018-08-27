@@ -92,27 +92,16 @@ suite("Message handling", function() {
     
     });
     
-    test("Try to call MESSAGE overload 2 with NULL service depth", function() {
-    
-        expect(function() {
-        
-            database.run(`
-                BEGIN
-                    log$.message(log$.c_INFO, 'Hello, World!', TO_NUMBER(NULL));    
-                END;
-            `);
-        
-        }).to.throw(/ORA-06502/);
-    
-    });
-
     test("Check if call stack is updated when no handlers are registered", function() {
         
         resetPackage();
 
-        database.call("log$.reset");
-        database.call("log$.reset_system_log_level");
-
+        database.run(`
+            BEGIN
+                log$.reset_system_log_level;
+            END;
+        `);
+        
         database.run(`
             BEGIN
                 log$.message(log$.c_INFO, 'Hello, :1!', t_varchars('World'));
@@ -229,21 +218,15 @@ suite("Message handling", function() {
 
         test("INFO message to one handler with NULL handler, session and system level", function() {
         
-            database.call("log$.reset");
-            database.call("log$.reset_system_log_level");
-
             database.run(`
                 BEGIN
-                    log$.add_message_handler("${handlerTypeName}"(NULL, NULL));    
-                END;
-            `);
-
-            database.run(`
-                BEGIN
+                    log$.reset;
+                    log$.reset_system_log_level;
+                    log$.add_message_handler("${handlerTypeName}"(NULL, NULL));
                     log$.set_default_message_formatter(t_default_message_formatter(':'));
                 END;
             `);
-
+            
             database.call(`"${handlerPackageName}".reset`);
 
             database.call("log$.message", {
@@ -260,19 +243,11 @@ suite("Message handling", function() {
 
         test("INFO message to one handler with NULL handler and session level, ERROR system level", function() {
         
-            database.call("log$.reset");
-            database.call("log$.set_system_log_level", {
-                p_level: ERROR
-            });
-
             database.run(`
                 BEGIN
-                    log$.add_message_handler("${handlerTypeName}"(NULL, NULL));    
-                END;
-            `);
-
-            database.run(`
-                BEGIN
+                    log$.reset;
+                    log$.set_system_log_level(log$.c_INFO);
+                    log$.add_message_handler("${handlerTypeName}"(NULL, NULL));
                     log$.set_default_message_formatter(t_default_message_formatter(':'));
                 END;
             `);
