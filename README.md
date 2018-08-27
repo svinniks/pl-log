@@ -531,7 +531,7 @@ Message handlers can use ```DBMS_UTILITY``` or ```UTL_CALL_STACK``` directly to 
 
 - Hide irrelevant (service) top entries from the stack, leaving only the one of the business code.
 - Associate one or more named values with any call stack entry (useful to log subprogram arguments or loop variables).
-- Get the fullest information of where an unexpected Oracle error has occured, by concacenating the most recently tracked call stack and the error backtrace.
+- Get the fullest information of where an unexpected Oracle error has occured, by merging the most recently tracked call stack and the error backtrace.
 
 ### Data types for storing call stack
 
@@ -574,11 +574,11 @@ TYPE t_call_values IS
 
 - ```LINE``` contains number of the line in the __top level unit__ (package or object type) the call has occured on, that is even when ```UNIT``` resolves to the very packaged procedure, ```LINE``` will still store line number in the package itself.
 
-- ```FIRST_TRACKED_LINE``` is used by PL-LOG call stack tracking subsystem to identify whether a new call of the same subprogram has started or it is just another instrumentation call in the same call. This field is considered to be an internal one and should be igrnored.
+- ```FIRST_TRACKED_LINE``` is used by PL-LOG call stack tracking subsystem to identify whether a new call of the same subprogram has started or it is just another instrumentation call in the same execution of the subprogram. This field is considered to be internal and should be igrnored.
 
 ```T_CALL_STACK``` represents contents of the whole call stack. The first element is the deepest entry of the stack.
 
-```T_CALL_VALUES``` represents named values associated with the call stack entries. 
+```T_CALL_VALUES``` represents named values associated with the call stack entries:
 
 - Each element of ```T_CALL_VALUES``` is a ```VARCHAR2``` indexed (the name) associative array of ```T_VALUE``` (the value) and represents the set of values associated with one call stack entry. 
 
@@ -599,12 +599,17 @@ PROCEDURE get_call_stack (
 );
 ```
 
-All the instrumentation calls will always update the internal representation of the call stack, taking in the account any user specified service depth. All internal calls to PL-LOG are considered to be the service ones and normally won't appear in the call stack.
+All the instrumentation calls will always update the internal representation of the call stack, taking into account any user specified service depth. All internal calls to PL-LOG are considered to be the service ones and normally won't appear in the call stack.
 
 ```LOG$``` also contains a helper method ```FORMAT_CALL_STACK```, which allows to create fromatted representation of the call stack contents ready to be presented or stored in a ```VARCHAR2``` column:
 
 ```
 c_STRING_LENGTH CONSTANT PLS_INTEGER := 32767;
+
+SUBTYPE t_formatted_call_stack_length IS
+    PLS_INTEGER
+        RANGE 3..32767
+        NOT NULL;
 
 TYPE t_call_stack_format_options IS
     RECORD (
@@ -614,10 +619,51 @@ TYPE t_call_stack_format_options IS
     );
 
 FUNCTION format_call_stack (
-    p_length IN t_string_length := c_STRING_LENGTH,
+    p_length IN t_formatted_call_stack_length := c_STRING_LENGTH,
     p_options IN t_call_stack_format_options := NULL
 )
 RETURN VARCHAR2;
+```
+
+By default, ```FORMAT_CALL_STACK``` will return up to the 32767 first characters of the formatted call stack, including information about the associated values. Additionally it is possible to lower the length limitation to as little as 3 characters. If there is a length overflow, an ellipsis mark will be added to the end of the returned value.
+
+It is possible to slightly alter the default behaviour of ```FORMAT_CALL_STACK``` by providing and instance of ```T_CALL_STACK_FORMAT_OPTIONS```:
+
+- ```FIRST_LINE_INDENT``` will be added to the beginning of the first line.
+
+- ```INDENT``` will be added to the beginning of all lines, starting with the second one.
+
+- ```ARGUMENT_NOTATION``` value of ```TRUE``` will tell PL-LOG to output the associated value in PL/SQL named argument notation (that is using ```=>``` and comma as the separator).
+
+Below is an example of how ```FORMAT_CALL_STACK``` is called withing the built-in message handler ```T_DBMS_OUTPUT_HANDLER``` (with the argument notation turned on):
+
+```
+DECLARE
+
+    v_call_stack_format_options log$.t_call_stack_format_options;
+    
+BEGIN
+
+    v_call_stack_format_options.first_line_indent := 'at: ';
+    v_call_stack_format_options.indent := '    ';
+    v_call_stack_format_options.argument_notation := TRUE;
+
+    DBMS_OUTPUT.PUT_LINE(
+        log$.format_call_stack(
+            p_options => v_call_stack_format_options
+        )
+    );
+
+END;
+```
+
+And here is an example of what could appear in your ```DBMS_OUTPUT``` window:
+
+```
+at: OWNER.REGISTER_PERSON (line 19)
+        p_birth_date => TIMESTAMP '2018-08-23 23:57:48',
+        p_name => NULL
+    __anonymous_block (line 2)
 ```
 
 ## Exception handling

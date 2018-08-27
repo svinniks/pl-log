@@ -881,7 +881,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     END;
     
     FUNCTION format_call_stack (
-        p_length IN t_string_length := c_STRING_LENGTH,
+        p_length IN t_formatted_call_stack_length := c_STRING_LENGTH,
         p_options IN t_call_stack_format_options := NULL
     )
     RETURN VARCHAR2 IS

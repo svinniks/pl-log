@@ -27,7 +27,7 @@ CREATE OR REPLACE PACKAGE log$ IS
  
     c_STRING_LENGTH CONSTANT PLS_INTEGER := 32767;
 
-    SUBTYPE t_string_length IS
+    SUBTYPE t_formatted_call_stack_length IS
         PLS_INTEGER
             RANGE 3..32767
             NOT NULL;
@@ -268,7 +268,7 @@ CREATE OR REPLACE PACKAGE log$ IS
     PROCEDURE reset_call_stack;
     
     FUNCTION format_call_stack (
-        p_length IN t_string_length := c_STRING_LENGTH,
+        p_length IN t_formatted_call_stack_length := c_STRING_LENGTH,
         p_options IN t_call_stack_format_options := NULL
     )
     RETURN VARCHAR2;
