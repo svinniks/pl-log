@@ -30,12 +30,12 @@ SET DEFINE OFF
 @@types/t_oracle_error_mapper.tps
 /
 
-@@types/t_top_call.tps
+@@types/t_call.tps
 /
 @@packages/log$.pks
 /
 
-@@types/t_top_call.tpb
+@@types/t_call.tpb
 /
 @@packages/log$.pkb
 /

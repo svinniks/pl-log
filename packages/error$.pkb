@@ -168,7 +168,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         v_code PLS_INTEGER;
         v_message log$.STRING;
         
-        v_mapped_code log$.t_target_error_code;
+        v_mapped_code PLS_INTEGER;
         v_mapped_message log$.STRING;
     
     BEGIN
@@ -195,7 +195,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
                 
                     v_code := v_mapped_code;
                     
-                    v_message := log$.format_message(
+                    v_message := log$.cache_message(
                         v_oracle_error_level, 
                         v_mapped_message, 
                         v_display_language,

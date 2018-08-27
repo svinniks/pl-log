@@ -1,23 +1,17 @@
-CREATE OR REPLACE TYPE BODY t_top_call IS
+CREATE OR REPLACE TYPE BODY t_call IS
 
-    CONSTRUCTOR FUNCTION t_top_call
-    RETURN self AS RESULT IS
-    BEGIN
-        RETURN;
-    END;
-    
     MEMBER FUNCTION param (
         p_name IN VARCHAR2,
         p_value IN VARCHAR2
     )
-    RETURN t_top_call IS
+    RETURN t_call IS
     BEGIN
     
-        log$.value(
+        log$.param(
+            id,
             p_name, 
             p_value,
-            p_service_depth => 1,
-            p_fill_call_stack => FALSE
+            p_service_depth => 1
         );
         
         RETURN self;
@@ -25,17 +19,17 @@ CREATE OR REPLACE TYPE BODY t_top_call IS
     END;
     
     MEMBER PROCEDURE param (
-        self IN t_top_call,
+        self IN t_call,
         p_name IN VARCHAR2,
         p_value IN VARCHAR2
     ) IS
     BEGIN
     
-        log$.value(
+        log$.param(
+            id,
             p_name, 
             p_value,
-            p_service_depth => 1,
-            p_fill_call_stack => FALSE
+            p_service_depth => 1
         );
          
     END;
@@ -44,14 +38,14 @@ CREATE OR REPLACE TYPE BODY t_top_call IS
         p_name IN VARCHAR2,
         p_value IN NUMBER
     )
-    RETURN t_top_call IS
+    RETURN t_call IS
     BEGIN
     
-        log$.value(
+        log$.param(
+            id,
             p_name, 
             p_value,
-            p_service_depth => 1,
-            p_fill_call_stack => FALSE
+            p_service_depth => 1
         );
         
         RETURN self;
@@ -59,17 +53,17 @@ CREATE OR REPLACE TYPE BODY t_top_call IS
     END;
     
     MEMBER PROCEDURE param (
-        self IN t_top_call,
+        self IN t_call,
         p_name IN VARCHAR2,
         p_value IN NUMBER
     ) IS
     BEGIN
     
-        log$.value(
+        log$.param(
+            id,
             p_name, 
             p_value,
-            p_service_depth => 1,
-            p_fill_call_stack => FALSE
+            p_service_depth => 1
         );
          
     END;
@@ -78,14 +72,14 @@ CREATE OR REPLACE TYPE BODY t_top_call IS
         p_name IN VARCHAR2,
         p_value IN BOOLEAN
     )
-    RETURN t_top_call IS
+    RETURN t_call IS
     BEGIN
     
-        log$.value(
+        log$.param(
+            id,
             p_name, 
             p_value,
-            p_service_depth => 1,
-            p_fill_call_stack => FALSE
+            p_service_depth => 1
         );
         
         RETURN self;
@@ -93,17 +87,17 @@ CREATE OR REPLACE TYPE BODY t_top_call IS
     END;
     
     MEMBER PROCEDURE param (
-        self IN t_top_call,
+        self IN t_call,
         p_name IN VARCHAR2,
         p_value IN BOOLEAN
     ) IS
     BEGIN
     
-        log$.value(
+        log$.param(
+            id,
             p_name, 
             p_value,
-            p_service_depth => 1,
-            p_fill_call_stack => FALSE
+            p_service_depth => 1
         );
          
     END;
@@ -112,14 +106,14 @@ CREATE OR REPLACE TYPE BODY t_top_call IS
         p_name IN VARCHAR2,
         p_value IN DATE
     )
-    RETURN t_top_call IS
+    RETURN t_call IS
     BEGIN
     
-        log$.value(
+        log$.param(
+            id,
             p_name, 
             p_value,
-            p_service_depth => 1,
-            p_fill_call_stack => FALSE
+            p_service_depth => 1
         );
         
         RETURN self;
@@ -127,17 +121,17 @@ CREATE OR REPLACE TYPE BODY t_top_call IS
     END;
     
     MEMBER PROCEDURE param (
-        self IN t_top_call,
+        self IN t_call,
         p_name IN VARCHAR2,
         p_value IN DATE
     ) IS
     BEGIN
     
-        log$.value(
+        log$.param(
+            id,
             p_name, 
             p_value,
-            p_service_depth => 1,
-            p_fill_call_stack => FALSE
+            p_service_depth => 1
         );
          
     END;

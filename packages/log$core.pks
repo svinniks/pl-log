@@ -18,13 +18,11 @@ CREATE OR REPLACE PACKAGE log$ IS
     
     PRAGMA RESTRICT_REFERENCES(DEFAULT, RNDS, WNDS, RNPS, WNPS, TRUST);
     
-    c_session_serial# CONSTANT NUMBER := DBMS_DEBUG_JDWP.CURRENT_SESSION_SERIAL;
-    
     SUBTYPE BOOLEANN IS 
         BOOLEAN 
             NOT NULL;
     
-    SUBTYPE NUMBERN IS
+    SUBTYPE t_session_serial# IS
         NUMBER NOT NULL;
  
     c_STRING_LENGTH CONSTANT PLS_INTEGER := 32767;
@@ -65,12 +63,15 @@ CREATE OR REPLACE PACKAGE log$ IS
 
     c_NONE CONSTANT t_handler_log_level := 601;
     
-    SUBTYPE t_application_error_code IS
+    SUBTYPE t_target_error_code IS
         PLS_INTEGER
-            RANGE 20000..20999
+            RANGE 20000..20999;
+    
+    SUBTYPE t_application_error_code IS
+        t_target_error_code
             NOT NULL;
     
-    TYPE t_call_entry IS
+    TYPE t_call IS
         RECORD (
             id NUMBER(30),
             unit STRING,
@@ -79,7 +80,7 @@ CREATE OR REPLACE PACKAGE log$ IS
         );
         
     TYPE t_call_stack IS
-        TABLE OF t_call_entry;
+        TABLE OF t_call;
     
     TYPE t_value IS
         RECORD (
@@ -118,6 +119,11 @@ CREATE OR REPLACE PACKAGE log$ IS
         p_formatter IN t_log_message_formatter := NULL
     );
     
+    PROCEDURE add_message_resolver (
+        p_resolver IN t_log_message_resolver,
+        p_formatter IN t_log_message_formatter
+    );
+    
     PROCEDURE set_default_message_formatter (
         p_formatter IN t_log_message_formatter
     );
@@ -144,107 +150,105 @@ CREATE OR REPLACE PACKAGE log$ IS
     
     /* System log level management */
     
-    PROCEDURE reset_system_log_level;
-    
-    PROCEDURE init_system_log_level (
-        p_level IN t_handler_log_level
-    );
-    
-    PROCEDURE set_system_log_level (
-        p_level IN t_handler_log_level
-    );
-    
     FUNCTION get_system_log_level
     RETURN t_handler_log_level;
     
-    /* Session log level management */
+    PROCEDURE set_system_log_level (
+        p_level IN t_handler_log_level
+    );  
         
-    FUNCTION get_session_log_level (
-        p_session_serial# IN NUMBERN := c_session_serial#
-    )        
+    PROCEDURE init_system_log_level (
+        p_level IN t_handler_log_level
+    );      
+    
+    PROCEDURE reset_system_log_level;
+    
+    /* Session log level management */
+    
+    FUNCTION get_session_log_level
     RETURN t_handler_log_level;
         
+    FUNCTION get_session_log_level (
+        p_session_serial# IN t_session_serial#
+    )        
+    RETURN t_handler_log_level;
+    
     PROCEDURE set_session_log_level (
-        p_level IN t_handler_log_level,
-        p_session_serial# IN NUMBERN := c_session_serial#
+        p_level IN t_handler_log_level
+    );
+    
+    PROCEDURE set_session_log_level (
+        p_session_serial# IN t_session_serial#,
+        p_level IN t_handler_log_level
     );
     
     /* Call stack management */ 
-    
-    PROCEDURE reset_call_stack;
-    
-    $IF $$test $THEN 
-        PROCEDURE fill_call_stack (
-            p_service_depth IN NATURALN,
-            p_reset_top IN BOOLEAN,
-            p_track_top IN BOOLEAN
-        );
-    $END
+     
+    PROCEDURE fill_call_stack (
+        p_service_depth IN NATURALN,
+        p_reset_top IN BOOLEANN,
+        p_track_top IN BOOLEANN
+    );
     
     PROCEDURE call (
-        p_id OUT NUMBER,
         p_service_depth IN NATURALN := 0
     );
     
     FUNCTION call (
         p_service_depth IN NATURALN := 0
     )
-    RETURN t_call;
+    RETURN t_top_call;
     
-    PROCEDURE call (
-        p_service_depth IN NATURALN := 0
-    );
-    
-    PROCEDURE param (
-        p_call_id IN NUMBER,
+    PROCEDURE value (
         p_name IN STRINGN,
         p_value IN VARCHAR2,
-        p_service_depth IN NATURALN := 0
-    );
-    
-    PROCEDURE param (
-        p_call_id IN NUMBER,
-        p_name IN STRINGN,
-        p_value IN NUMBER,
-        p_service_depth IN NATURALN := 0
-    );
-    
-    PROCEDURE param (
-        p_call_id IN NUMBER,
-        p_name IN STRINGN,
-        p_value IN BOOLEAN,
-        p_service_depth IN NATURALN := 0
-    );
-    
-    PROCEDURE param (
-        p_call_id IN NUMBER,
-        p_name IN STRINGN,
-        p_value IN DATE,
-        p_service_depth IN NATURALN := 0
+        p_service_depth IN NATURALN := 0,
+        p_fill_call_stack IN BOOLEANN := TRUE
     );
     
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN VARCHAR2,
-        p_service_depth IN NATURALN := 0
+        p_fill_call_stack IN BOOLEANN
     );
     
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN NUMBER,
-        p_service_depth IN NATURALN := 0
+        p_service_depth IN NATURALN := 0,
+        p_fill_call_stack IN BOOLEANN := TRUE
+    );
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN NUMBER,
+        p_fill_call_stack IN BOOLEANN
     );
     
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN BOOLEAN,
-        p_service_depth IN NATURALN := 0
+        p_service_depth IN NATURALN := 0,
+        p_fill_call_stack IN BOOLEANN := TRUE
+    );
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN BOOLEAN,
+        p_fill_call_stack IN BOOLEANN
     );
     
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN DATE,
-        p_service_depth IN NATURALN := 0
+        p_service_depth IN NATURALN := 0,
+        p_fill_call_stack IN BOOLEANN := TRUE
+    );
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN DATE,
+        p_fill_call_stack IN BOOLEANN
     );
     
     FUNCTION backtrace_unit (
@@ -252,16 +256,16 @@ CREATE OR REPLACE PACKAGE log$ IS
     )
     RETURN VARCHAR2;
     
-    $IF $$test $THEN
-        PROCEDURE fill_error_stack (
-            p_service_depth IN NATURAL
-        );
-    $END
+    PROCEDURE fill_error_stack (
+        p_service_depth IN NATURAL := 0
+    );
     
     PROCEDURE get_call_stack (
         p_calls OUT t_call_stack,
         p_values OUT t_call_values 
     );
+    
+    PROCEDURE reset_call_stack;
     
     FUNCTION format_call_stack (
         p_length IN t_formatted_call_stack_length := c_STRING_LENGTH,
@@ -274,8 +278,15 @@ CREATE OR REPLACE PACKAGE log$ IS
     FUNCTION format_message (
         p_level IN t_message_log_level,
         p_message IN VARCHAR2,
-        p_arguments IN t_varchars := NULL,
-        p_language IN VARCHAR2 := NULL
+        p_language IN VARCHAR2 := NULL,
+        p_arguments IN t_varchars := NULL
+    )
+    RETURN VARCHAR2;
+    
+    FUNCTION format_message (
+        p_level IN t_message_log_level,
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars
     )
     RETURN VARCHAR2;
     
@@ -288,18 +299,29 @@ CREATE OR REPLACE PACKAGE log$ IS
     RETURN VARCHAR2;
     
     PROCEDURE reset_message_cache;
-        
+    
+    FUNCTION handling (
+        p_level IN t_message_log_level
+    )
+    RETURN BOOLEAN;
+    
     PROCEDURE message (
         p_level IN t_message_log_level,
         p_message IN VARCHAR2,
         p_arguments IN t_varchars := NULL,
         p_service_depth IN NATURALN := 0
     );
+    
+    PROCEDURE message (
+        p_level IN t_message_log_level,
+        p_message IN VARCHAR2,
+        p_service_depth IN NATURALN
+    ); 
         
     PROCEDURE oracle_error (
         p_level IN t_message_log_level,
         p_service_depth IN NATURALN,
-        p_mapped_code OUT PLS_INTEGER,
+        p_mapped_code OUT t_target_error_code,
         p_mapped_message OUT VARCHAR2
     );
     

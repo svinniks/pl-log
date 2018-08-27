@@ -52,7 +52,7 @@ DROP PACKAGE error$
 DROP PACKAGE log$
 /
 
-DROP TYPE t_top_call
+DROP TYPE t_call
 /
 
 DROP TYPE t_oracle_error_mapper

@@ -18,6 +18,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
 
     SUBTYPE CHARN IS CHAR NOT NULL;
 
+    v_session_serial# t_session_serial# := DBMS_DEBUG_JDWP.CURRENT_SESSION_SERIAL;
+
     TYPE t_message_resolvers IS 
         TABLE OF t_log_message_resolver;
         
@@ -55,9 +57,11 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     v_null_language_message STRING;
     
     v_call_id NUMBER(30);    
-    
     v_call_stack t_call_stack;
+    
     v_call_values t_call_values;   
+    
+    v_top_call CONSTANT t_top_call := t_top_call();
     
     /* Initialization methods */
 
@@ -172,6 +176,14 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
           
     END;
     
+    PROCEDURE add_message_resolver (
+        p_resolver IN t_log_message_resolver,
+        p_formatter IN t_log_message_formatter
+    ) IS
+    BEGIN
+        add_message_resolver(p_resolver, c_ALL, p_formatter); 
+    END;
+    
     PROCEDURE set_default_message_formatter (
         p_formatter IN t_log_message_formatter
     ) IS
@@ -247,11 +259,13 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         RETURN SYS_CONTEXT('LOG$LEVELS', 'SYSTEM'); 
     END;
     
-    PROCEDURE reset_system_log_level IS
+    PROCEDURE set_system_log_level (
+        p_level IN t_handler_log_level
+    ) IS
     BEGIN
-        DBMS_SESSION.CLEAR_CONTEXT('LOG$LEVELS', NULL, 'SYSTEM');
-        DBMS_SESSION.CLEAR_CONTEXT('LOG$LEVELS', NULL, 'SYSTEM_INITIALIZED');
-    END;
+        DBMS_SESSION.SET_CONTEXT('LOG$LEVELS', 'SYSTEM', p_level);
+        DBMS_SESSION.SET_CONTEXT('LOG$LEVELS', 'SYSTEM_INITIALIZED', 'TRUE');
+    END;       
     
     PROCEDURE init_system_log_level (
         p_level IN t_handler_log_level
@@ -264,18 +278,14 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
-    PROCEDURE set_system_log_level (
-        p_level IN t_handler_log_level
-    ) IS
+    PROCEDURE reset_system_log_level IS
     BEGIN
-        DBMS_SESSION.SET_CONTEXT('LOG$LEVELS', 'SYSTEM', p_level);
-        DBMS_SESSION.SET_CONTEXT('LOG$LEVELS', 'SYSTEM_INITIALIZED', 'TRUE');
-    END;       
-    
-    /* Session log level management */
-    
+        DBMS_SESSION.CLEAR_CONTEXT('LOG$LEVELS', NULL, 'SYSTEM');
+        DBMS_SESSION.CLEAR_CONTEXT('LOG$LEVELS', NULL, 'SYSTEM_INITIALIZED');
+    END;
+        
     FUNCTION get_session_log_level (
-        p_session_serial# IN NUMBERN := c_session_serial#
+        p_session_serial# IN t_session_serial#
     )
     RETURN t_handler_log_level IS
     BEGIN
@@ -285,6 +295,14 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             '#' || p_session_serial#
         );
     
+    END;
+    
+    /* Session log level management */
+    
+    FUNCTION get_session_log_level
+    RETURN t_handler_log_level IS
+    BEGIN
+        RETURN get_session_log_level(v_session_serial#);
     END;
     
     PROCEDURE cleanup_session_log_levels IS
@@ -313,8 +331,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     END;
     
     PROCEDURE set_session_log_level (
-        p_level IN t_handler_log_level,
-        p_session_serial# IN NUMBERN := c_session_serial#
+        p_session_serial# IN t_session_serial#,
+        p_level IN t_handler_log_level
     ) IS
     BEGIN
     
@@ -340,13 +358,14 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
-    /* Call stack management */
-    
-    PROCEDURE reset_call_stack IS
+    PROCEDURE set_session_log_level (
+        p_level IN t_handler_log_level
+    ) IS
     BEGIN
-        v_call_stack := t_call_stack();
-        v_call_values := t_call_values();
+        set_session_log_level(v_session_serial#, p_level);
     END;
+    
+    /* Call stack management */
     
     FUNCTION call_stack_unit (
         p_depth IN PLS_INTEGER
@@ -389,7 +408,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         END LOOP; 
     
     END;
-        
+    
     PROCEDURE fill_call_stack (
         p_service_depth IN NATURALN,
         p_reset_top IN BOOLEANN,
@@ -402,8 +421,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_matching_height PLS_INTEGER;
         
         v_depth PLS_INTEGER;
-        v_actual_call t_call_entry;
-        v_stack_call t_call_entry;
+        v_actual_call t_call;
+        v_stack_call t_call;
         
     BEGIN
     
@@ -476,141 +495,27 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     END;
     
     PROCEDURE call (
-        p_id OUT NUMBER,
         p_service_depth IN NATURALN := 0
     ) IS
+        c t_call;
     BEGIN
         fill_call_stack(p_service_depth + 1, TRUE, TRUE);
-        p_id := v_call_stack(v_call_stack.COUNT).id;   
     END;
     
     FUNCTION call (
         p_service_depth IN NATURALN := 0
     )
-    RETURN t_call IS
+    RETURN t_top_call IS
     BEGIN
         fill_call_stack(p_service_depth + 1, TRUE, TRUE);
-        RETURN t_call(v_call_stack(v_call_stack.COUNT).id);   
-    END;
-    
-    PROCEDURE call (
-        p_service_depth IN NATURALN := 0
-    ) IS
-    BEGIN
-        fill_call_stack(p_service_depth + 1, TRUE, TRUE);
-    END;
-    
-    PROCEDURE param (
-        p_call_id IN NUMBER,
-        p_name IN VARCHAR2,
-        p_type IN VARCHAR2,
-        p_service_depth IN PLS_INTEGER,
-        p_varchar2_value IN VARCHAR2 := NULL,
-        p_number_value IN NUMBER := NULL,
-        p_boolean_value IN BOOLEAN := NULL,
-        p_date_value IN DATE := NULL
-    ) IS
-        v_value t_value;
-        v_call_i PLS_INTEGER;
-    BEGIN
-    
-        FOR v_i IN REVERSE 1..v_call_stack.COUNT LOOP
-            IF v_call_stack(v_i).id = p_call_id THEN
-                v_call_i := v_i;
-                EXIT;
-            END IF;
-        END LOOP;
-    
-        IF v_call_i IS NOT NULL THEN
-        
-            v_value.type := p_type;
-            v_value.varchar2_value := p_varchar2_value;
-            v_value.number_value := p_number_value;
-            v_value.boolean_value := p_boolean_value;
-            v_value.date_value := p_date_value;
-        
-            v_call_values(v_call_i)(p_name) := v_value;
-            
-        END IF;
-    
-    END;
-    
-    PROCEDURE param (
-        p_call_id IN NUMBER,
-        p_name IN STRINGN,
-        p_value IN VARCHAR2,
-        p_service_depth IN NATURALN := 0
-    ) IS
-    BEGIN
-    
-        param(
-            p_call_id,
-            p_name, 
-            'VARCHAR2', 
-            p_service_depth + 1,
-            p_varchar2_value => p_value
-        );
-    
-    END;
-    
-    PROCEDURE param (
-        p_call_id IN NUMBER,
-        p_name IN STRINGN,
-        p_value IN NUMBER,
-        p_service_depth IN NATURALN := 0
-    ) IS
-    BEGIN
-    
-        param(
-            p_call_id,
-            p_name, 
-            'NUMBER', 
-            p_service_depth + 1,
-            p_number_value => p_value
-        );
-    
-    END;
-    
-    PROCEDURE param (
-        p_call_id IN NUMBER,
-        p_name IN STRINGN,
-        p_value IN BOOLEAN,
-        p_service_depth IN NATURALN := 0
-    ) IS
-    BEGIN
-    
-        param(
-            p_call_id,
-            p_name, 
-            'BOOLEAN', 
-            p_service_depth + 1,
-            p_boolean_value => p_value
-        );
-    
-    END;
-    
-    PROCEDURE param (
-        p_call_id IN NUMBER,
-        p_name IN STRINGN,
-        p_value IN DATE,
-        p_service_depth IN NATURALN := 0
-    ) IS
-    BEGIN
-    
-        param(
-            p_call_id,
-            p_name, 
-            'DATE', 
-            p_service_depth + 1,
-            p_date_value => p_value
-        );
-    
+        RETURN v_top_call;   
     END;
     
     PROCEDURE value (
         p_name IN VARCHAR2,
         p_type IN VARCHAR2,
         p_service_depth IN PLS_INTEGER,
+        p_fill_call_stack IN BOOLEAN,
         p_varchar2_value IN VARCHAR2 := NULL,
         p_number_value IN NUMBER := NULL,
         p_boolean_value IN BOOLEAN := NULL,
@@ -619,11 +524,15 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_value t_value;
     BEGIN
     
-        fill_call_stack(
-            p_service_depth => p_service_depth + 1, 
-            p_reset_top => FALSE, 
-            p_track_top => TRUE
-        );
+        IF p_fill_call_stack THEN
+        
+            fill_call_stack(
+                p_service_depth => p_service_depth + 1, 
+                p_reset_top => FALSE, 
+                p_track_top => TRUE
+            );
+                
+        END IF;
         
         IF v_call_values.COUNT > 0 THEN
         
@@ -642,7 +551,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN VARCHAR2,
-        p_service_depth IN NATURALN := 0
+        p_service_depth IN NATURALN := 0,
+        p_fill_call_stack IN BOOLEANN := TRUE
     ) IS
     BEGIN
     
@@ -650,6 +560,24 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             p_name, 
             'VARCHAR2', 
             p_service_depth + 1,
+            p_fill_call_stack,
+            p_varchar2_value => p_value
+        );
+    
+    END;
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN VARCHAR2,
+        p_fill_call_stack IN BOOLEANN
+    ) IS
+    BEGIN
+    
+        value(
+            p_name, 
+            'VARCHAR2', 
+            1,
+            p_fill_call_stack,
             p_varchar2_value => p_value
         );
     
@@ -658,7 +586,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN NUMBER,
-        p_service_depth IN NATURALN := 0
+        p_service_depth IN NATURALN := 0,
+        p_fill_call_stack IN BOOLEANN := TRUE
     ) IS
     BEGIN
     
@@ -666,6 +595,24 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             p_name, 
             'NUMBER', 
             p_service_depth + 1,
+            p_fill_call_stack,
+            p_number_value => p_value
+        );
+    
+    END;
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN NUMBER,
+        p_fill_call_stack IN BOOLEANN
+    ) IS
+    BEGIN
+    
+        value(
+            p_name, 
+            'NUMBER', 
+            1,
+            p_fill_call_stack,
             p_number_value => p_value
         );
     
@@ -674,7 +621,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN BOOLEAN,
-        p_service_depth IN NATURALN := 0
+        p_service_depth IN NATURALN := 0,
+        p_fill_call_stack IN BOOLEANN := TRUE
     ) IS
     BEGIN
     
@@ -682,6 +630,24 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             p_name, 
             'BOOLEAN', 
             p_service_depth + 1,
+            p_fill_call_stack,
+            p_boolean_value => p_value
+        );
+    
+    END;
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN BOOLEAN,
+        p_fill_call_stack IN BOOLEANN
+    ) IS
+    BEGIN
+    
+        value(
+            p_name, 
+            'BOOLEAN', 
+            1,
+            p_fill_call_stack,
             p_boolean_value => p_value
         );
     
@@ -690,7 +656,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     PROCEDURE value (
         p_name IN STRINGN,
         p_value IN DATE,
-        p_service_depth IN NATURALN := 0
+        p_service_depth IN NATURALN := 0,
+        p_fill_call_stack IN BOOLEANN := TRUE
     ) IS
     BEGIN
     
@@ -698,6 +665,24 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             p_name, 
             'DATE', 
             p_service_depth + 1,
+            p_fill_call_stack,
+            p_date_value => p_value
+        );
+    
+    END;
+    
+    PROCEDURE value (
+        p_name IN STRINGN,
+        p_value IN DATE,
+        p_fill_call_stack IN BOOLEANN
+    ) IS
+    BEGIN
+    
+        value(
+            p_name, 
+            'DATE', 
+            1,
+            p_fill_call_stack,
             p_date_value => p_value
         );
     
@@ -730,7 +715,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
-    PROCEDURE fill_error_stack (
+    PROCEDURE do_fill_error_stack (
         p_service_depth IN NATURAL
     ) IS
     
@@ -740,13 +725,13 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_matching_height PLS_INTEGER;
         
         v_depth PLS_INTEGER;
-        v_actual_call t_call_entry;
-        v_stack_call t_call_entry;
+        v_actual_call t_call;
+        v_stack_call t_call;
         
         v_backtrace_unit VARCHAR2(4000);
         v_backtrace_depth PLS_INTEGER;
         
-        v_call t_call_entry;
+        v_call t_call;
     
     BEGIN
     
@@ -871,6 +856,15 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
+    PROCEDURE fill_error_stack (
+        p_service_depth IN NATURAL := 0
+    ) IS
+    BEGIN
+        IF utl_call_stack.error_depth > 0 THEN
+            do_fill_error_stack(p_service_depth + 1);
+        END IF;
+    END;
+    
     PROCEDURE get_call_stack (
         p_calls OUT t_call_stack,
         p_values OUT t_call_values
@@ -878,6 +872,12 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     BEGIN
         p_calls := v_call_stack;
         p_values := v_call_values;
+    END;
+    
+    PROCEDURE reset_call_stack IS
+    BEGIN
+        v_call_stack := t_call_stack();
+        v_call_values := t_call_values();
     END;
     
     FUNCTION format_call_stack (
@@ -1007,8 +1007,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     FUNCTION format_message (
         p_level IN t_message_log_level,
         p_message IN VARCHAR2,
-        p_arguments IN t_varchars := NULL,
-        p_language IN VARCHAR2 := NULL
+        p_language IN VARCHAR2 := NULL,
+        p_arguments IN t_varchars := NULL
     )
     RETURN VARCHAR2 IS
     
@@ -1091,6 +1091,16 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
     END;
     
+    FUNCTION format_message (
+        p_level IN t_message_log_level,
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars
+    )
+    RETURN VARCHAR2 IS
+    BEGIN
+        RETURN format_message(p_level, p_message, NULL, p_arguments);
+    END;
+
     FUNCTION handling (
         p_handler_i IN NATURALN,
         p_level IN t_message_log_level
@@ -1147,7 +1157,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         IF p_language IS NULL THEN
         
             IF v_null_language_message IS NULL THEN
-                v_null_language_message := format_message(p_level, p_message, p_arguments);
+                v_null_language_message := format_message(p_level, p_message, NULL, p_arguments);
             END IF;
             
             RETURN v_null_language_message;
@@ -1155,7 +1165,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         ELSE
         
             IF NOT v_message_cache.EXISTS(p_language) THEN
-                v_message_cache(p_language) := format_message(p_level, p_message, p_arguments, p_language);
+                v_message_cache(p_language) := format_message(p_level, p_message, p_language, p_arguments);
             END IF;
             
             RETURN v_message_cache(p_language);
@@ -1217,9 +1227,18 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
        
     END;
     
+    PROCEDURE message (
+        p_level IN t_message_log_level,
+        p_message IN VARCHAR2,
+        p_service_depth IN NATURALN
+    ) IS
+    BEGIN
+        message(p_level, p_message, NULL, p_service_depth + 1);
+    END;
+    
     PROCEDURE map_oracle_error (
         p_source_code IN NATURALN,
-        p_target_code OUT PLS_INTEGER,
+        p_target_code OUT t_target_error_code,
         p_target_message OUT VARCHAR2
     ) IS
     BEGIN
@@ -1227,24 +1246,16 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         FOR v_i IN 1..v_oracle_error_mappers.COUNT LOOP
         
             BEGIN
-            
                 v_oracle_error_mappers(v_i).map_oracle_error(p_source_code, p_target_code, p_target_message);
-                
-                IF p_target_code IS NOT NULL THEN
-                    
-                    IF p_target_code BETWEEN 20000 AND 20999 THEN
-                        RETURN;
-                    ELSE
-                        log_event('E', 'Invalid target code ' || p_target_code || ' has been returned by an Oracle error mapper!');
-                    END IF;
-                    
-                END IF;
-                
             EXCEPTION
                 WHEN OTHERS THEN
                     log_error('An error occured while mapping oracle error!');
             END;
             
+            IF p_target_code IS NOT NULL THEN
+                RETURN;
+            END IF;
+        
         END LOOP;
     
     END;
@@ -1462,7 +1473,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     PROCEDURE oracle_error (
         p_level IN t_message_log_level,
         p_service_depth IN NATURALN,
-        p_mapped_code OUT PLS_INTEGER,
+        p_mapped_code OUT t_target_error_code,
         p_mapped_message OUT VARCHAR2
     ) IS
     
@@ -1473,7 +1484,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
         IF utl_call_stack.error_depth > 0 AND handling(p_level) THEN 
     
-            fill_error_stack(p_service_depth + 1);
+            do_fill_error_stack(p_service_depth + 1);
         
             v_code := utl_call_stack.error_number(1);
             v_message := utl_call_stack.error_msg(1);
@@ -1532,7 +1543,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         p_service_depth IN NATURALN := 0
     ) IS
     
-        v_mapped_code PLS_INTEGER;
+        v_mapped_code t_target_error_code;
         v_mapped_message STRING;
     
     BEGIN
