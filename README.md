@@ -435,6 +435,89 @@ END;
 
 ## Code instrumentation
 
+There are two ways in PL-LOG of using ```LOG$``` to put instrumentation calls into your PL/SQL code: 
+
+- A generic procedure ```MESSAGE```, which accepts any valid log level and an array of message arguments;
+- A set of shortcut methods ```DEBUG```, ```INFO```, ```WARNING```, ```ERROR``` and ```FATAL``` each of which has six overloaded versions - one with an array of arguments and five similar versions which accept respectively from 1 to 5 arguments as separate procedure parameters ```P_ARGUMENT_1``` ... ```P_ARGUMENT_5```.
+
+The generic procedure ```MESSAGE``` is defined as follows:
+
+```
+SUBTYPE t_message_log_level IS 
+    PLS_INTEGER 
+        RANGE 1..600
+        NOT NULL;
+
+PROCEDURE message (
+    p_level IN t_message_log_level,
+    p_message IN VARCHAR2,
+    p_arguments IN t_varchars := NULL,
+    p_service_depth IN NATURALN := 0
+);
+```
+
+```P_SERVICE_DEPTH``` is a non-null natural number, which controls how many levels of the current call stack, starting from the top, must be considered as internal (or the "service") ones. This feature is helpful when it is necessary to wrap calls to PL-LOG into another layer of the instrumentation routines. For example, a system, which is going to integrate PL-LOG might already have an existing logging solution. The new code which is being developed will for sure call PL-LOG directly, but the old instrumentation methods can be refactored to call ```LOG$``` subprograms as well. In that case developers won't want to see their old logging framework units in the callstack logged alongside the messages. Please refer to the chapter ["Call stack tracking"](#call-stack-tracking) for more details.
+
+Below is a set examples of calling ```MESSAGE``` for some codified and free-text messages:
+
+```
+PROCEDURE create_account (
+    p_user_id IN NUMBER,
+    p_currency IN VARCHAR2
+) IS
+BEGIN
+
+    log$.message(
+        log$.c_DEBUG, 
+        'Starting account creation. User ID is :1, currency is :2.', 
+        t_varchars(p_user_id, p_currency)
+    );
+
+    -- An account for the user ID = :1 has been successfully created!
+    log$.message(200, 'MSG-00001', t_varchars(p_user_id));
+
+END;
+```
+
+The shortcut methods allow to keep the instrumentation calls as short and readable as possible:
+
+```
+PROCEDURE debug | info | warning | error | fatal (
+    p_message IN VARCHAR2,
+    p_arguments IN t_varchars := NULL
+);
+
+PROCEDURE debug | info | warning | error | fatal (
+    p_message IN VARCHAR2,
+    p_argument_1 IN VARCHAR2,
+    [ ...
+      p_argument_5 IN VARCHAR2 ]
+);
+```
+
+Usually, being able to pass up to five message arguments is more than enough in the vast majority of situations. If, however, more arguments are required, each of the shortcut methods has an overloaded version, which accepts an array of argument values. The shortcut methods don't allow to specify service depth.
+
+Below is the same example as for ```MESSAGE```, refactored to use sortcut methods:
+
+```
+PROCEDURE create_account (
+    p_user_id IN NUMBER,
+    p_currency IN VARCHAR2
+) IS
+BEGIN
+
+    log$.debug(
+        'Starting account creation. User ID is :1, currency is :2.', 
+        p_user_id, 
+        p_currency
+    );
+
+    -- An account for the user ID = :1 has been successfully created!
+    log$.info('MSG-00001', p_user_id);
+
+END;
+```
+
 ## Call stack tracking
 
 ## Exception handling

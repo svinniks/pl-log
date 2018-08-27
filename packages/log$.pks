@@ -317,13 +317,7 @@ CREATE OR REPLACE PACKAGE log$ IS
         p_message IN VARCHAR2,
         p_service_depth IN NATURALN
     ); 
-    
-    PROCEDURE map_oracle_error (
-        p_source_code IN NATURALN,
-        p_target_code OUT t_target_error_code,
-        p_target_message OUT VARCHAR2
-    );
-    
+        
     PROCEDURE oracle_error (
         p_level IN t_message_log_level,
         p_service_depth IN NATURALN,
