@@ -279,15 +279,10 @@ CREATE OR REPLACE PACKAGE log$ IS
     )
     RETURN VARCHAR2;
     
-    FUNCTION cache_message (
-        p_level IN t_message_log_level,
-        p_message IN VARCHAR2,
-        p_language IN VARCHAR2,
-        p_arguments IN t_varchars
+    FUNCTION get_last_message (
+        p_language IN VARCHAR2
     )
     RETURN VARCHAR2;
-    
-    PROCEDURE reset_message_cache;
         
     PROCEDURE message (
         p_level IN t_message_log_level,

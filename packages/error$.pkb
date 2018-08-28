@@ -21,7 +21,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
     v_oracle_error_level log$.t_message_log_level := log$.c_FATAL;
     
     c_handler_unit CONSTANT VARCHAR2(4000) := $$PLSQL_UNIT_OWNER || '.' || $$PLSQL_UNIT;
-    v_handled_lines t_numbers := t_numbers(102, 212, 217, 222);
+    v_handled_lines t_numbers := t_numbers(118, 226, 231, 236);
     
     v_display_language log$.STRING;
     
@@ -89,6 +89,9 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         p_arguments IN t_varchars := NULL,
         p_service_depth IN NATURALN := 0
     ) IS
+    
+        v_message log$.STRING;
+    
     BEGIN
     
         log$.message(
@@ -98,16 +101,21 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
             p_service_depth => p_service_depth + 1
         );
     
-        -- Handled!
-        raise_application_error(
-            -v_error_code, 
-            log$.cache_message(
+        v_message := log$.get_last_message(v_display_language);
+        
+        IF v_message IS NULL THEN
+        
+            v_message := log$.format_message(
                 v_error_level,
                 p_message,
-                v_display_language,
-                p_arguments
-            )
-        );
+                p_arguments,
+                v_display_language
+            );
+                
+        END IF;
+    
+        -- Handled!
+        raise_application_error(-v_error_code, v_message);
          
     END;
         
@@ -195,13 +203,19 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
                 
                     v_code := v_mapped_code;
                     
-                    v_message := log$.cache_message(
-                        v_oracle_error_level, 
-                        v_mapped_message, 
-                        v_display_language,
-                        t_varchars(v_code, v_message)
-                    );
-                
+                    v_message := log$.get_last_message(v_display_language);
+                    
+                    IF v_message IS NULL THEN
+                    
+                        v_message := log$.format_message(
+                            v_oracle_error_level, 
+                            v_mapped_message,
+                            t_varchars(v_code, v_message), 
+                            v_display_language
+                        );
+                    
+                    END IF;
+                    
                 END IF;     
             
             END IF;
