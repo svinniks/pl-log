@@ -18,7 +18,7 @@ CREATE OR REPLACE PACKAGE log$ IS
     
     PRAGMA RESTRICT_REFERENCES(DEFAULT, RNDS, WNDS, RNPS, WNPS, TRUST);
     
-    c_session_serial# CONSTANT NUMBER := DBMS_DEBUG_JDWP.CURRENT_SESSION_SERIAL;
+    c_SESSION_SERIAL# CONSTANT NUMBER := DBMS_DEBUG_JDWP.CURRENT_SESSION_SERIAL;
     
     SUBTYPE BOOLEANN IS 
         BOOLEAN 
@@ -160,13 +160,13 @@ CREATE OR REPLACE PACKAGE log$ IS
     /* Session log level management */
         
     FUNCTION get_session_log_level (
-        p_session_serial# IN NUMBERN := c_session_serial#
+        p_session_serial# IN NUMBERN := c_SESSION_SERIAL#
     )        
     RETURN t_handler_log_level;
         
     PROCEDURE set_session_log_level (
         p_level IN t_handler_log_level,
-        p_session_serial# IN NUMBERN := c_session_serial#
+        p_session_serial# IN NUMBERN := c_SESSION_SERIAL#
     );
     
     /* Call stack management */ 

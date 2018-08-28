@@ -27,7 +27,7 @@ Log and error messages can be codified, translated into different languages, sto
 
 All formatted messages are finally directed to (also pluggable) __handlers__ which store or forward them according to the user and developer needs. Each handler can be configured to process messages in a different language - this can be useful, for example, in a multi-language user environment to store all log entries only in english, but to display messages to the users in their preferred language.
 
-PL-LOG can be configured with unlimited number or message resolvers/formatters/handlers, limiting flow of the messages with log level constraints. Log level of messages being handled can be manipulated irrespective of database transactions on the __system__, __session__ (even different from the current one!) and __handler__ level which allows developers to leave even the finest level logger calls (DEBUG and lower) in the code and quickly enable message output when necessary.
+PL-LOG can be configured with unlimited number or message resolvers/formatters/handlers, controlling flow of the messages with log level thresholds. Log level of messages being handled can be manipulated irrespective of database transactions on the __system__, __session__ (even different from the current one!) and __handler__ level which allows developers to leave even the finest level logger calls (DEBUG and lower) in the code and quickly enable message output when necessary.
 
 Additional useful features include __call stack tracking__ with subprogram __argument and variable value logging__, ORA- error __translating__ and __mapping__ to custom business errors upon reraise, custom language code handling.
 
@@ -65,7 +65,7 @@ BEGIN
 END;
 ```
 
-Providing that `DBMS_OUTPUT` handler is enabled and configured to accept all level messages, the following exception will be raised:
+Providing that the `DBMS_OUTPUT` handler is enabled and configured to accept all level messages, the following exception will be raised:
 
 ```
 ORA-20000: MSG-00001: name is not specified!
@@ -121,7 +121,7 @@ GRANT EXECUTE ON error$ TO <PUBLIC|any_separate_user_or_role>
 /
 ```
 
-It is also recommended to create __public synonyms__ for these objects to keep call statements as short as possible. Please refer to the next chapters to get familiar with other PL-LOG objects which it is usable to grant public access to.
+It is also recommended to create __public synonyms__ for these objects to keep call statements as short as possible. Please refer to the next chapters to get familiar with other PL-LOG objects which it is useful to grant public access to.
 
 # Architecture
 
@@ -131,13 +131,13 @@ Each log message must be supplemented with a numeric __log level__, which denote
 
 Users can set __theshold log level__ on the __system__, __session__ and __handler__ level to control how many messages are getting handled (persisted). For example, if your code contains a lot of ```DEBUG``` level messages, you would not want to always store them all in the log table to save disk space and to increase performance. In that case ```INFO``` can be set as the threshold value for the whole system so that only messages with level 200 or more would get "noticed" and handled. However, if the system starts to behave incorrectly, operators can instantly swith the threshold to ```ALL = 0``` and start observing the log table while trying to reproduce the invalid behavior.
 
-Threshold log level for each message handler gets resolved as ```COALESCE(handler_log_level, session_log_level, system_log_level)``` which means that the session level overrides the system one and the handler level overrides both session and system level thresholds. If all three threshold levels are ```NULL```, then messages __won't be handled__ at all.
+Threshold log level for each message handler gets calculated as ```COALESCE(handler_log_level, session_log_level, system_log_level)``` which means that the session level overrides the system one and the handler level overrides both the session and the system level thresholds. If all three threshold levels are ```NULL```, then messages __won't be handled__ at all.
 
 ## Message handlers
 
-By default, PL-LOG only provides the API to issue log messages of different levels. These messages, however, are not stored or displayed anywhere. To persist or show messages, PL-LOG must be configured to include one or more __message handlers__. Handlers may store messages in a table, file system, alert log or a trace file, output them to ```DBMS_OUTPUT``` or send via e-mail. It is possible to develop custom message handlers and plug them into PL-LOG without recompiling the framework's source code. 
+By default, PL-LOG only provides the API to issue log messages of different levels. These messages, however, are not stored or displayed anywhere. To persist or show messages, PL-LOG must be configured to include one or more __message handlers__. Handlers may store messages in a table, file system, alert log or a trace file, output them to ```DBMS_OUTPUT``` or send via e-mail. It is possible to develop custom message handlers and plug them into PL-LOG without recompiling framework's source code. 
 
-Message handler API is implemented via an abstract object type ```T_LOG_MESSAGE_HANDLER```:
+Message handler API is implemented via the abstract object type ```T_LOG_MESSAGE_HANDLER```:
 
 ```
 CREATE OR REPLACE TYPE t_log_message_handler IS OBJECT (
@@ -156,11 +156,11 @@ CREATE OR REPLACE TYPE t_log_message_handler IS OBJECT (
 NOT INSTANTIABLE NOT FINAL
 ```
 
-The field ```dummy``` is there only because Oracle doesn't allow to create object types without fields.
+Field ```DUMMY``` is there only because Oracle doesn't allow to create object types without fields.
 
 While creating custom message handlers, developer must extend ```T_LOG_MESSAGE_HANDLER``` and implement two methods: ```GET_LOG_LEVEL``` and ```HANDLE_MESSAGE```.
 
-```GET_LOG_LEVEL``` must return threshold log level of the handler. PL-LOG will call the method while deciding whether to call the handler's ```HANDLE_MESSAGE``` method or not. It's up to the developer to decide where the return value for ```GET_LOG_LEVEL``` comes from. It may be a simple session-wide package global variable or a system-wide global value stored in a globally accessed context.
+```GET_LOG_LEVEL``` must return threshold log level of the handler. PL-LOG will call the method while deciding whether to call handler's ```HANDLE_MESSAGE``` method or not. It's up to the developer to decide where the return value for ```GET_LOG_LEVEL``` comes from. It may be a simple session-wide package global variable or a system-wide global value stored in a globally accessed context.
 
 ```HANDLE_MESSAGE``` is called by PL-LOG when the message passes the level threshold and should be persisted. The message text passed is already __translated and formatted__, so the handler must just save, display or forward it.
 
@@ -177,7 +177,7 @@ There are two message handlers PL-LOG comes bundled with:
 
 ```T_DEFAULT_MESSAGE_HANDLER``` appends log messages to a circular buffer based on a collection variable stored in the handler implementation package ```DEFAULT_MESSAGE_HANDLER```. 
 
-- Messages can be observed by selecting from the ```LOG$TAIL``` view. Only the messages of the current session are visible to the user.
+- Messages can be observed by selecting from the ```LOG$TAIL``` view. Only messages of the current session are visible to the user.
 
 - Size of the buffer can be changed by calling ```DEFAULT_MESSAGE_HANDLER.SET_CAPACITY```.
 
@@ -185,9 +185,9 @@ There are two message handlers PL-LOG comes bundled with:
 
 ```T_DBMS_OUTPUT_HANDLER``` writes log messages to ```DBMS_OUTPUT```. Just like for the default message handler, there is an implementation package called ```DBMS_OUTPUT_HANDLER```.
 
-- Log level threshold can be changed by calling ```DBMS_OUTPUT_HANDLER.SET_LOG_LEVEL``` (also only for the current session).
-- By default the handler will output callstack for all messages with level 400 (```ERROR```) or higher. To lower or to raise call stack display level threshold call ```DBMS_OUTPUT_HANDLER.SET_CALL_STACK_LEVEL```.
-- While displaying the call stack, tracked subprogram argument values will by default be displayed using colon as a separator:
+- Log level threshold can be changed by calling ```DBMS_OUTPUT_HANDLER.SET_LOG_LEVEL``` (applies only to the current session).
+- By default the handler will output callstack for all messages with level 400 (```ERROR```) or higher. To lower or to raise call stack display level threshold use ```DBMS_OUTPUT_HANDLER.SET_CALL_STACK_LEVEL```.
+- While displaying the call stack, tracked subprogram argument values will by default be separated by colons and new lines:
 
     ```
     23:57:48.268 [ERROR  ] MSG-00001: name is not specified!
@@ -197,7 +197,7 @@ There are two message handlers PL-LOG comes bundled with:
         __anonymous_block (line 2)
     ```
 
-    It is possible, however, to make ```DBMS_OUTPUT_HANDLER``` display parameters using PL/SQL named notation, by issuing ```DBMS_OUTPUT_HANDLER.SET_ARGUMENT_NOTATION(TRUE)```:
+    It is possible, however, to make ```DBMS_OUTPUT_HANDLER``` display parameters in PL/SQL named notation, by issuing ```DBMS_OUTPUT_HANDLER.SET_ARGUMENT_NOTATION(TRUE)```:
     ```
     23:57:48.268 [ERROR  ] MSG-00001: name is not specified!
     at: OWNER.REGISTER_PERSON (line 19)
@@ -206,13 +206,11 @@ There are two message handlers PL-LOG comes bundled with:
         __anonymous_block (line 2)
     ```
 
-    This feature can be useful to ease rerunning failed subprogram by just copy-pasting the argument values into your PL/SQL IDE. 
-    
     Please note that argument values as displayed as valid __PL/SQL literals__ for ```VARCHAR2```, ```NUMBER```, ```DATE```, ```BOOLEAN``` and compatible type arguments.
 
 ## Message resolvers
 
-It is a common practice to codify all the messages in the system, especially those which are displayed to the end users. Codifying means assigning each message a unique code and storing the texts somwhere outside the PL/SQL code, for example in a table. This approach enables multi-language message support, eases reusing and sistematizaion of the system's messages.
+It is a common practice to codify all the messages in the system, especially those which are displayed to the end users. Codifying means assigning each message a unique code and storing the texts somewhere outside the PL/SQL code, for example in a table. This approach enables multi-language message support, eases reusing and sistematizaion of system's messages.
 
 In PL-LOG, external message store concept is implemented via __message resolvers__ and the ```T_LOG_MESSAGE_RESOLVER`` abstract object type:
 
@@ -234,9 +232,9 @@ The only method that needs to be implemented in a custom resolver is ```RESOLVE_
 
 If the message has been successfully resolved, then the text must be returned from the function. Please note, that PL-LOG __will not add the original message__ code to the resolved text. For example, if there is a message with the code ```'MSG-00001'``` which resolves to the text ```'Invalid value!'```, the resolver might consider to concatenate them together before returning: ```'MSG-00001: Invalid value!'```.
 
-If the message could not be resolved, ```NULL``` must be returned from ```RESOLVE_MESSAGE```. PL-LOG allows to define multiple resolvers. These resolvers will be called by the framework in the same order they have been registered. The firts one which returns a non-NULL value will "win", so no other resolver will be called.
+If the message could not be resolved, ```NULL``` must be returned from ```RESOLVE_MESSAGE```. PL-LOG allows to define multiple resolvers. These resolvers will be called by the framework in the same order they have been registered in. The firts one which returns a non-NULL value will "win", so no other resolver will be called.
 
-In case the message could not be resolved by any of the registered resolvers, the original text will be passed to the handlers.
+In case the message could not be resolved by any of the registered resolvers, __the original text__ will be passed to the handlers.
 
 ### Built-in resolvers
 
@@ -264,11 +262,11 @@ BEGIN
 END;
 ```
 
-```REGISTER_MESSAGES``` is called from the initialization block of ```A_VERY_USEFUL_PACKAGE``` and registers all the necessary messages by issuing ```DEFAULT_MESSAGE_HANDLER.REGISTER_MESSAGE```.
+```REGISTER_MESSAGES``` is called from the initialization block of ```A_VERY_USEFUL_PACKAGE``` and registers all necessary messages by issuing ```DEFAULT_MESSAGE_HANDLER.REGISTER_MESSAGE```.
 
 ## Message formatters
 
-Formatting is the process of replacing special placeholders in a message text with the provided values. This feature allows to define log messages not only as constant strings, but also as templates, which are later filled with data to provide end users more detailed information of what has happened in the system. 
+Formatting is the process of replacing special placeholders in the message text with the provided values. This feature allows to define log messages not only as constant strings, but also as templates, which are later filled with data to provide end users more detailed information of what has happened in the system. 
 
 PL-LOG doesn't define any specific message template format, instead it provides an abstract object type called ```T_LOG_MESSAGE_FORMATTER``` which implements the formatter concept:
 
@@ -307,47 +305,49 @@ PL-LOG public API consists of two packages: ```LOG$``` and ```ERROR$```.
 
 ```LOG$``` provides methods for log message formatting and dispatching, call stack and subprogram argument tracking, unexpected Oracle error handling, threshold log level manipulation and PL-LOG framework configuration. Constants for the predefined log levels are also defined in the ```LOG$``` package.
 
-```ERROR$``` is used for both free-text and codified businness error raising and Oracle build-in error reraising after handling. The package ensures that any error will be dispatched to the handlers only once.
+```ERROR$``` is used for both free-text and codified businness error raising and Oracle built-in error reraising after handling. The package ensures that any error will be dispatched to the handlers only once.
 
 ## Configuration
 
-All PL-LOG configuration, namely message resolvers, formatters, handlers and log level thresholds, is stored in ```LOG$``` package variables, is local to the session and therefore must be initialized upon session creation. The default entry point for configuring PL-LOG is a special schema-level procedure called ```LOG$INIT```. ```LOG$``` will try to run this procedure from it's initialization block dynamically, using ```EXECUTE IMMEDIATE```. Procedure must either reside in the same schema as PL-LOG does or to be resolvable via a synonym.
+All PL-LOG configuration, namely message resolvers, formatters and handlers, is stored in ```LOG$``` package variables, is local to the session and therefore must be initialized upon session creation. The default entry point for configuring PL-LOG is a special schema-level procedure called ```LOG$INIT```. ```LOG$``` will try to run this procedure from it's initialization block dynamically, using ```EXECUTE IMMEDIATE```. Procedure must either reside in the same schema as PL-LOG does or to be resolvable via a synonym.
 
 ### Log level threshold control
 
 System and session log level thresholds are manipulated using the following ```LOG$``` subprograms:
 
 ```
-PROCEDURE set_system_log_level (
-    p_level IN t_handler_log_level
-);  
-    
-PROCEDURE init_system_log_level (
-    p_level IN t_handler_log_level
-);      
+SUBTYPE NUMBERN IS
+    NUMBER NOT NULL;
 
-PROCEDURE reset_system_log_level;
-
-PROCEDURE set_session_log_level (
-    p_level IN t_handler_log_level
-);
-
-PROCEDURE set_session_log_level (
-    p_session_serial# IN t_session_serial#,
-    p_level IN t_handler_log_level
-);
-```
-
-```T_HANDLER_LOG_LEVEL``` and ```T_SESSION_SERIAL#``` are defined in ```LOG$``` as:
-
-```
 SUBTYPE t_handler_log_level IS 
     PLS_INTEGER 
         RANGE 0..601;
 
-SUBTYPE t_session_serial# IS
-    NUMBER NOT NULL;
+PROCEDURE reset_system_log_level;
+    
+PROCEDURE init_system_log_level (
+    p_level IN t_handler_log_level
+);
+
+PROCEDURE set_system_log_level (
+    p_level IN t_handler_log_level
+);
+
+FUNCTION get_system_log_level
+RETURN t_handler_log_level;
+
+FUNCTION get_session_log_level (
+    p_session_serial# IN NUMBERN := c_SESSION_SERIAL#
+)        
+RETURN t_handler_log_level;
+    
+PROCEDURE set_session_log_level (
+    p_level IN t_handler_log_level,
+    p_session_serial# IN NUMBERN := c_SESSION_SERIAL#
+);
 ```
+
+```c_SESSION_SERIAL#``` constant stores serial number of the current session.
 
 - ```SET_SYSTEM_LOG_LEVEL``` changes __system__ log level threshold. The change becomes immediately available to all sessions.
 
@@ -355,7 +355,7 @@ SUBTYPE t_session_serial# IS
 
 - ```RESET_SYSTEM_LOG_LEVEL``` puts the system log level threshold back to the unitialized state, so that the first session to call ```INIT_SYSTEM_LOG_LEVEL``` or ```SET_SYSTEM_LOG_LEVEL``` would initialize it again.
 
-- ```SET_SESSION_LOG_LEVEL``` allows to set log level to the current (the first overload) or to __any other session__ (the second one), by providing a valid session ```SERIAL#``` (unlike ```SID```s, session serial numbers are not reused by the database instance and can be used to uniquely identify sessions).
+- ```SET_SESSION_LOG_LEVEL``` allows to set log level to the current or to __any other session__,by providing a valid session ```SERIAL#``` (unlike ```SID```s, session serial numbers are not reused by the database instance and can be used to uniquely identify sessions).
 
 Unitialized log level threshold equals to and gets handled as ```NULL```.
 
@@ -370,11 +370,6 @@ PROCEDURE add_message_resolver (
     p_resolver IN t_log_message_resolver,
     p_level IN t_resolver_log_level := c_ALL,
     p_formatter IN t_log_message_formatter := NULL
-);
-
-PROCEDURE add_message_resolver (
-    p_resolver IN t_log_message_resolver,
-    p_formatter IN t_log_message_formatter
 );
 
 PROCEDURE set_default_message_formatter (
@@ -393,17 +388,19 @@ PROCEDURE set_default_language (
 
 - ```ADD_MESSAGE_RESOLVER``` registers a message resolver, optionally sets it's log level threshold and associates a message formatter which will exclusively be used in pair with the resolver. 
     
-    Usually only messages visible to the end users are codified and need a resolver to be retrieved. Debug level messages will most probably be included in the code in a free-text form. Setting resolver's log level threshold may help to increase performance while processing large amounts of debug messages.
+    Usually only messages visible to the end users are codified and need a resolver to get obtained. Debug level messages will most probably be included in the code in a free-text form. Setting resolver's log level threshold may help to increase performance while processing large amounts of debug messages.
 
-    PL-LOG allows to register more than one message resolvers, each of which may lookup messages in different stores and return templates of different formats. It is possible to associate different formatters for each resolver registered. If no formatter has been assigned to the resolver, then the default one will be used, if such is configured.
+    PL-LOG allows to register __multiple message resolvers__, each of which may lookup messages in different stores and return templates of different formats. It is possible to associate different formatters for each registered resolver. If no formatter has been associated with the resolver, the default one will be used, if such is configured.
 
-- ```SET_DEFAULT_MESSAGE_FORMATTER``` sets a message formatter which will be used to format messages which could not be resolved or the ones from the resolvers without associated formatter.
+- ```SET_DEFAULT_MESSAGE_FORMATTER``` sets message formatter which will be used to format messages which could not be resolved or the ones from the resolvers without associated formatter.
 
-- ```ADD_MESSAGE_HANDLER``` registers a log message handler and optionally sets a language which the handler "would like" to receive messages in. When dispatching a message, PL-LOG will iterate over all active handlers and try to resolve the message in all languages requested. By calling ```SET_DEFAULT_LANGUAGE``` it is possible to set a language which will be used to resolve messages if no language has been provided while registering the handler.
+- ```ADD_MESSAGE_HANDLER``` registers a log message handler and optionally sets the language which the handler "would like" to receive messages in. When dispatching a message, PL-LOG will iterate over all active handlers and try to resolve the message in all requested languages. 
+
+- ```SET_DEFAULT_LANGUAGE``` defines the language which will be used to resolve messages if no language has been provided while registering the handler.
 
 ### Configuration procedure example
 
-Below is a (commented) example of how the PL-LOG configuration procedure ```LOG$INIT``` might look like:
+Below is an example of how the PL-LOG configuration procedure ```LOG$INIT``` might look like:
 
 ```
 CREATE OR REPLACE PROCEDURE log$init IS
@@ -438,9 +435,10 @@ END;
 
 ## Code instrumentation
 
-There are two ways in PL-LOG of using ```LOG$``` to put instrumentation calls into your PL/SQL code: 
+In PL-LOG there are two ways of using ```LOG$``` to put instrumentation calls into your PL/SQL code: 
 
 - A generic procedure ```MESSAGE```, which accepts any valid log level and an array of message arguments;
+
 - A set of shortcut methods ```DEBUG```, ```INFO```, ```WARNING```, ```ERROR``` and ```FATAL``` each of which has six overloaded versions - one with an array of arguments and five similar versions which accept respectively from 1 to 5 arguments as separate procedure parameters ```P_ARGUMENT_1``` ... ```P_ARGUMENT_5```.
 
 The generic procedure ```MESSAGE``` is defined as follows:
@@ -461,7 +459,7 @@ PROCEDURE message (
 
 ```P_SERVICE_DEPTH``` is a non-null natural number, which controls how many levels of the current call stack, starting from the top, must be considered as internal (or the "service") ones. This feature is helpful when it is necessary to wrap calls to PL-LOG into another layer of the instrumentation routines. For example, a system, which is going to integrate PL-LOG might already have an existing logging solution. The new code which is being developed will for sure call PL-LOG directly, but the old instrumentation methods can be refactored to call ```LOG$``` subprograms as well. In that case developers won't want to see their old logging framework units in the callstack logged alongside the messages. Please refer to the chapter ["Call stack tracking"](#call-stack-tracking) for more details.
 
-Below is a set examples of calling ```MESSAGE``` for some codified and free-text messages:
+Below is an example of calling ```MESSAGE``` for both codified and free-text messages:
 
 ```
 PROCEDURE create_account (
@@ -482,7 +480,7 @@ BEGIN
 END;
 ```
 
-The shortcut methods allow to keep the instrumentation calls as short and readable as possible:
+The shortcut methods allow to keep instrumentation calls as short and readable as possible:
 
 ```
 PROCEDURE debug | info | warning | error | fatal (
@@ -498,7 +496,7 @@ PROCEDURE debug | info | warning | error | fatal (
 );
 ```
 
-Usually, being able to pass up to five message arguments is more than enough in the vast majority of situations. If, however, more arguments are required, each of the shortcut methods has an overloaded version, which accepts an array of argument values. The shortcut methods don't allow to specify service depth.
+Usually, being able to pass up to five message arguments is more than enough in the vast majority of situations. If, however, more arguments are required, each of the shortcut methods has an overloaded version, which accepts an array of values. The shortcut methods don't allow to specify service depth.
 
 Below is the same example as for ```MESSAGE```, refactored to use sortcut methods:
 
@@ -523,7 +521,7 @@ END;
 
 ## Call stack tracking
 
-PL/SQL has a built-in ability to report contents of the call stack. Before 12c, developers relied on [```DBMS_UTILITY.FORMAT_CALL_STACK```](https://docs.oracle.com/database/121/ARPLS/d_util.htm#ARPLS73240), which would return a single string value, containing a list of subprograms currently in the call stack. Starting from 12c Release 1, there is a new package called ```UTL_CALL_STACK```, which allows to observe the call stack in a structured way, entry by entry.
+PL/SQL has a built-in ability to report contents of the call stack. Before 12c, developers relied on [```DBMS_UTILITY.FORMAT_CALL_STACK```](https://docs.oracle.com/database/121/ARPLS/d_util.htm#ARPLS73240), which would return a single string value, containing list of subprograms currently in the call stack. Starting from 12c Release 1, there is a new package called ```UTL_CALL_STACK```, which allows to observe the call stack in a structured way, entry by entry.
 
 Sometimes it is very helpful to store contents of the call stack alongside with the log message. Most often it is required when storing error messages - developers would very much like to know where exactly the error has occured. 
 
@@ -568,11 +566,11 @@ TYPE t_call_values IS
 
 ```T_CALL_ENTRY``` represents one entry in the call stack:
 
--  ```ID``` is an internal unique identifier of the call the entry's subprogram, which is being "guessed" by PL-LOG as precisely as possible;
+-  ```ID``` is an internal unique identifier of the call;
 
-- ```UNIT``` is a fully qualified name of the unit. In case of successfull flow or a businness error raised by PL-LOG itself, ```UNIT``` will resolve down to the subprogram of the package being called. In case of an unexpected Oracle error (eg. ```NO_DATA_FOUND```), some upper entries of the call stack may be resolved until the package, because of the ```UTL_CALL_STACK``` limitations.
+- ```UNIT``` is a fully qualified name of the unit. In case of successfull flow or a businness error raised by PL-LOG itself, ```UNIT``` will resolve down to the subprogram of the package being called. In case of an unexpected Oracle error (eg. ```NO_DATA_FOUND```), some upper entries of the call stack may be resolved only to the package, because of the ```UTL_CALL_STACK``` limitations.
 
-- ```LINE``` contains number of the line in the __top level unit__ (package or object type) the call has occured on, that is even when ```UNIT``` resolves to the very packaged procedure, ```LINE``` will still store line number in the package itself.
+- ```LINE``` contains calling line number in the __top level program unit__ (package or object type), that is even when ```UNIT``` resolves to a packaged procedure, ```LINE``` will still store line number in the package itself.
 
 - ```FIRST_TRACKED_LINE``` is used by PL-LOG call stack tracking subsystem to identify whether a new call of the same subprogram has started or it is just another instrumentation call in the same execution of the subprogram. This field is considered to be internal and should be igrnored.
 
@@ -580,7 +578,7 @@ TYPE t_call_values IS
 
 ```T_CALL_VALUES``` represents named values associated with the call stack entries:
 
-- Each element of ```T_CALL_VALUES``` is a ```VARCHAR2``` indexed (the name) associative array of ```T_VALUE``` (the value) and represents the set of values associated with one call stack entry. 
+- Each element of ```T_CALL_VALUES``` is a ```VARCHAR2``` indexed (the name) associative array of ```T_VALUE``` (the value) and represents a set of values associated with one call stack entry. 
 
 - ```T_CALL_STACK``` and ```T_CALL_VALUES``` variables always contain the same number of elements. The first element of ```T_CALL_VALUES``` corresponds to the first element of ```T_CALL_STACK```, the second corresponds to the second and so on. 
 
@@ -588,9 +586,9 @@ TYPE t_call_values IS
 
 ### Tracking calls and named values
 
-PL-SQL has a built-in call stack tracking mechanism, based on the ```UTL_CALL_STACK``` package. The goal of developing such mechanism was to provide a possibility to log actual argument values passed to the subprograms in the call stack. Additional idea was to make the whole call stack with all the argument values available for logging as early as possible - ideally at the moment of an instrumentation method call.
+PL-SQL has a built-in call stack tracking mechanism, based on the ```UTL_CALL_STACK``` package. The goal of developing such mechanism was to provide a possibility to log actual argument values passed to the subprograms in the call stack. Additional idea was to make the whole call stack with all argument values available for logging as early as possible - ideally at the moment of an instrumentation method call.
 
-Unfortunately, ```UTL_CALL_STACK``` is still quite limited in functionality, namely it's resolution is one code line (not one character!) which makes it impossible to distinguish two calls on the same line. The package also doesn't provide any means to identify subsequent calls of the same PL/SQL subprogram.
+Unfortunately, ```UTL_CALL_STACK``` is still quite limited in functionality, namely it's resolution is one line of code (not one character!) which makes it impossible to distinguish two calls on the same line. The package also doesn't provide any means to identify subsequent calls of the same PL/SQL subprogram.
 
 As a consequence of the foregoing, to avoid strange and undesirable behavior, developers must be careful and obey some rules while working with the ```LOG$``` call stack tracking subprograms.
 
@@ -602,22 +600,11 @@ PROCEDURE call (
 );
 ```
 
-```CALL``` will make sure that the tracked call stack is actualized and synchronized with ```UTL_CALL_STACK```. Also the collection of the named values associated to the actual call will be cleared. Line number the call to ```LOG$.CALL``` is located at will be written into the ```FIRST_TRACKED_LINE``` field of the top stack entry.
+```CALL``` will make sure that the tracked call stack is actualized and synchronized with ```UTL_CALL_STACK```. Also collection of the named values associated to the call will be cleared. Line number ```LOG$.CALL;``` statement is located at will be written into the ```FIRST_TRACKED_LINE``` field of the top call stack entry.
 
 ### Obtaining and formatting call stack
 
-There is a procedure called ```GET_CALL_STACK``` in the ```LOG$``` package, which should be called from within the message handlers to obtain the most recent contents of the call stack:
-
-```
-PROCEDURE get_call_stack (
-    p_calls OUT t_call_stack,
-    p_values OUT t_call_values 
-);
-```
-
-All the instrumentation calls will always update the internal representation of the call stack, taking into account any user specified service depth. All internal calls to PL-LOG are considered to be the service ones and normally won't appear in the call stack.
-
-```LOG$``` also contains a helper method ```FORMAT_CALL_STACK```, which allows to create fromatted representation of the call stack contents ready to be presented or stored in a ```VARCHAR2``` column:
+```LOG$``` provides two subprograms to obtain the most recent contents of the tracked call stack:
 
 ```
 c_STRING_LENGTH CONSTANT PLS_INTEGER := 32767;
@@ -634,6 +621,11 @@ TYPE t_call_stack_format_options IS
         argument_notation BOOLEANN := FALSE
     );
 
+PROCEDURE get_call_stack (
+    p_calls OUT t_call_stack,
+    p_values OUT t_call_values 
+);
+
 FUNCTION format_call_stack (
     p_length IN t_formatted_call_stack_length := c_STRING_LENGTH,
     p_options IN t_call_stack_format_options := NULL
@@ -641,45 +633,49 @@ FUNCTION format_call_stack (
 RETURN VARCHAR2;
 ```
 
-By default, ```FORMAT_CALL_STACK``` will return up to the 32767 first characters of the formatted call stack, including information about the associated values. Additionally it is possible to lower the length limitation to as little as 3 characters. If there is a length overflow, an ellipsis mark will be added to the end of the returned value.
+- ```GET_CALL_STACK``` returns structured call stack information. Message handlers can use this method to analyze or to format call stack as desired.
 
-It is possible to slightly alter the default behaviour of ```FORMAT_CALL_STACK``` by providing and instance of ```T_CALL_STACK_FORMAT_OPTIONS```:
+- ```FORMAT_CALL_STACK``` concatenates contenst of the call stack into one ```VARCHAR2``` value.
 
-- ```FIRST_LINE_INDENT``` will be added to the beginning of the first line.
+    By default, ```FORMAT_CALL_STACK``` will return up to the 32767 first characters of the formatted call stack, including information about associated values. Additionally it is possible to lower the length limitation to as little as 3 characters. If there is a length overflow, an ellipsis mark will be added to the end of the returned value.
 
-- ```INDENT``` will be added to the beginning of all lines, starting with the second one.
+    It is possible to slightly alter default behaviour of ```FORMAT_CALL_STACK``` by providing an instance of ```T_CALL_STACK_FORMAT_OPTIONS```:
 
-- ```ARGUMENT_NOTATION``` value of ```TRUE``` will tell PL-LOG to output the associated value in PL/SQL named argument notation (that is using ```=>``` and comma as the separator).
+    - ```FIRST_LINE_INDENT``` will be added to the beginning of the first line.
 
-Below is an example of how ```FORMAT_CALL_STACK``` is called withing the built-in message handler ```T_DBMS_OUTPUT_HANDLER``` (with the argument notation turned on):
+    - ```INDENT``` will be added to the beginning of all lines, starting with the second one.
 
-```
-DECLARE
+    - ```ARGUMENT_NOTATION``` value of ```TRUE``` will tell PL-LOG to output associated values in PL/SQL named argument notation.
 
-    v_call_stack_format_options log$.t_call_stack_format_options;
+    Below is an example of how ```FORMAT_CALL_STACK``` is called withing the built-in message handler ```T_DBMS_OUTPUT_HANDLER```:
 
-BEGIN
+    ```
+    DECLARE
 
-    v_call_stack_format_options.first_line_indent := 'at: ';
-    v_call_stack_format_options.indent := '    ';
-    v_call_stack_format_options.argument_notation := TRUE;
+        v_call_stack_format_options log$.t_call_stack_format_options;
 
-    DBMS_OUTPUT.PUT_LINE(
-        log$.format_call_stack(
-            p_options => v_call_stack_format_options
-        )
-    );
+    BEGIN
 
-END;
-```
+        v_call_stack_format_options.first_line_indent := 'at: ';
+        v_call_stack_format_options.indent := '    ';
+        v_call_stack_format_options.argument_notation := TRUE;
 
-And here is an example of what could appear in your ```DBMS_OUTPUT``` window:
+        DBMS_OUTPUT.PUT_LINE(
+            log$.format_call_stack(
+                p_options => v_call_stack_format_options
+            )
+        );
 
-```
-at: OWNER.REGISTER_PERSON (line 19)
-        p_birth_date => TIMESTAMP '2018-08-23 23:57:48',
-        p_name => NULL
-    __anonymous_block (line 2)
-```
+    END;
+    ```
+
+    the output:
+
+    ```
+    at: OWNER.REGISTER_PERSON (line 19)
+            p_birth_date => TIMESTAMP '2018-08-23 23:57:48',
+            p_name => NULL
+        __anonymous_block (line 2)
+    ```                 
 
 ## Exception handling

@@ -275,7 +275,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     /* Session log level management */
     
     FUNCTION get_session_log_level (
-        p_session_serial# IN NUMBERN := c_session_serial#
+        p_session_serial# IN NUMBERN := c_SESSION_SERIAL#
     )
     RETURN t_handler_log_level IS
     BEGIN
@@ -314,7 +314,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     PROCEDURE set_session_log_level (
         p_level IN t_handler_log_level,
-        p_session_serial# IN NUMBERN := c_session_serial#
+        p_session_serial# IN NUMBERN := c_SESSION_SERIAL#
     ) IS
     BEGIN
     
