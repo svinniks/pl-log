@@ -416,6 +416,7 @@ suite("Message resolving and formatting", function() {
 
                     log$.add_message_resolver(
                         t_default_message_resolver(),
+                        log$.c_ALL,
                         t_default_message_formatter(':')
                     );
 

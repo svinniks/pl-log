@@ -538,7 +538,7 @@ Message handlers can use ```DBMS_UTILITY``` or ```UTL_CALL_STACK``` directly to 
 PL-LOG stores it's own representation of the most recent call stack in a set of package variables of the following data types:
 
 ```
-TYPE t_call IS
+TYPE t_call_entry IS
     RECORD (
         id NUMBER(30),
         unit STRING,
@@ -547,7 +547,7 @@ TYPE t_call IS
     );
     
 TYPE t_call_stack IS
-    TABLE OF t_call;
+    TABLE OF t_call_entry;
 
 TYPE t_value IS
     RECORD (
@@ -566,7 +566,7 @@ TYPE t_call_values IS
     TABLE OF t_values;
 ```
 
-```T_CALL``` represents one entry in the call stack:
+```T_CALL_ENTRY``` represents one entry in the call stack:
 
 -  ```ID``` is an internal unique identifier of the call the entry's subprogram, which is being "guessed" by PL-LOG as precisely as possible;
 

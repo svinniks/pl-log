@@ -246,7 +246,7 @@ suite("Message handling", function() {
             database.run(`
                 BEGIN
                     log$.reset;
-                    log$.set_system_log_level(log$.c_INFO);
+                    log$.set_system_log_level(log$.c_ERROR);
                     log$.add_message_handler("${handlerTypeName}"(NULL, NULL));
                     log$.set_default_message_formatter(t_default_message_formatter(':'));
                 END;

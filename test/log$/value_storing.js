@@ -54,43 +54,11 @@ suite("Storing values in the tracked call stack nodes", function() {
             
                 database.run(`
                     BEGIN
-                        log$.value('hello', 'world', NULL, TRUE);
+                        log$.value('hello', 'world', NULL);
                     END;
                 `);
             
             }).to.throw(/PLS-00567/);
-
-        });
-
-        test("Try to pass NULL fill call stack flag to the VARCHAR2 version of VALUE", function() {
-    
-            resetPackage();
-
-            expect(function() {
-            
-                database.run(`
-                    BEGIN
-                        log$.value('hello', 'world', 0, NULL);
-                    END;
-                `);
-            
-            }).to.throw(/PLS-00567/);
-
-        });
-
-        test("Try to pass NULL fill call stack flag to the VARCHAR2 version of VALUE, overload 2", function() {
-    
-            resetPackage();
-
-            expect(function() {
-            
-                database.run(`
-                    BEGIN
-                        log$.value('hello', 'world', 0, CAST(NULL AS BOOLEAN));
-                    END;
-                `);
-            
-            }).to.throw(/ORA-06502/);
 
         });
 
@@ -277,43 +245,11 @@ suite("Storing values in the tracked call stack nodes", function() {
             
                 database.run(`
                     BEGIN
-                        log$.value('hello', 123, NULL, TRUE);
+                        log$.value('hello', 123, NULL);
                     END;
                 `);
             
             }).to.throw(/PLS-00567/);
-
-        });
-
-        test("Try to pass NULL fill call stack flag to the NUMBER version of VALUE", function() {
-    
-            resetPackage();
-
-            expect(function() {
-            
-                database.run(`
-                    BEGIN
-                        log$.value('hello', 123, 0, NULL);
-                    END;
-                `);
-            
-            }).to.throw(/PLS-00567/);
-
-        });
-
-        test("Try to pass NULL fill call stack flag to the NUMBER version of VALUE, overload 2", function() {
-    
-            resetPackage();
-
-            expect(function() {
-            
-                database.run(`
-                    BEGIN
-                        log$.value('hello', 123, CAST(NULL AS BOOLEAN));
-                    END;
-                `);
-            
-            }).to.throw(/ORA-06512/);
 
         });
 
@@ -500,43 +436,11 @@ suite("Storing values in the tracked call stack nodes", function() {
             
                 database.run(`
                     BEGIN
-                        log$.value('hello', TRUE, NULL, TRUE);
+                        log$.value('hello', TRUE, NULL);
                     END;
                 `);
             
             }).to.throw(/PLS-00567/);
-
-        });
-
-        test("Try to pass NULL fill call stack flag to the BOOLEAN version of VALUE", function() {
-    
-            resetPackage();
-
-            expect(function() {
-            
-                database.run(`
-                    BEGIN
-                        log$.value('hello', TRUE, 0, NULL);
-                    END;
-                `);
-            
-            }).to.throw(/PLS-00567/);
-
-        });
-
-        test("Try to pass NULL fill call stack flag to the BOOLEAN version of VALUE, overload 2", function() {
-    
-            resetPackage();
-
-            expect(function() {
-            
-                database.run(`
-                    BEGIN
-                        log$.value('hello', TRUE, CAST(NULL AS BOOLEAN));
-                    END;
-                `);
-            
-            }).to.throw(/ORA-06512/);
 
         });
 
@@ -723,43 +627,11 @@ suite("Storing values in the tracked call stack nodes", function() {
             
                 database.run(`
                     BEGIN
-                        log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE), NULL, TRUE);
+                        log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE), NULL);
                     END;
                 `);
             
             }).to.throw(/PLS-00567/);
-
-        });
-
-        test("Try to pass NULL fill call stack flag to the DATE version of VALUE", function() {
-    
-            resetPackage();
-
-            expect(function() {
-            
-                database.run(`
-                    BEGIN
-                        log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE), 0, NULL);
-                    END;
-                `);
-            
-            }).to.throw(/PLS-00567/);
-
-        });
-
-        test("Try to pass NULL fill call stack flag to the DATE version of VALUE, overload 2", function() {
-    
-            resetPackage();
-
-            expect(function() {
-            
-                database.run(`
-                    BEGIN
-                        log$.value('hello', CAST(TIMESTAMP '1913-08-25 13:49:03' AS DATE), CAST(NULL AS BOOLEAN));
-                    END;
-                `);
-            
-            }).to.throw(/ORA-06502/);
 
         });
 
