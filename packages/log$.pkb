@@ -1177,16 +1177,58 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
+    PROCEDURE handle_message (
+        p_level IN PLS_INTEGER,
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars
+    ) IS
+    
+        v_language STRING;
+        v_message STRING;
+        
+    BEGIN
+    
+        FOR v_i IN 1..v_message_handlers.COUNT LOOP
+        
+            IF handling(v_i, p_level) THEN
+                
+                BEGIN
+                
+                    v_language := NVL(v_handler_languages(v_i), v_default_language);
+                    v_message := get_last_message(v_language);
+                        
+                    IF v_message IS NULL THEN
+                        
+                        v_message := format_message(
+                            p_level, 
+                            p_message, 
+                            p_arguments,
+                            v_language
+                        );
+                            
+                        set_last_message(v_language, v_message);
+                            
+                    END IF;
+                    
+                    v_message_handlers(v_i).handle_message(p_level, v_message);
+                        
+                EXCEPTION
+                    WHEN OTHERS THEN    
+                        log_error('An error occured while handling a message!');
+                END;
+                    
+            END IF;
+            
+        END LOOP;
+    
+    END;
+    
     PROCEDURE message (
         p_level IN t_message_log_level,
         p_message IN VARCHAR2,
         p_arguments IN t_varchars := NULL,
         p_service_depth IN NATURALN := 0
     ) IS
-    
-        v_language STRING;
-        v_message STRING;
-    
     BEGIN
     
         reset_last_message;
@@ -1199,38 +1241,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
                 p_track_top => TRUE
             );
             
-            FOR v_i IN 1..v_message_handlers.COUNT LOOP
-        
-                IF handling(v_i, p_level) THEN
-                
-                    BEGIN
-                
-                        v_language := NVL(v_handler_languages(v_i), v_default_language);
-                        v_message := get_last_message(v_language);
-                        
-                        IF v_message IS NULL THEN
-                        
-                            v_message := format_message(
-                                p_level, 
-                                p_message, 
-                                p_arguments,
-                                v_language
-                            );
-                            
-                            set_last_message(v_language, v_message);
-                            
-                        END IF;
-                    
-                        v_message_handlers(v_i).handle_message(p_level, v_message);
-                        
-                    EXCEPTION
-                        WHEN OTHERS THEN    
-                            log_error('An error occured while handling a message!');
-                    END;
-                    
-                END IF;
-            
-            END LOOP;
+            handle_message(p_level, p_message, p_arguments);
             
         END IF;
        
@@ -1511,11 +1522,10 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
                 
                 IF p_mapped_code IS NOT NULL THEN
                 
-                    message(
+                    handle_message(
                         p_level,
                         p_mapped_message,
-                        t_varchars(v_code, v_message),
-                        p_service_depth + 1
+                        t_varchars(v_code, v_message)
                     );
                  
                 ELSE
