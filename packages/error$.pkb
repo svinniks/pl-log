@@ -21,7 +21,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
     v_oracle_error_level log$.t_message_log_level := log$.c_FATAL;
     
     c_handler_unit CONSTANT VARCHAR2(4000) := $$PLSQL_UNIT_OWNER || '.' || $$PLSQL_UNIT;
-    v_handled_lines t_numbers := t_numbers(118, 226, 231, 236);
+    v_handled_lines t_numbers := t_numbers(132, 228, 233, 238, 305);
     
     v_display_language log$.STRING;
     
@@ -84,6 +84,33 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         RETURN v_display_language;
     END;
     
+    FUNCTION format_message (
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars
+    )
+    RETURN VARCHAR2 IS
+    
+        v_message log$.STRING;
+    
+    BEGIN
+    
+        v_message := log$.get_last_message(v_display_language);
+        
+        IF v_message IS NULL THEN
+        
+            v_message := log$.format_message(
+                v_error_level,
+                p_message,
+                p_arguments,
+                v_display_language
+            );
+                
+        END IF;
+        
+        RETURN v_message;
+    
+    END;
+    
     PROCEDURE raise (
         p_message IN VARCHAR2,
         p_arguments IN t_varchars := NULL,
@@ -101,21 +128,11 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
             p_service_depth => p_service_depth + 1
         );
     
-        v_message := log$.get_last_message(v_display_language);
-        
-        IF v_message IS NULL THEN
-        
-            v_message := log$.format_message(
-                v_error_level,
-                p_message,
-                p_arguments,
-                v_display_language
-            );
-                
-        END IF;
-    
         -- Handled!
-        raise_application_error(-v_error_code, v_message);
+        raise_application_error(
+            -v_error_code, 
+            format_message(p_message, p_arguments)
+        );
          
     END;
         
@@ -169,6 +186,25 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         error$.raise(p_message, t_varchars(p_argument1, p_argument2, p_argument3, p_argument4, p_argument5), 1);
     END;
     
+    FUNCTION get_error_message (
+        p_depth IN PLS_INTEGER
+    )
+    RETURN VARCHAR2 IS
+    
+        v_message log$.STRING;
+        
+    BEGIN
+    
+        v_message := utl_call_stack.error_msg(p_depth);
+        
+        $IF DBMS_DB_VERSION.VERSION = 12 AND DBMS_DB_VERSION.RELEASE = 1 $THEN
+            v_message := SUBSTR(v_message, 1, LENGTH(v_message) - 1);
+        $END
+        
+        RETURN v_message;
+        
+    END;
+    
     PROCEDURE raise (
         p_service_depth IN NATURALN := 0
     ) IS
@@ -176,50 +212,16 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         v_code PLS_INTEGER;
         v_message log$.STRING;
         
-        v_mapped_code PLS_INTEGER;
-        v_mapped_message log$.STRING;
-    
     BEGIN
     
         IF utl_call_stack.error_depth > 0 THEN
         
-            v_code := utl_call_stack.error_number(1);
-            v_message := utl_call_stack.error_msg(1);
-                
-            $IF DBMS_DB_VERSION.VERSION = 12 AND DBMS_DB_VERSION.RELEASE = 1 $THEN
-                v_message := SUBSTR(v_message, 1, LENGTH(v_message) - 1);
-            $END
+            handle(p_service_depth + 1);
         
-            IF NOT handled THEN
-                
-                log$.oracle_error(
-                    v_oracle_error_level,
-                    p_service_depth + 1,
-                    v_mapped_code,
-                    v_mapped_message
-                );
+            v_code := utl_call_stack.error_number(1);
+            v_message := get_error_message(1);
             
-                IF v_mapped_code IS NOT NULL THEN
-                
-                    v_code := v_mapped_code;
-                    
-                    v_message := log$.get_last_message(v_display_language);
-                    
-                    IF v_message IS NULL THEN
-                    
-                        v_message := log$.format_message(
-                            v_oracle_error_level, 
-                            v_mapped_message,
-                            t_varchars(v_code, v_message), 
-                            v_display_language
-                        );
-                    
-                    END IF;
-                    
-                END IF;     
-            
-            END IF;
-            
+                        
             IF v_code BETWEEN 20000 AND 20999 THEN
         
                 -- Handled!
@@ -248,24 +250,13 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
     
     END;    
 
-    PROCEDURE handle (
-        p_service_depth IN NATURALN := 0
-    ) IS
-    BEGIN
-        
-        IF NOT handled THEN
-            log$.oracle_error(v_oracle_error_level, p_service_depth + 1);
-        END IF;
-    
-    END;
-        
     FUNCTION handled
     RETURN BOOLEAN IS
     BEGIN
     
         IF utl_call_stack.error_depth = 0 THEN
         
-            RETURN FALSE;
+            RETURN NULL;
             
         ELSE
     
@@ -291,6 +282,43 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         
     END;
 
+    PROCEDURE handle (
+        p_service_depth IN NATURALN := 0
+    ) IS
+    
+        v_mapped_code PLS_INTEGER;
+        v_mapped_message log$.STRING;
+        
+    BEGIN
+        
+        IF NOT handled THEN
+        
+            log$.oracle_error(
+                v_oracle_error_level, 
+                p_service_depth + 1, 
+                v_mapped_code, 
+                v_mapped_message
+            );
+            
+            IF v_mapped_code IS NOT NULL THEN
+                
+                raise_application_error(
+                    -v_mapped_code,
+                    format_message(
+                        v_mapped_message,
+                        t_varchars(
+                            utl_call_stack.error_number(1),
+                            get_error_message(1)
+                        )
+                    )
+                );
+                    
+            END IF; 
+            
+        END IF;
+    
+    END;
+    
 BEGIN
     reset;
 END;

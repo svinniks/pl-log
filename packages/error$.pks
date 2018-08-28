@@ -93,12 +93,12 @@ CREATE OR REPLACE PACKAGE error$ IS
         p_service_depth IN NATURALN := 0
     );
     
+    FUNCTION handled
+    RETURN BOOLEAN;
+    
     PROCEDURE handle (
         p_service_depth IN NATURALN := 0
     );    
-        
-    FUNCTION handled
-    RETURN BOOLEAN;
     
 END;
 

@@ -597,11 +597,11 @@ suite("Error raising and handling", function() {
 
 suite("Error reraising", function() {
 
-    test("Check if HANDLED returns FALSE if there is no error", function() {
+    test("Check if HANDLED returns NULL if there is no error", function() {
     
         let handled = database.call("error$.handled");
 
-        expect(handled).to.be(false);
+        expect(handled).to.be(null);
     
     });
     
