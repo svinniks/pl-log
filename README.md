@@ -165,13 +165,13 @@ To integrate PL-LOG into an existing PL/SQL project, you will have to develop cu
 
 Each log message must be supplemented with a numeric __log level__, which denotes severity (importance) of the message. PL-LOG supports up to 600 log levels expressed in positive integers ranged from 1 to 600. There are five predefined log levels ```DEBUG = 100```, ```INFO = 200```, ```WARNING = 300```, ```ERROR = 400``` and ```FATAL = 500```.
 
-Users can set __theshold log level__ on the __system__, __session__ and __handler__ level to control how many messages are getting handled (persisted). For example, if your code contains a lot of ```DEBUG``` level messages, you would not want to always store them all in the log table to save disk space and to increase performance. In that case ```INFO``` can be set as the threshold value for the whole system so that only messages with level 200 or more would get "noticed" and handled. However, if the system starts to behave incorrectly, operators can instantly swith the threshold to ```ALL = 0``` and start observing the log table while trying to reproduce the invalid behavior.
+Users can set __theshold log level__ on the __system__, __session__ and __handler__ level to control how many messages are getting handled. For example, if your code contains a lot of ```DEBUG``` level messages, you would not want to always store them all in the log table to save disk space and to increase performance. In that case ```INFO``` can be set as the threshold value for the whole system so that only messages with level 200 or more would get "noticed" and handled. At any time threshold can instantly be decreased to ```ALL = 0``` to allow the finest detail log messages to be persisted.
 
-Threshold log level for each message handler gets calculated as ```COALESCE(handler_log_level, session_log_level, system_log_level)``` which means that the session level overrides the system one and the handler level overrides both the session and the system level thresholds. If all three threshold levels are ```NULL```, then messages __won't be handled__ at all.
+Threshold log level for each message handler gets calculated as ```COALESCE(handler_log_level, session_log_level, system_log_level)``` which means that the session level overrides the system one and the handler level overrides both the session and the system level thresholds. If all three threshold levels are ```NULL```, then messages __won't get handled__ at all.
 
 ## Message handlers
 
-By default, PL-LOG only provides the API to issue log messages of different levels. These messages, however, are not stored or displayed anywhere. To persist or show messages, PL-LOG must be configured to include one or more __message handlers__. Handlers may store messages in a table, file system, alert log or a trace file, output them to ```DBMS_OUTPUT``` or send via e-mail. It is possible to develop custom message handlers and plug them into PL-LOG without recompiling framework's source code. 
+By default, PL-LOG only provides API which can be used to instrument PL/SQL code. Log messages, however, are not stored or displayed anywhere. To save or display messages, one or more __message handlers__ must be registered in PL-LOG. Handlers may store messages in a table, file, alert log, write them to ```DBMS_OUTPUT``` or send via e-mail. It is possible to develop custom message handlers and plug them into PL-LOG without recompiling framework's source code. 
 
 Message handler API is implemented via the abstract object type ```T_LOG_MESSAGE_HANDLER```:
 
@@ -194,36 +194,35 @@ NOT INSTANTIABLE NOT FINAL
 
 Field ```DUMMY``` is there only because Oracle doesn't allow to create object types without fields.
 
-While creating custom message handlers, developer must extend ```T_LOG_MESSAGE_HANDLER``` and implement two methods: ```GET_LOG_LEVEL``` and ```HANDLE_MESSAGE```.
+The following two abstract methods must be implemented while developing a message handler:
 
-```GET_LOG_LEVEL``` must return threshold log level of the handler. PL-LOG will call the method while deciding whether to call handler's ```HANDLE_MESSAGE``` method or not. It's up to the developer to decide where the return value for ```GET_LOG_LEVEL``` comes from. It may be a simple session-wide package global variable or a system-wide global value stored in a globally accessed context.
+- ```GET_LOG_LEVEL``` must return threshold log level of the handler. PL-LOG will call the method while deciding whether to call handler's ```HANDLE_MESSAGE``` method or not. It's up to the developer to decide where the return value for ```GET_LOG_LEVEL``` comes from. It may be a simple session-wide package global variable or a system-wide global value stored in a globally accessed context.
 
-```HANDLE_MESSAGE``` is called by PL-LOG when the message passes the level threshold and should be persisted. The message text passed is already __translated and formatted__, so the handler must just save, display or forward it.
+- ```HANDLE_MESSAGE``` is called by PL-LOG when the message passes level threshold and should be persisted. The message text provided in ```P_MESSAGE``` is __translated and formatted__ and can be handled without additional processing.
 
 Please refer to the [```CREATE TYPE```](https://docs.oracle.com/database/121/LNPLS/create_type.htm) documentation to get familiar with how object type inheritance works in Oracle.
-
-Message handlers must be added to PL-LOG by the [configuration procedure]() discussed later.
 
 ### Built-in handlers
 
 There are two message handlers PL-LOG comes bundled with:
 
-- ```T_DEFAULT_MESSAGE_HANDLER```
-- ```T_DBMS_OUTPUT_HANDLER```
+- ```T_DEFAULT_MESSAGE_HANDLER``` appends log messages to a circular buffer based on a collection variable stored in the handler implementation package ```DEFAULT_MESSAGE_HANDLER```. 
 
-```T_DEFAULT_MESSAGE_HANDLER``` appends log messages to a circular buffer based on a collection variable stored in the handler implementation package ```DEFAULT_MESSAGE_HANDLER```. 
+    Messages can be observed by selecting from the ```LOG$TAIL``` view. Only messages of the current session are visible to the user.
 
-- Messages can be observed by selecting from the ```LOG$TAIL``` view. Only messages of the current session are visible to the user.
+    Size of the buffer can be changed by calling ```DEFAULT_MESSAGE_HANDLER.SET_CAPACITY```.
 
-- Size of the buffer can be changed by calling ```DEFAULT_MESSAGE_HANDLER.SET_CAPACITY```.
+    Log level threshold of the default message handler is set via ```DEFAULT_MESSAGE_HANDLER.SET_LOG_LEVEL``` and works only in context of the session.
 
-- Log level threshold of the default message handler is set via ```DEFAULT_MESSAGE_HANDLER.SET_LOG_LEVEL``` and works only in context of the session.
+    Call ```DEFAULT_MESSAGE_HANDLER.RESET``` to clear message buffer.
 
-```T_DBMS_OUTPUT_HANDLER``` writes log messages to ```DBMS_OUTPUT```. Just like for the default message handler, there is an implementation package called ```DBMS_OUTPUT_HANDLER```.
+- ```T_DBMS_OUTPUT_HANDLER``` writes log messages to ```DBMS_OUTPUT```. Handler's implementation logic is located in the ```DBMS_OUTPUT_HANDLER``` package.
 
-- Log level threshold can be changed by calling ```DBMS_OUTPUT_HANDLER.SET_LOG_LEVEL``` (applies only to the current session).
-- By default the handler will output callstack for all messages with level 400 (```ERROR```) or higher. To lower or to raise call stack display level threshold use ```DBMS_OUTPUT_HANDLER.SET_CALL_STACK_LEVEL```.
-- While displaying the call stack, tracked subprogram argument values will by default be separated by colons and new lines:
+    Log level threshold can be changed by calling ```DBMS_OUTPUT_HANDLER.SET_LOG_LEVEL``` (applies only to the current session).
+
+    By default the handler will output callstack for all messages with level 400 (```ERROR```) or higher. To change call stack display level threshold use ```DBMS_OUTPUT_HANDLER.SET_CALL_STACK_LEVEL```.
+
+    While displaying the call stack, tracked subprogram argument values will by default be separated by colons and new lines:
 
     ```
     23:57:48.268 [ERROR  ] MSG-00001: name is not specified!
@@ -233,7 +232,8 @@ There are two message handlers PL-LOG comes bundled with:
         __anonymous_block (line 2)
     ```
 
-    It is possible, however, to make ```DBMS_OUTPUT_HANDLER``` display parameters in PL/SQL named notation, by issuing ```DBMS_OUTPUT_HANDLER.SET_ARGUMENT_NOTATION(TRUE)```:
+    It is possible, however, to make ```DBMS_OUTPUT_HANDLER``` display value in PL/SQL argument named notation, by issuing ```DBMS_OUTPUT_HANDLER.SET_ARGUMENT_NOTATION(TRUE);```:
+
     ```
     23:57:48.268 [ERROR  ] MSG-00001: name is not specified!
     at: OWNER.REGISTER_PERSON (line 19)
@@ -242,7 +242,7 @@ There are two message handlers PL-LOG comes bundled with:
         __anonymous_block (line 2)
     ```
 
-    Please note that argument values as displayed as valid __PL/SQL literals__ for ```VARCHAR2```, ```NUMBER```, ```DATE```, ```BOOLEAN``` and compatible type arguments.
+    Argument values are displayed by ```T_DBMS_OUTPUT_HANDLER``` as valid __PL/SQL literals__ for ```VARCHAR2```, ```NUMBER```, ```DATE```, ```BOOLEAN``` and compatible types.
 
 ## Message resolvers
 
