@@ -79,7 +79,7 @@ It is also recommended to create __public synonyms__ for these objects to keep c
 
 # Quick start guide
 
-After installation, create a procedure called ```LOG$INIT``` in PL-LOG schema:
+After installation, create a procedure called ```LOG$INIT``` in the PL-LOG schema:
 
 ```
 CREATE OR REPLACE PROCEDURE log$init IS
@@ -98,7 +98,7 @@ BEGIN
 END;
 ```
 
-Then create a procedure to test the instrumentation API:
+Create another procedure to test the instrumentation API:
 
 ```
 CREATE OR REPLACE PROCEDURE register_person (
@@ -149,7 +149,7 @@ at: OWNER.REGISTER_PERSON (line 19)
     __anonymous_block (line 2)
 ```
 
-Try to change system log level threshold and rerunt the procedure:
+Try to change system log level threshold and rerun the procedure:
 
 ```
 BEGIN
@@ -165,7 +165,7 @@ To integrate PL-LOG into an existing PL/SQL project, you will have to develop cu
 
 Each log message must be supplemented with a numeric __log level__, which denotes severity (importance) of the message. PL-LOG supports up to 600 log levels expressed in positive integers ranged from 1 to 600. There are five predefined log levels ```DEBUG = 100```, ```INFO = 200```, ```WARNING = 300```, ```ERROR = 400``` and ```FATAL = 500```.
 
-Users can set __theshold log level__ on the __system__, __session__ and __handler__ level to control how many messages are getting handled. For example, if your code contains a lot of ```DEBUG``` level messages, you would not want to always store them all in the log table to save disk space and to increase performance. In that case ```INFO``` can be set as the threshold value for the whole system so that only messages with level 200 or more would get "noticed" and handled. At any time threshold can instantly be decreased to ```ALL = 0``` to allow the finest detail log messages to be persisted.
+Users can set __threshold log level__ on the __system__, __session__ and __handler__ level to control how many messages are getting handled. For example, if your code contains a lot of ```DEBUG``` level messages, you would not want to always store them all in the log table to save disk space and to increase performance. In that case ```INFO``` can be set as the threshold value for the whole system so that only messages with level 200 or more would get "noticed" and handled. At any time threshold can instantly be decreased to ```ALL = 0``` to allow the finest detail log messages to be persisted.
 
 Threshold log level for each message handler gets calculated as ```COALESCE(handler_log_level, session_log_level, system_log_level)``` which means that the session level overrides the system one and the handler level overrides both the session and the system level thresholds. If all three threshold levels are ```NULL```, then messages __won't get handled__ at all.
 
@@ -206,7 +206,7 @@ Please refer to the [```CREATE TYPE```](https://docs.oracle.com/database/121/LNP
 
 There are two message handlers PL-LOG comes bundled with:
 
-- ```T_DEFAULT_MESSAGE_HANDLER``` appends log messages to a circular buffer based on a collection variable stored in the handler implementation package ```DEFAULT_MESSAGE_HANDLER```. 
+- ```T_DEFAULT_MESSAGE_HANDLER``` appends log messages to a circular buffer based on a collection variable stored in the implementation package ```DEFAULT_MESSAGE_HANDLER```. 
 
     Messages can be observed by selecting from the ```LOG$TAIL``` view. Only messages of the current session are visible to the user.
 
@@ -232,7 +232,7 @@ There are two message handlers PL-LOG comes bundled with:
         __anonymous_block (line 2)
     ```
 
-    It is possible, however, to make ```DBMS_OUTPUT_HANDLER``` display value in PL/SQL argument named notation, by issuing ```DBMS_OUTPUT_HANDLER.SET_ARGUMENT_NOTATION(TRUE);```:
+    It is possible, however, to make ```DBMS_OUTPUT_HANDLER``` display values in PL/SQL argument named notation, by issuing ```DBMS_OUTPUT_HANDLER.SET_ARGUMENT_NOTATION(TRUE);```
 
     ```
     23:57:48.268 [ERROR  ] MSG-00001: name is not specified!
@@ -242,11 +242,11 @@ There are two message handlers PL-LOG comes bundled with:
         __anonymous_block (line 2)
     ```
 
-    Argument values are displayed by ```T_DBMS_OUTPUT_HANDLER``` as valid __PL/SQL literals__ for ```VARCHAR2```, ```NUMBER```, ```DATE```, ```BOOLEAN``` and compatible types.
+    ```T_DBMS_OUTPUT_HANDLER``` displays argument values as valid __PL/SQL literals__ for ```VARCHAR2```, ```NUMBER```, ```DATE```, ```BOOLEAN``` and compatible types.
 
 ## Message resolvers
 
-It is a common practice to codify all the messages in the system, especially those which are displayed to the end users. Codifying means assigning each message a unique code and storing the texts somewhere outside the PL/SQL code, for example in a table. This approach enables multi-language message support, eases reusing and sistematizaion of system's messages.
+It is a common practice to codify all messages in the system, especially those which are displayed to the end users. Codifying means assigning each message a unique code and storing texts somewhere outside the PL/SQL code, for example in a table. This approach helps to implement multi-language message support and eases message reusing throughout the project.
 
 In PL-LOG, external message store concept is implemented via __message resolvers__ and the ```T_LOG_MESSAGE_RESOLVER`` abstract object type:
 
@@ -264,13 +264,13 @@ CREATE OR REPLACE TYPE t_log_message_resolver IS OBJECT (
 ) NOT INSTANTIABLE NOT FINAL
 ```
 
-The only method that needs to be implemented in a custom resolver is ```RESOLVE_MESSAGE```. The method is given a ```P_MESSAGE``` to resolve and an optional ```P_LANGUAGE```. If language is not specified then it's up to the resolver implementation to decide which language to return the resolved message in (one of the options can be the default system language, another is to use current session ```NLS_LANGUAGE```). ```P_MESSAGE``` format is also not strictly defined. While integrating PL-LOG into an existing system developers might want to implement a resolver based on the existing message definition table.
+The only method that needs to be implemented in a custom resolver is ```RESOLVE_MESSAGE```. The method is given a ```P_MESSAGE``` to lookup and an optional ```P_LANGUAGE``` and must return the resolved text. If language is not specified then it's up to the implementation to decide which language to return the resolved message in. ```P_MESSAGE``` format is also not strictly defined. While integrating PL-LOG into an existing system developers might want to implement a resolver based on the existing message definition table.
 
-If the message has been successfully resolved, then the text must be returned from the function. Please note, that PL-LOG __will not add the original message__ code to the resolved text. For example, if there is a message with the code ```'MSG-00001'``` which resolves to the text ```'Invalid value!'```, the resolver might consider to concatenate them together before returning: ```'MSG-00001: Invalid value!'```.
+Please note, that PL-LOG __will not add the original message__ to the resolved text. For example, if there is a message with the code ```'MSG-00001'``` which resolves to the text ```'Invalid value!'```, the resolver might consider to concatenate them together before returning: ```'MSG-00001: Invalid value!'```.
 
 If the message could not be resolved, ```NULL``` must be returned from ```RESOLVE_MESSAGE```. PL-LOG allows to define multiple resolvers. These resolvers will be called by the framework in the same order they have been registered in. The firts one which returns a non-NULL value will "win", so no other resolver will be called.
 
-In case the message could not be resolved by any of the registered resolvers, __the original text__ will be passed to the handlers.
+In case a message could not be resolved by any of the registered resolvers, __the original text__ will be passed to the handlers.
 
 ### Built-in resolvers
 
@@ -302,7 +302,7 @@ END;
 
 ## Message formatters
 
-Formatting is the process of replacing special placeholders in the message text with the provided values. This feature allows to define log messages not only as constant strings, but also as templates, which are later filled with data to provide end users more detailed information of what has happened in the system. 
+Formatting is the process of replacing special placeholders in the message text with the provided values.
 
 PL-LOG doesn't define any specific message template format, instead it provides an abstract object type called ```T_LOG_MESSAGE_FORMATTER``` which implements the formatter concept:
 
@@ -321,9 +321,11 @@ CREATE OR REPLACE TYPE t_log_message_formatter IS OBJECT (
 NOT INSTANTIABLE NOT FINAL
 ```
 
-Single method ```FORMAT_MESSAGE``` must be implemented to create a custom message formatter. The method accepts a template string and an array of ```VARCHAR2``` argument values and must return a fully formatted message text.
+```FORMAT_MESSAGE``` must be implemented to create a custom message formatter. The method accepts a template string and an array of ```VARCHAR2``` argument values and must return a fully formatted message text.
 
-There is one message formatter included in PL-LOG by default, which is called ```T_DEFAULT_MESSAGE_FORMATTER```. It allows to include sequential numbers of arguments as value placeholders, prefixed with at most one special character. For example, if a developer chooses to use colon ```':'``` as the prefix, valid message templates would look like:
+### Built-in formatters
+
+There is one message formatter included in PL-LOG by default, which is called ```T_DEFAULT_MESSAGE_FORMATTER```. It allows to include sequential numbers of arguments as value placeholders, prefixed with at most one special character. Below is an example of message templates containing value placeholders prefixed with colons:
 
 ```
 User :1 has no privileges to run service :2!
@@ -335,17 +337,20 @@ The prefix character can be defined while constructing a ```T_DEFAULT_MESSAGE_FO
 ```
 t_default_message_formatter(':');
 ```
+
 # Public API
 
 PL-LOG public API consists of two packages: ```LOG$``` and ```ERROR$```. 
 
-```LOG$``` provides methods for log message formatting and dispatching, call stack and subprogram argument tracking, unexpected Oracle error handling, threshold log level manipulation and PL-LOG framework configuration. Constants for the predefined log levels are also defined in the ```LOG$``` package.
+```LOG$``` provides methods for log message formatting and dispatching, call stack and subprogram argument tracking, Oracle built-in exception handling, threshold log level manipulation, message resolver, formatter and handler registration. Constants for the predefined log levels are also defined in the ```LOG$``` package.
 
-```ERROR$``` is used for both free-text and codified businness error raising and Oracle built-in error reraising after handling. The package ensures that any error will be dispatched to the handlers only once.
+```ERROR$``` is used for both free-text and codified businness exception raising and Oracle built-in exception reraising after they have been handled.
 
 ## Configuration
 
-All PL-LOG configuration, namely message resolvers, formatters and handlers, is stored in ```LOG$``` package variables, is local to the session and therefore must be initialized upon session creation. The default entry point for configuring PL-LOG is a special schema-level procedure called ```LOG$INIT```. ```LOG$``` will try to run this procedure from it's initialization block dynamically, using ```EXECUTE IMMEDIATE```. Procedure must either reside in the same schema as PL-LOG does or to be resolvable via a synonym.
+Lists of registered message resolvers, formatters and handlers are stored in ```LOG$``` package variables, are local to the session and therefore must be initialized upon session creation. 
+
+The default entry point for configuring PL-LOG is a special schema-level procedure called ```LOG$INIT```. ```LOG$``` will try to run this procedure from it's initialization block dynamically, using ```EXECUTE IMMEDIATE```. Procedure must either reside in the same schema as PL-LOG does or to be resolvable via a synonym.
 
 ### Log level threshold control
 
@@ -383,23 +388,21 @@ PROCEDURE set_session_log_level (
 );
 ```
 
-```c_SESSION_SERIAL#``` constant stores serial number of the current session.
-
 - ```SET_SYSTEM_LOG_LEVEL``` changes __system__ log level threshold. The change becomes immediately available to all sessions.
 
-- ```INIT_SYSTEM_LOG_LEVEL``` must be used to initialize the default system log level threshold when the database instance is started. When included into the ```LOG$INIT``` procedure, the first session which uses ```LOG$``` will set the initial system level threshold. All subsequent calls to ```INIT_SYSTEM_LOG_LEVEL``` won't make any effect to the setting.
+- ```INIT_SYSTEM_LOG_LEVEL``` must be used to initialize the default system log level threshold when the database instance is started. When included into the ```LOG$INIT``` procedure, the first session which uses ```LOG$``` will set the initial system level threshold. All subsequent calls to ```INIT_SYSTEM_LOG_LEVEL``` won't affect the setting. Unitialized log level threshold equals to and gets handled as ```NULL```.
 
 - ```RESET_SYSTEM_LOG_LEVEL``` puts the system log level threshold back to the unitialized state, so that the first session to call ```INIT_SYSTEM_LOG_LEVEL``` or ```SET_SYSTEM_LOG_LEVEL``` would initialize it again.
 
-- ```SET_SESSION_LOG_LEVEL``` allows to set log level to the current or to __any other session__,by providing a valid session ```SERIAL#``` (unlike ```SID```s, session serial numbers are not reused by the database instance and can be used to uniquely identify sessions).
+- ```SET_SESSION_LOG_LEVEL``` allows to set log level to the current or to __any other session__, by providing a valid session ```SERIAL#``` (unlike ```SID```s, session serial numbers are not reused by the database instance and can be used to uniquely identify sessions).
 
-Unitialized log level threshold equals to and gets handled as ```NULL```.
+The ```c_SESSION_SERIAL#``` constant stores serial number of the current session.
 
 Special log level threshold values ```ALL = 0``` and ```NONE = 601``` can be used to allow, respectively, any or none of the messages to be handled.
 
 ### Message resolver and handler registration
 
-To register log message resolvers, formatters and handlers into PL-LOG, the following ```LOG$``` methods must be used in the configuration procedure:
+To register log message resolvers, formatters and handlers in PL-LOG, use the following ```LOG$``` methods in the configuration procedure:
 
 ```
 PROCEDURE add_message_resolver (
@@ -473,87 +476,85 @@ END;
 
 In PL-LOG there are two ways of using ```LOG$``` to put instrumentation calls into your PL/SQL code: 
 
-- A generic procedure ```MESSAGE```, which accepts any valid log level and an array of message arguments;
+- A generic procedure ```MESSAGE```, which accepts any valid log level, a message and an array of message arguments:
 
-- A set of shortcut methods ```DEBUG```, ```INFO```, ```WARNING```, ```ERROR``` and ```FATAL``` each of which has six overloaded versions - one with an array of arguments and five similar versions which accept respectively from 1 to 5 arguments as separate procedure parameters ```P_ARGUMENT_1``` ... ```P_ARGUMENT_5```.
+    ```
+    SUBTYPE t_message_log_level IS 
+        PLS_INTEGER 
+            RANGE 1..600
+            NOT NULL;
 
-The generic procedure ```MESSAGE``` is defined as follows:
+    PROCEDURE message (
+        p_level IN t_message_log_level,
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL,
+        p_service_depth IN NATURALN := 0
+    );
+    ```
 
-```
-SUBTYPE t_message_log_level IS 
-    PLS_INTEGER 
-        RANGE 1..600
-        NOT NULL;
+    ```P_SERVICE_DEPTH``` is a non-null natural number, which controls how many levels of the current call stack, starting from the top, must be considered as internal and be hidden from the call stack. This feature is helpful when it is necessary to wrap calls to PL-LOG into another layer of the instrumentation routines. For example, a system, which is going to integrate PL-LOG might already have an existing logging solution. The new code which is being developed will for sure call PL-LOG directly, but the old instrumentation methods can be refactored to call ```LOG$``` subprograms as well. In that case developers won't want to see their old logging framework units in the call stack logged alongside the messages. Please refer to the chapter ["Call stack tracking"](#call-stack-tracking) for more details.
 
-PROCEDURE message (
-    p_level IN t_message_log_level,
-    p_message IN VARCHAR2,
-    p_arguments IN t_varchars := NULL,
-    p_service_depth IN NATURALN := 0
-);
-```
+    Below is an example of calling ```MESSAGE``` for both codified and free-text messages:
 
-```P_SERVICE_DEPTH``` is a non-null natural number, which controls how many levels of the current call stack, starting from the top, must be considered as internal (or the "service") ones. This feature is helpful when it is necessary to wrap calls to PL-LOG into another layer of the instrumentation routines. For example, a system, which is going to integrate PL-LOG might already have an existing logging solution. The new code which is being developed will for sure call PL-LOG directly, but the old instrumentation methods can be refactored to call ```LOG$``` subprograms as well. In that case developers won't want to see their old logging framework units in the callstack logged alongside the messages. Please refer to the chapter ["Call stack tracking"](#call-stack-tracking) for more details.
+    ```
+    PROCEDURE create_account (
+        p_user_id IN NUMBER,
+        p_currency IN VARCHAR2
+    ) IS
+    BEGIN
 
-Below is an example of calling ```MESSAGE``` for both codified and free-text messages:
+        log$.message(
+            log$.c_DEBUG, 
+            'Starting account creation. User ID is :1, currency is :2.', 
+            t_varchars(p_user_id, p_currency)
+        );
 
-```
-PROCEDURE create_account (
-    p_user_id IN NUMBER,
-    p_currency IN VARCHAR2
-) IS
-BEGIN
+        -- An account for the user ID = :1 has been successfully created!
+        log$.message(200, 'MSG-00001', t_varchars(p_user_id));
 
-    log$.message(
-        log$.c_DEBUG, 
-        'Starting account creation. User ID is :1, currency is :2.', 
-        t_varchars(p_user_id, p_currency)
+    END;
+    ```
+
+- A set of shortcut methods ```DEBUG```, ```INFO```, ```WARNING```, ```ERROR``` and ```FATAL``` each of which has six overloaded versions - one with an array of arguments and five similar versions which accept respectively from 1 to 5 arguments:
+
+    ```
+    PROCEDURE debug | info | warning | error | fatal (
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL
     );
 
-    -- An account for the user ID = :1 has been successfully created!
-    log$.message(200, 'MSG-00001', t_varchars(p_user_id));
-
-END;
-```
-
-The shortcut methods allow to keep instrumentation calls as short and readable as possible:
-
-```
-PROCEDURE debug | info | warning | error | fatal (
-    p_message IN VARCHAR2,
-    p_arguments IN t_varchars := NULL
-);
-
-PROCEDURE debug | info | warning | error | fatal (
-    p_message IN VARCHAR2,
-    p_argument_1 IN VARCHAR2,
-    [ ...
-      p_argument_5 IN VARCHAR2 ]
-);
-```
-
-Usually, being able to pass up to five message arguments is more than enough in the vast majority of situations. If, however, more arguments are required, each of the shortcut methods has an overloaded version, which accepts an array of values. The shortcut methods don't allow to specify service depth.
-
-Below is the same example as for ```MESSAGE```, refactored to use sortcut methods:
-
-```
-PROCEDURE create_account (
-    p_user_id IN NUMBER,
-    p_currency IN VARCHAR2
-) IS
-BEGIN
-
-    log$.debug(
-        'Starting account creation. User ID is :1, currency is :2.', 
-        p_user_id, 
-        p_currency
+    PROCEDURE debug | info | warning | error | fatal (
+        p_message IN VARCHAR2,
+        p_argument_1 IN VARCHAR2,
+        [ ...
+        p_argument_5 IN VARCHAR2 ]
     );
+    ```
 
-    -- An account for the user ID = :1 has been successfully created!
-    log$.info('MSG-00001', p_user_id);
+    - The shortcut methods allow to keep instrumentation calls as short and readable as possible.
+    - Usually, being able to pass up to five message arguments is more than enough in the vast majority of situations. 
+    - The shortcut methods don't allow to specify service depth.
 
-END;
-```
+    Below is the same example as for ```MESSAGE```, refactored to use shortcut methods:
+
+    ```
+    PROCEDURE create_account (
+        p_user_id IN NUMBER,
+        p_currency IN VARCHAR2
+    ) IS
+    BEGIN
+
+        log$.debug(
+            'Starting account creation. User ID is :1, currency is :2.', 
+            p_user_id, 
+            p_currency
+        );
+
+        -- An account for the user ID = :1 has been successfully created!
+        log$.info('MSG-00001', p_user_id);
+
+    END;
+    ```
 
 ## Call stack tracking
 
@@ -671,25 +672,21 @@ RETURN VARCHAR2;
 
 - ```GET_CALL_STACK``` returns structured call stack information. Message handlers can use this method to analyze or to format call stack as desired.
 
-- ```FORMAT_CALL_STACK``` concatenates contenst of the call stack into one ```VARCHAR2``` value.
+- ```FORMAT_CALL_STACK``` concatenates contents of the call stack into one ```VARCHAR2``` value.
 
     By default, ```FORMAT_CALL_STACK``` will return up to the 32767 first characters of the formatted call stack, including information about associated values. Additionally it is possible to lower the length limitation to as little as 3 characters. If there is a length overflow, an ellipsis mark will be added to the end of the returned value.
 
     It is possible to slightly alter default behaviour of ```FORMAT_CALL_STACK``` by providing an instance of ```T_CALL_STACK_FORMAT_OPTIONS```:
 
     - ```FIRST_LINE_INDENT``` will be added to the beginning of the first line.
-
     - ```INDENT``` will be added to the beginning of all lines, starting with the second one.
-
     - ```ARGUMENT_NOTATION``` value of ```TRUE``` will tell PL-LOG to output associated values in PL/SQL named argument notation.
 
-    Below is an example of how ```FORMAT_CALL_STACK``` is called withing the built-in message handler ```T_DBMS_OUTPUT_HANDLER```:
+    Below is an example of how ```FORMAT_CALL_STACK``` is called from withing the built-in message handler ```T_DBMS_OUTPUT_HANDLER```:
 
     ```
     DECLARE
-
         v_call_stack_format_options log$.t_call_stack_format_options;
-
     BEGIN
 
         v_call_stack_format_options.first_line_indent := 'at: ';
@@ -705,7 +702,7 @@ RETURN VARCHAR2;
     END;
     ```
 
-    possible output:
+    Possible handler output:
 
     ```
     at: OWNER.REGISTER_PERSON (line 19)
