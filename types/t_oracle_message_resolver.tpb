@@ -28,6 +28,8 @@ CREATE OR REPLACE TYPE BODY t_oracle_message_resolver IS
     ) 
     RETURN VARCHAR2 IS
     
+        v_code PLS_INTEGER;
+    
         v_message log$.STRING;
         v_resolving_result INTEGER;
         
@@ -37,13 +39,24 @@ CREATE OR REPLACE TYPE BODY t_oracle_message_resolver IS
             RETURN NULL;
         END IF;
         
-        v_resolving_result := utl_lms.get_message(
-            SUBSTR(p_message, 5), 
-            'RDBMS', 
-            'ORA', 
-            log$.to_nls_language(p_language), 
-            v_message
-        );
+        v_code := SUBSTR(p_message, 5);
+        
+        IF v_code BETWEEN 20000 AND 20999 THEN
+        
+            v_message := '%s';
+            v_resolving_result := 0;
+            
+        ELSE
+        
+            v_resolving_result := utl_lms.get_message(
+                v_code, 
+                'RDBMS', 
+                'ORA', 
+                log$.to_nls_language(p_language), 
+                v_message
+            );
+            
+        END IF;
         
         IF v_resolving_result = 0 THEN
             RETURN p_message || ': ' || v_message;

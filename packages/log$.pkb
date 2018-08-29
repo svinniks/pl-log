@@ -1417,7 +1417,9 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
     BEGIN
 
-        IF utl_lms.get_message(p_code, 'RDBMS', 'ORA', p_language, v_template) != 0 THEN
+        IF p_code BETWEEN 20000 AND 20999 THEN
+            v_template := '%s';
+        ELSIF utl_lms.get_message(p_code, 'RDBMS', 'ORA', p_language, v_template) != 0 THEN
             log_event('E', 'Failed to obtain built-in message for the error ORA-' || p_code || '!');
             RETURN;
         END IF;
