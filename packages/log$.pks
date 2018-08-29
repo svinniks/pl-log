@@ -123,7 +123,11 @@ CREATE OR REPLACE PACKAGE log$ IS
     );
 
     PROCEDURE add_message_handler (
-        p_handler IN t_log_message_handler,
+        p_handler IN t_raw_message_handler
+    );
+
+    PROCEDURE add_message_handler (
+        p_handler IN t_formatted_message_handler,
         p_language IN VARCHAR2 := NULL
     );
     
@@ -138,8 +142,8 @@ CREATE OR REPLACE PACKAGE log$ IS
         p_mapper IN t_oracle_error_mapper
     );
     
-    PROCEDURE set_user_language_mapper (
-        p_mapper IN t_user_language_mapper
+    PROCEDURE set_nls_language_mapper (
+        p_mapper IN t_nls_language_mapper
     );
     
     /* System log level management */
@@ -291,6 +295,11 @@ CREATE OR REPLACE PACKAGE log$ IS
         p_service_depth IN NATURALN := 0
     );
         
+    FUNCTION to_nls_language (
+        p_user_language IN VARCHAR2
+    ) 
+    RETURN VARCHAR2;
+    
     PROCEDURE oracle_error (
         p_level IN t_message_log_level,
         p_service_depth IN NATURALN,

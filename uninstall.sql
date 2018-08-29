@@ -26,7 +26,7 @@ DROP TYPE t_iso_language_mapper
 DROP TABLE iso_language_map
 /
 
-DROP TYPE t_user_language_mapper
+DROP TYPE t_nls_language_mapper
 /
 
 DROP TYPE t_dbms_output_handler
@@ -56,6 +56,10 @@ DROP TYPE t_call
 /
 
 DROP TYPE t_oracle_error_mapper
+/
+DROP TYPE t_formatted_message_handler
+/
+DROP TYPE t_raw_message_handler
 /
 DROP TYPE t_log_message_handler
 /

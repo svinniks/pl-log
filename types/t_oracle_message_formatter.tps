@@ -1,7 +1,7 @@
-CREATE OR REPLACE TYPE t_dbms_output_handler UNDER t_formatted_message_handler (
+CREATE OR REPLACE TYPE t_oracle_message_formatter UNDER t_log_message_formatter (
 
     /* 
-        Copyright 2017 Sergejs Vinniks
+        Copyright 2018 Sergejs Vinniks
 
         Licensed under the Apache License, Version 2.0 (the "License");
         you may not use this file except in compliance with the License.
@@ -15,16 +15,14 @@ CREATE OR REPLACE TYPE t_dbms_output_handler UNDER t_formatted_message_handler (
         See the License for the specific language governing permissions and
         limitations under the License.
     */
-
-    CONSTRUCTOR FUNCTION t_dbms_output_handler
+  
+    CONSTRUCTOR FUNCTION t_oracle_message_formatter
     RETURN self AS RESULT,
 
-    OVERRIDING MEMBER FUNCTION get_log_level
-    RETURN PLS_INTEGER,
-    
-    OVERRIDING MEMBER PROCEDURE handle_message (
-        p_level IN PLS_INTEGER,
-        p_message IN VARCHAR2
+    OVERRIDING MEMBER FUNCTION format_message (
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars
     )
-
+    RETURN VARCHAR2
+    
 );

@@ -19,12 +19,7 @@ CREATE OR REPLACE TYPE t_log_message_handler IS OBJECT (
     dummy CHAR,
         
     NOT INSTANTIABLE MEMBER FUNCTION get_log_level
-    RETURN PLS_INTEGER,
-    
-    NOT INSTANTIABLE MEMBER PROCEDURE handle_message (
-        p_level IN PLS_INTEGER,
-        p_message IN VARCHAR2
-    )
+    RETURN PLS_INTEGER
     
 ) 
 NOT INSTANTIABLE NOT FINAL

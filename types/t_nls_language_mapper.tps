@@ -14,12 +14,17 @@
     limitations under the License.
 */
 
-CREATE OR REPLACE TYPE t_user_language_mapper IS OBJECT (
+CREATE OR REPLACE TYPE t_nls_language_mapper IS OBJECT (
     
     dummy CHAR,
     
     NOT INSTANTIABLE MEMBER FUNCTION to_nls_language (
         p_user_language IN VARCHAR2
+    )
+    RETURN VARCHAR2,
+    
+    NOT INSTANTIABLE MEMBER FUNCTION from_nls_language (
+        p_nls_language IN VARCHAR2
     )
     RETURN VARCHAR2
     

@@ -38,14 +38,18 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
     v_oracle_error_mappers t_oracle_error_mappers;
     
-    TYPE t_log_message_handlers IS
-        TABLE OF t_log_message_handler;
+    TYPE t_raw_message_handlers IS
+        TABLE OF t_raw_message_handler;
+        
+    TYPE t_formatted_message_handlers IS
+        TABLE OF t_formatted_message_handler;
     
-    v_message_handlers t_log_message_handlers;
-    v_handler_languages t_varchars;
+    v_raw_message_handlers t_raw_message_handlers;
+    v_formatted_message_handlers t_formatted_message_handlers;
+    v_formatted_message_languages t_varchars;
     
     v_default_language STRING;
-    v_user_language_mapper t_user_language_mapper;
+    v_nls_language_mapper t_nls_language_mapper;
     
     v_call_id NUMBER(30);    
     
@@ -64,16 +68,17 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     PROCEDURE reset IS
     BEGIN
     
-        v_message_resolvers := t_message_resolvers();
-        v_resolver_log_levels := t_resolver_log_levels();
+        v_message_resolvers := t_message_resolvers(t_oracle_message_resolver());
+        v_resolver_log_levels := t_resolver_log_levels(c_ALL);
         
-        v_message_formatters := t_message_formatters();
+        v_message_formatters := t_message_formatters(t_oracle_message_formatter());
         v_default_message_formatter := NULL;
         
         v_oracle_error_mappers := t_oracle_error_mappers();
         
-        v_message_handlers := t_log_message_handlers();
-        v_handler_languages := t_varchars();
+        v_raw_message_handlers := t_raw_message_handlers();
+        v_formatted_message_handlers := t_formatted_message_handlers();
+        v_formatted_message_languages := t_varchars();
         
         set_session_log_level(NULL);
         
@@ -180,7 +185,25 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     END;
     
     PROCEDURE add_message_handler (
-        p_handler IN t_log_message_handler,
+        p_handler IN t_raw_message_handler
+    ) IS
+    BEGIN
+    
+        IF p_handler IS NULL THEN
+        
+            log_event('W', 'Attempted to register NULL message handler!');
+        
+        ELSE
+        
+            v_raw_message_handlers.EXTEND(1);
+            v_raw_message_handlers(v_raw_message_handlers.COUNT) := p_handler;
+            
+        END IF;
+    
+    END;
+    
+    PROCEDURE add_message_handler (
+        p_handler IN t_formatted_message_handler,
         p_language IN VARCHAR2 := NULL
     ) IS
     BEGIN
@@ -191,11 +214,11 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
         ELSE
         
-            v_message_handlers.EXTEND(1);
-            v_message_handlers(v_message_handlers.COUNT) := p_handler;
+            v_formatted_message_handlers.EXTEND(1);
+            v_formatted_message_handlers(v_formatted_message_handlers.COUNT) := p_handler;
             
-            v_handler_languages.EXTEND(1);
-            v_handler_languages(v_handler_languages.COUNT) := p_language;
+            v_formatted_message_languages.EXTEND(1);
+            v_formatted_message_languages(v_formatted_message_languages.COUNT) := p_language;
             
         END IF;
     
@@ -232,11 +255,11 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
-    PROCEDURE set_user_language_mapper (
-        p_mapper IN t_user_language_mapper
+    PROCEDURE set_nls_language_mapper (
+        p_mapper IN t_nls_language_mapper
     ) IS
     BEGIN
-        v_user_language_mapper := p_mapper;
+        v_nls_language_mapper := p_mapper;
     END;
     
     /* System log level management */
@@ -1092,7 +1115,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     END;
     
     FUNCTION handling (
-        p_handler_i IN NATURALN,
+        p_handler IN t_log_message_handler,
         p_level IN t_message_log_level
     )
     RETURN BOOLEAN IS
@@ -1102,7 +1125,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     BEGIN
     
         BEGIN
-            v_handler_log_level := v_message_handlers(p_handler_i).get_log_level;
+            v_handler_log_level := p_handler.get_log_level;
         EXCEPTION
             WHEN OTHERS THEN
                 log_error('An error occured while determining log level of a message handler!');
@@ -1123,9 +1146,17 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     RETURN BOOLEAN IS
     BEGIN
     
-        FOR v_i IN 1..v_message_handlers.COUNT LOOP
+        FOR v_i IN 1..v_raw_message_handlers.COUNT LOOP
         
-            IF handling(v_i, p_level) THEN
+            IF handling(v_raw_message_handlers(v_i), p_level) THEN
+                RETURN TRUE;
+            END IF;
+        
+        END LOOP;
+    
+        FOR v_i IN 1..v_formatted_message_handlers.COUNT LOOP
+        
+            IF handling(v_formatted_message_handlers(v_i), p_level) THEN
                 RETURN TRUE;
             END IF;
         
@@ -1188,13 +1219,28 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
     BEGIN
     
-        FOR v_i IN 1..v_message_handlers.COUNT LOOP
+        FOR v_i IN 1..v_raw_message_handlers.COUNT LOOP
+            
+            IF handling(v_raw_message_handlers(v_i), p_level) THEN
+            
+                BEGIN
+                    v_raw_message_handlers(v_i).handle_message(p_level, p_message, p_arguments);
+                EXCEPTION
+                    WHEN OTHERS THEN
+                        log_error('An error occured while handling a message!');
+                END;    
+                    
+            END IF;
         
-            IF handling(v_i, p_level) THEN
+        END LOOP;
+    
+        FOR v_i IN 1..v_formatted_message_handlers.COUNT LOOP
+        
+            IF handling(v_formatted_message_handlers(v_i), p_level) THEN
                 
                 BEGIN
                 
-                    v_language := NVL(v_handler_languages(v_i), v_default_language);
+                    v_language := NVL(v_formatted_message_languages(v_i), v_default_language);
                     v_message := get_last_message(v_language);
                         
                     IF v_message IS NULL THEN
@@ -1210,7 +1256,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
                             
                     END IF;
                     
-                    v_message_handlers(v_i).handle_message(p_level, v_message);
+                    v_formatted_message_handlers(v_i).handle_message(p_level, v_message);
                         
                 EXCEPTION
                     WHEN OTHERS THEN    
@@ -1279,13 +1325,15 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
-    FUNCTION extract_message_arguments (
-        p_template IN VARCHAR2,
+    PROCEDURE exctract_oracle_error_arguments (
+        p_code IN PLS_INTEGER,
         p_message IN VARCHAR2,
+        p_language IN VARCHAR2,
         p_arguments OUT t_varchars
-    )
-    RETURN BOOLEAN IS 
+    ) IS 
 
+        v_template STRING;
+    
         v_position PLS_INTEGER;
         v_placeholder_position PLS_INTEGER;
         
@@ -1369,21 +1417,22 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
     BEGIN
 
-        IF p_template IS NULL AND p_message IS NOT NULL THEN
-            RETURN FALSE;
+        IF utl_lms.get_message(p_code, 'RDBMS', 'ORA', p_language, v_template) != 0 THEN
+            log_event('E', 'Failed to obtain built-in message for the error ORA-' || p_code || '!');
+            RETURN;
         END IF;
 
         v_fragments := t_varchars();
         v_position := 1;
         
-        WHILE v_position <= LENGTH(p_template) LOOP
+        WHILE v_position <= LENGTH(v_template) LOOP
         
-            v_placeholder_position := INSTR(p_template, '%s', v_position);
+            v_placeholder_position := INSTR(v_template, '%s', v_position);
             
             IF v_placeholder_position = 0 THEN
                 
                 v_fragments.EXTEND(1);
-                v_fragments(v_fragments.COUNT) := SUBSTR(p_template, v_position);
+                v_fragments(v_fragments.COUNT) := SUBSTR(v_template, v_position);
                 
                 EXIT;
         
@@ -1391,9 +1440,10 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
                 
                 IF v_placeholder_position > v_position THEN
                     v_fragments.EXTEND(1);
-                    v_fragments(v_fragments.COUNT) := SUBSTR(p_template, v_position, v_placeholder_position - v_position);
+                    v_fragments(v_fragments.COUNT) := SUBSTR(v_template, v_position, v_placeholder_position - v_position);
                 ELSIF v_position > 1 THEN
-                    RETURN FALSE;
+                    log_event('E', 'Failed to extract argument from the error ORA-' || p_code || '!');
+                    RETURN;
                 END IF;
                 
                 v_fragments.EXTEND(1);
@@ -1409,85 +1459,61 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
 
         IF find_fragment(1, 1) THEN
             p_arguments := v_arguments;
-            RETURN TRUE;
         ELSE
-            RETURN FALSE;
+            log_event('E', 'Failed to extract argument from the error ORA-' || p_code || '!');
         END IF;
             
     END;
     
-    FUNCTION translate_oracle_error (
-        p_code IN PLS_INTEGER,
-        p_message IN VARCHAR2,
-        p_language IN VARCHAR2
-    )
+    FUNCTION from_nls_language (
+        p_nls_language IN VARCHAR2
+    ) 
     RETURN VARCHAR2 IS
-    
-        v_message_nls_language STRING;
-        v_message_template STRING;
-        v_message_arguments t_varchars;
         
-        v_target_nls_language STRING;
-        v_target_template STRING;
-        v_target_message STRING;
-        
-        v_result PLS_INTEGER;
+        v_user_language STRING;
         
     BEGIN
-    
-        IF p_language IS NULL THEN
         
-            v_target_message := NULL;
+        IF v_nls_language_mapper IS NULL THEN
+          
+            RETURN p_nls_language;
             
         ELSE
         
-            v_target_message := get_last_message(p_language);
+            BEGIN
+                RETURN v_nls_language_mapper.from_nls_language(p_nls_language);
+            EXCEPTION
+                WHEN OTHERS THEN
+                    log_error('An error occurred while mapping NLS language!');
+            END;
             
-            IF v_target_message IS NULL THEN
-        
-                IF v_user_language_mapper IS NULL THEN
-                
-                    v_target_nls_language := p_language;
-                    
-                ELSE
-                
-                    BEGIN    
-                        v_target_nls_language := v_user_language_mapper.to_nls_language(p_language);
-                    EXCEPTION
-                        WHEN OTHERS THEN
-                            log_error('An error occurred while mapping user language to NLS_LANGUAGE');
-                    END;    
-                        
-                END IF;
-                
-                IF v_target_nls_language IS NOT NULL THEN
-                
-                    SELECT value
-                    INTO v_message_nls_language
-                    FROM nls_session_parameters
-                    WHERE parameter = 'NLS_LANGUAGE';
-                
-                    IF v_target_nls_language != v_message_nls_language
-                       AND utl_lms.get_message(p_code, 'RDBMS', 'ORA', v_message_nls_language, v_message_template) = 0
-                       AND extract_message_arguments(v_message_template, p_message, v_message_arguments) 
-                       AND utl_lms.get_message(p_code, 'RDBMS', 'ORA', v_target_nls_language, v_target_template) = 0 
-                    THEN   
-                        
-                        v_target_message := v_target_template;
-                        
-                        FOR v_i IN 1..v_message_arguments.COUNT LOOP
-                            v_target_message := REGEXP_REPLACE(v_target_message, '\%s', v_message_arguments(v_i), 1, 1);
-                        END LOOP;
-                        
-                    END IF;
-                
-                END IF;
-                
-            END IF;
-        
         END IF;
     
-        RETURN 'ORA-' || LPAD(p_code, 5, '0') || ': ' || NVL(v_target_message, p_message);
+    END;
+    
+    FUNCTION to_nls_language (
+        p_user_language IN VARCHAR2
+    ) 
+    RETURN VARCHAR2 IS
+        
+        v_nls_language STRING;
+        
+    BEGIN
+        
+        IF v_nls_language_mapper IS NULL THEN
+          
+            RETURN p_user_language;
+            
+        ELSE
+        
+            BEGIN
+                RETURN v_nls_language_mapper.to_nls_language(p_user_language);
+            EXCEPTION
+                WHEN OTHERS THEN
+                    log_error('An error occurred while mapping NLS language!');
+            END;
+            
+        END IF;
     
     END;
     
@@ -1500,6 +1526,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
         v_code PLS_INTEGER;
         v_message STRING;
+        v_nls_language STRING;
+        v_arguments t_varchars;
         
     BEGIN
     
@@ -1529,31 +1557,30 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
                     );
                  
                 ELSE
-                                    
-                    FOR v_i IN 1..v_message_handlers.COUNT LOOP
-            
-                        IF handling(v_i, p_level) THEN
-                        
-                            BEGIN
-                            
-                                v_message_handlers(v_i).handle_message(
-                                    p_level,
-                                    translate_oracle_error(
-                                        v_code,
-                                        v_message,
-                                        NVL(v_handler_languages(v_i), v_default_language)
-                                    )
-                                );
-                                
-                            EXCEPTION    
-                                WHEN OTHERS THEN
-                                    log_error('An error occurred while handling a message!');
-                            END;
-                            
-                        END IF;
+                                   
+                    SELECT value
+                    INTO v_nls_language
+                    FROM nls_session_parameters
+                    WHERE parameter = 'NLS_LANGUAGE';
+                 
+                    set_last_message(
+                        from_nls_language(v_nls_language), 
+                        'ORA-' || LPAD(v_code, 5, '0') || ': ' || v_message
+                    );
                     
-                    END LOOP;
+                    exctract_oracle_error_arguments(
+                        v_code, 
+                        v_message, 
+                        v_nls_language, 
+                        v_arguments
+                    );
                     
+                    handle_message(
+                        p_level,
+                        'ORA-' || LPAD(v_code, 5, '0'),
+                        v_arguments
+                    );
+                
                 END IF;
                 
             END IF;         

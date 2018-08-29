@@ -174,7 +174,7 @@ suite("Message handling", function() {
                     ';
 
                     EXECUTE IMMEDIATE '
-                        CREATE OR REPLACE TYPE "${handlerTypeName}" UNDER t_log_message_handler (
+                        CREATE OR REPLACE TYPE "${handlerTypeName}" UNDER t_formatted_message_handler (
 
                             log_level NUMBER,
 
@@ -532,7 +532,7 @@ suite("Message handling", function() {
                     ';
 
                     EXECUTE IMMEDIATE '
-                        CREATE OR REPLACE TYPE "${handlerTypeName}" UNDER t_log_message_handler (
+                        CREATE OR REPLACE TYPE "${handlerTypeName}" UNDER t_formatted_message_handler (
 
                             log_level NUMBER,
 

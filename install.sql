@@ -25,7 +25,11 @@ SET DEFINE OFF
 /
 @@types/t_log_message_handler.tps
 /
-@@types/t_user_language_mapper.tps
+@@types/t_raw_message_handler.tps
+/
+@@types/t_formatted_message_handler.tps
+/
+@@types/t_nls_language_mapper.tps
 /
 @@types/t_oracle_error_mapper.tps
 /

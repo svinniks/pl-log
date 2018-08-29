@@ -6,10 +6,11 @@ BEGIN
     log$.add_message_resolver(t_default_message_resolver());
     
     log$.add_message_handler(t_default_message_handler(), 'ENG');
-    log$.add_message_handler(t_dbms_output_handler(), 'ENG');
+    log$.add_message_handler(t_dbms_output_handler(), 'GER');
+    log$.add_message_handler(t_dummy_message_handler(null));
     
     log$.set_default_message_formatter(t_default_message_formatter(':'));
     
-    log$.set_user_language_mapper(t_iso_language_mapper());
+    log$.set_nls_language_mapper(t_iso_language_mapper());
     
 END;
