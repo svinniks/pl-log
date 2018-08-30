@@ -2,6 +2,8 @@ CREATE OR REPLACE TYPE t_call IS OBJECT (
 
     id NUMBER,
     
+    PRAGMA RESTRICT_REFERENCES(DEFAULT, RNDS, WNDS, RNPS, WNPS, TRUST),
+    
     MEMBER FUNCTION param (
         p_name IN VARCHAR2,
         p_value IN VARCHAR2
