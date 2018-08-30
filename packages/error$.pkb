@@ -94,7 +94,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
     
     BEGIN
     
-        v_message := log$.get_last_message(v_display_language);
+        v_message := log$.get_cached_message(v_display_language);
         
         IF v_message IS NULL THEN
         

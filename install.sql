@@ -16,8 +16,18 @@
 
 SET DEFINE OFF
 
+/* Tables */
+
 @@tables/log$events.tab
 /
+@@tables/iso_language_map.tab
+/
+@@data/iso_language_map.sql
+
+
+/* Specifications */
+
+-- Core
 
 @@types/t_log_message_formatter.tps
 /
@@ -29,72 +39,95 @@ SET DEFINE OFF
 /
 @@types/t_formatted_message_handler.tps
 /
-@@types/t_nls_language_mapper.tps
-/
-@@types/t_oracle_error_mapper.tps
-/
-
 @@types/t_call.tps
 /
 @@packages/log$.pks
 /
+@@packages/error$.pks
+/
+
+-- Formatters
+@@types/t_default_message_formatter.tps
+/
+@@types/t_oracle_message_formatter.tps
+/
+
+-- Resolvers
+
+@@packages/default_message_resolver.pks
+/
+@@types/t_default_message_resolver.tps
+/
+@@types/t_nls_language_mapper.tps
+/
+@@types/t_iso_language_mapper.tps
+/
+@@packages/oracle_message_resolver.pks
+/
+@@types/t_oracle_message_resolver.tps
+/
+
+-- Handlers
+
+@@packages/default_message_handler.pks
+/
+@@views/log$tail.vw
+/
+@@types/t_default_message_handler.tps
+/
+@@packages/dbms_output_handler.pks
+/
+@@types/t_dbms_output_handler.tps
+/
+
+-- Oracle error mapper
+
+@@types/t_oracle_error_mapper.tps
+/
+
+-- Contexts
+
+@@contexts/log$levels.ctx
+/
+
+/* Bodies */
+
+-- Core
 
 @@types/t_call.tpb
 /
 @@packages/log$.pkb
 /
-
-@@packages/error$.pks
-/
 @@packages/error$.pkb
 /
 
-@@packages/default_message_resolver.pks
+-- Formatters
+
+@@types/t_default_message_formatter.tpb
 /
-@@packages/default_message_resolver.pkb
+@@types/t_oracle_message_formatter.tpb
 /
 
-@@types/t_default_message_resolver.tps
+-- Resolvers
+
+@@packages/default_message_resolver.pkb
 /
 @@types/t_default_message_resolver.tpb
 /
-
-@@packages/default_message_handler.pks
+@@types/t_iso_language_mapper.tpb
 /
+@@packages/oracle_message_resolver.pkb
+/
+@@types/t_oracle_message_resolver.tpb
+/
+
+-- Handlers
+
 @@packages/default_message_handler.pkb
-/
-
-@@types/t_default_message_handler.tps
 /
 @@types/t_default_message_handler.tpb
 /
-
-@@packages/dbms_output_handler.pks
-/
 @@packages/dbms_output_handler.pkb
 /
-
-@@types/t_dbms_output_handler.tps
-/
 @@types/t_dbms_output_handler.tpb
-/
-
-@@types/t_default_message_formatter.tps
-/
-@@types/t_default_message_formatter.tpb
-/
-
-@@tables/iso_language_map.tab
-/
-@@data/iso_language_map.sql
-
-@@types/t_iso_language_mapper.tps
-/
-@@types/t_iso_language_mapper.tpb
-/
-
-@@views/log$tail.vw
-/
-
-@@contexts/log$levels.ctx
 /

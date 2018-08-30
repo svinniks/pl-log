@@ -16,7 +16,11 @@ CREATE OR REPLACE TYPE t_oracle_message_resolver UNDER t_log_message_resolver (
         limitations under the License.
     */
 
-    CONSTRUCTOR FUNCTION t_oracle_message_resolver
+    nls_language_mapper t_nls_language_mapper,
+
+    CONSTRUCTOR FUNCTION t_oracle_message_resolver (
+        p_nls_language_mapper IN t_nls_language_mapper := NULL
+    )
     RETURN SELF AS RESULT,
 
     OVERRIDING MEMBER FUNCTION resolve_message (

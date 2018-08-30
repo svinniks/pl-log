@@ -14,48 +14,53 @@
     limitations under the License.
 */
 
+-- Contexts
+
 DROP CONTEXT log$levels
 /
 
-DROP VIEW log$tail
-/
-
-DROP TYPE t_iso_language_mapper
-/
-
-DROP TABLE iso_language_map
-/
-
-DROP TYPE t_nls_language_mapper
-/
+-- Handlers
 
 DROP TYPE t_dbms_output_handler
 /
 DROP PACKAGE dbms_output_handler
 /
-
 DROP TYPE t_default_message_handler
+/
+DROP VIEW log$tail
 /
 DROP PACKAGE default_message_handler
 /
 
-DROP PACKAGE default_message_resolver
+-- Resolvers 
+
+DROP TYPE t_oracle_message_resolver
+/
+DROP PACKAGE oracle_message_resolver
+/
+DROP TYPE t_iso_language_mapper
+/
+DROP TYPE t_nls_language_mapper
 /
 DROP TYPE t_default_message_resolver
 /
+DROP PACKAGE default_message_resolver
+/
 
+-- Formatters 
+
+DROP TYPE t_oracle_message_formatter
+/
 DROP TYPE t_default_message_formatter
 /
+
+-- Core
 
 DROP PACKAGE error$
 /
 DROP PACKAGE log$
 /
-
 DROP TYPE t_call
-/
-
-DROP TYPE t_oracle_error_mapper
 /
 DROP TYPE t_formatted_message_handler
 /
@@ -68,5 +73,9 @@ DROP TYPE t_log_message_resolver
 DROP TYPE t_log_message_formatter
 /
 
+-- Tables 
+
+DROP TABLE iso_language_map
+/
 DROP TABLE log$events
 /

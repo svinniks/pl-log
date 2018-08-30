@@ -16,9 +16,12 @@ CREATE OR REPLACE TYPE BODY t_oracle_message_resolver IS
         limitations under the License.
     */
 
-    CONSTRUCTOR FUNCTION t_oracle_message_resolver
+    CONSTRUCTOR FUNCTION t_oracle_message_resolver (
+        p_nls_language_mapper IN t_nls_language_mapper := NULL
+    )
     RETURN SELF AS RESULT IS
     BEGIN
+        nls_language_mapper := p_nls_language_mapper;
         RETURN;
     END;
 
@@ -27,43 +30,8 @@ CREATE OR REPLACE TYPE BODY t_oracle_message_resolver IS
         p_language IN VARCHAR2 := NULL
     ) 
     RETURN VARCHAR2 IS
-    
-        v_code PLS_INTEGER;
-    
-        v_message log$.STRING;
-        v_resolving_result INTEGER;
-        
     BEGIN
-        
-        IF NOT REGEXP_LIKE(p_message, '^ORA-[0-9]{5}$') THEN
-            RETURN NULL;
-        END IF;
-        
-        v_code := SUBSTR(p_message, 5);
-        
-        IF v_code BETWEEN 20000 AND 20999 THEN
-        
-            v_message := '%s';
-            v_resolving_result := 0;
-            
-        ELSE
-        
-            v_resolving_result := utl_lms.get_message(
-                v_code, 
-                'RDBMS', 
-                'ORA', 
-                log$.to_nls_language(p_language), 
-                v_message
-            );
-            
-        END IF;
-        
-        IF v_resolving_result = 0 THEN
-            RETURN p_message || ': ' || v_message;
-        ELSE
-            RETURN NULL;
-        END IF;
-    
+        RETURN oracle_message_resolver.resolve_message(p_message, p_language);
     END;    
 
 END;

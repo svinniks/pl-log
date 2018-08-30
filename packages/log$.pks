@@ -142,10 +142,6 @@ CREATE OR REPLACE PACKAGE log$ IS
         p_mapper IN t_oracle_error_mapper
     );
     
-    PROCEDURE set_nls_language_mapper (
-        p_mapper IN t_nls_language_mapper
-    );
-    
     /* System log level management */
     
     PROCEDURE reset_system_log_level;
@@ -283,7 +279,7 @@ CREATE OR REPLACE PACKAGE log$ IS
     )
     RETURN VARCHAR2;
     
-    FUNCTION get_last_message (
+    FUNCTION get_cached_message (
         p_language IN VARCHAR2
     )
     RETURN VARCHAR2;
@@ -294,11 +290,6 @@ CREATE OR REPLACE PACKAGE log$ IS
         p_arguments IN t_varchars := NULL,
         p_service_depth IN NATURALN := 0
     );
-        
-    FUNCTION to_nls_language (
-        p_user_language IN VARCHAR2
-    ) 
-    RETURN VARCHAR2;
     
     PROCEDURE oracle_error (
         p_level IN t_message_log_level,

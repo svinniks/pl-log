@@ -93,11 +93,10 @@ suite("Message handling", function() {
     });
     
     test("Check if call stack is updated when no handlers are registered", function() {
-        
-        resetPackage();
 
         database.run(`
             BEGIN
+                log$.reset;
                 log$.reset_system_log_level;
             END;
         `);
@@ -424,6 +423,10 @@ suite("Message handling", function() {
 
             database.call("log$.set_system_log_level", {
                 p_level: INFO
+            });
+
+            database.call("log$.set_session_log_level", {
+                p_level: null
             });
 
             database.run(`

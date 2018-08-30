@@ -22,11 +22,6 @@ CREATE OR REPLACE TYPE t_iso_language_mapper UNDER t_nls_language_mapper (
     OVERRIDING MEMBER FUNCTION to_nls_language (
         p_user_language IN VARCHAR2
     )
-    RETURN VARCHAR2,
-    
-    OVERRIDING MEMBER FUNCTION from_nls_language (
-        p_nls_language IN VARCHAR2
-    )
     RETURN VARCHAR2
     
 );

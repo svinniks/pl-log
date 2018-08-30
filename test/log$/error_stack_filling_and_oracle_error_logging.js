@@ -932,7 +932,7 @@ suite("Error stack filling and oracle error logging", function() {
     
     });
 
-    test("Log oracle error custom message level", function() {
+    test("Log oracle error, custom message level", function() {
         
         database.run(`
             BEGIN
