@@ -1304,7 +1304,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
-    PROCEDURE exctract_oracle_error_arguments (
+    PROCEDURE decompose_oracle_message (
         p_code IN PLS_INTEGER,
         p_message IN VARCHAR2,
         p_nls_language IN VARCHAR2,
@@ -1492,7 +1492,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
                     FROM nls_session_parameters
                     WHERE parameter = 'NLS_LANGUAGE';
                                      
-                    exctract_oracle_error_arguments(
+                    decompose_oracle_message(
                         v_code, 
                         v_message, 
                         v_nls_language, 
