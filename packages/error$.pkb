@@ -216,7 +216,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
     
         IF utl_call_stack.error_depth > 0 THEN
         
-            handle(p_service_depth + 1);
+            handle(TRUE, p_service_depth + 1);
         
             v_code := utl_call_stack.error_number(1);
             v_message := get_error_message(1);
@@ -283,6 +283,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
     END;
 
     PROCEDURE handle (
+        p_raise_mapped_error IN log$.BOOLEANN := FALSE,
         p_service_depth IN NATURALN := 0
     ) IS
     
@@ -300,7 +301,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
                 v_mapped_message
             );
             
-            IF v_mapped_code IS NOT NULL THEN
+            IF v_mapped_code IS NOT NULL AND p_raise_mapped_error THEN
                 
                 raise_application_error(
                     -v_mapped_code,

@@ -97,6 +97,7 @@ CREATE OR REPLACE PACKAGE error$ IS
     RETURN BOOLEAN;
     
     PROCEDURE handle (
+        p_raise_mapped_error IN log$.BOOLEANN := FALSE,
         p_service_depth IN NATURALN := 0
     );    
     
