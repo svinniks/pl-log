@@ -104,6 +104,7 @@ Create another procedure to test the instrumentation API:
 CREATE OR REPLACE PROCEDURE register_person (
     p_name IN VARCHAR2,
     p_birth_date IN DATE
+) IS
 BEGIN
 
     -- Help PL-LOG to track the call stack and 
