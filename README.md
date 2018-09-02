@@ -275,31 +275,62 @@ In case a message could not be resolved by any of the registered resolvers, __th
 
 ### Built-in resolvers
 
-PL-LOG comes bundled with one message resolver ```T_DEFAULT_MESSAGE_RESOLVER```, which is based on an associative array package variable and does not support multi-language messages. However, it can be useful if you are planning to create a reusable package which is message store agnostic and comes bundled with all the messages it is using. Consider the following example:
+PL-LOG comes bundled with two message resolvers:
 
-```
-CREATE POR REPLACE PACKAGE a_very_useful_package IS
-    /* Subprogram declarations */
-    ...
-END;
+-  ```T_DEFAULT_MESSAGE_RESOLVER``` is based on an associative array package variable and does not support multi-language messages. However, it can be useful if you are planning to create a reusable package which is message store agnostic and comes bundled with all the messages it is using. Consider the following example:
 
-CREATE POR REPLACE PACKAGE BODY a_very_useful_package IS
-    
-    PROCEDURE register_messages I
-    BEGIN
-        default_message_handler.register_message('MSG-00001', 'Not all parameters have been filled correctly!');
-        default_message_handler.register_message('MSG-00002', 'Insufficient privileges to run :1!');
+    ```
+    CREATE POR REPLACE PACKAGE a_very_useful_package IS
+        /* Subprogram declarations */
+        ...
     END;
 
-    /* Subprogram implementations */
-    ...
+    CREATE POR REPLACE PACKAGE BODY a_very_useful_package IS
+        
+        PROCEDURE register_messages I
+        BEGIN
+            default_message_handler.register_message('MSG-00001', 'Not all parameters have been filled correctly!');
+            default_message_handler.register_message('MSG-00002', 'Insufficient privileges to run :1!');
+        END;
 
-BEGIN
-    register_messages;
-END;
-```
+        /* Subprogram implementations */
+        ...
 
-```REGISTER_MESSAGES``` is called from the initialization block of ```A_VERY_USEFUL_PACKAGE``` and registers all necessary messages by issuing ```DEFAULT_MESSAGE_HANDLER.REGISTER_MESSAGE```.
+    BEGIN
+        register_messages;
+    END;
+    ```
+
+    ```REGISTER_MESSAGES``` is called from the initialization block of ```A_VERY_USEFUL_PACKAGE``` and registers all necessary messages by issuing ```DEFAULT_MESSAGE_HANDLER.REGISTER_MESSAGE```.
+
+- ```T_ORACLE_MESSAGE_RESOLVER``` is used to resolve and __translate__ Oracle built-in ```ORA-``` error messages. The resolver is based on the [```UTL_LMS```](https://docs.oracle.com/database/121/ARPLS/u_lms.htm) package. 
+    
+    ```UTL_LMS``` allows to obtain text for any ```ORA-``` message in any supported language, using ```NLS_LANGUAGE``` language codes (e. g. ```'ENGLISH'```, ```'AMERICAN'```, ```'GERMAN'``` etc.). The system PL-LOG is used in may, however, use it's own language code table (for example [ISO 639-2](https://en.wikipedia.org/wiki/List_of_ISO_639-2_codes)). To successfully integrate ```T_ORACLE_MESSAGE_RESOLVER``` into a custom language code system an optional __NLS language mapper__ can be set up by using the following statement in the PL-LOG configuration procedure:
+
+    ```
+    oracle_message_resolver.set_nls_language_mapper(<t_nls_language_mapper_instance>);
+    ```
+
+    NLS language mapper is an abstraction, which allows to create translators from custom language codes to the NLS ones and is defined as follows:
+
+    ```
+    TYPE t_nls_language_mapper IS OBJECT (
+    
+        dummy CHAR,
+        
+        NOT INSTANTIABLE MEMBER FUNCTION to_nls_language (
+            p_user_language IN VARCHAR2
+        )
+        RETURN VARCHAR2
+        
+    ) NOT INSTANTIABLE NOT FINAL;
+    ```
+
+    There is one NLS language mapper included in the PL-LOG installation as an example - ```T_ISO_LANGUAGE_MAPPER```. The mapper uses a prepopulated table called ```ISO_LANGUAGE_MAP``` to translate ```ISO 639-2``` three letter language codes into valid NLS language names. *Please note that currently this table does not contain all languages defined in the standart!*
+
+    If no language mapper has been specified, ```T_ORACLE_MESSAGE_RESOLVER``` __will accept on;y NLS language names__.
+
+    Refer to the chapter [Message resolver and handler registration](#message-resolver-and-handler-registration) for the details of how ```T_ORACLE_MESSAGE_RESOLVER``` gets registered in PL-LOG.
 
 ## Message formatters
 
@@ -326,18 +357,26 @@ NOT INSTANTIABLE NOT FINAL
 
 ### Built-in formatters
 
-There is one message formatter included in PL-LOG by default, which is called ```T_DEFAULT_MESSAGE_FORMATTER```. It allows to include sequential numbers of arguments as value placeholders, prefixed with at most one special character. Below is an example of message templates containing value placeholders prefixed with colons:
+There are two message formatters included in PL-LOG by default:
 
-```
-User :1 has no privileges to run service :2!
-File :1 could not be found!
-```
+- ```T_DEFAULT_MESSAGE_FORMATTER``` allows to include sequential numbers of arguments as value placeholders, prefixed with at most one special character. Below is an example of message templates containing value placeholders prefixed with colons:
 
-The prefix character can be defined while constructing a ```T_DEFAULT_MESSAGE_FORMATTER``` instance:
+    ```
+    User :1 has no privileges to run service :2!
+    File :1 could not be found!
+    ```
 
-```
-t_default_message_formatter(':');
-```
+    The prefix character can be defined while constructing a ```T_DEFAULT_MESSAGE_FORMATTER``` instance:
+
+    ```
+    t_default_message_formatter(':');
+    ```
+
+- ```T_ORACLE_MESSAGE_FORMATTER``` mimics the way Oracle defines and formats it's built-in messages and must be used in pair with ```T_ORACLE_MESSAGE_RESOLVER```.
+
+    The message template format used by Oracle most probably has been derived from that of the ```C``` and ```Java``` programming languages. Namely it uses literals like ```%s``` and ```%d``` as argument value placeholders.
+
+    Current implementation of ```T_ORACLE_MESSAGE_FORMATTER``` is very limited and supports only ```%s``` replacing with string argument values, which apparently is more than enough for the most common situations when it is required to translate and format a built-in Oracle message.
 
 # Public API
 
@@ -403,7 +442,9 @@ Special log level threshold values ```ALL = 0``` and ```NONE = 601``` can be use
 
 ### Message resolver and handler registration
 
-To register log message resolvers, formatters and handlers in PL-LOG, use the following ```LOG$``` methods in the configuration procedure:
+PL-LOG will always automatically register an instance of ```T_ORACLE_MESSAGE_RESOLVER``` in pair with ```T_ORACLE_MESSAGE_FORMATTER``` formatter. This will immidiately allow to format Oracle built-in messages in any language and custom argument values. ```T_ORACLE_MESSAGE_RESOLVER``` __will always remain the last__ in the list of registered resolvers, which allows developers to override some or all of the ```ORA-``` messages.
+
+To register custom log message resolvers, formatters and handlers in PL-LOG, use the following ```LOG$``` methods in the configuration procedure:
 
 ```
 PROCEDURE add_message_resolver (
