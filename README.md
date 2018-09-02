@@ -172,18 +172,44 @@ Threshold log level for each message handler gets calculated as ```COALESCE(hand
 
 ## Message handlers
 
-By default, PL-LOG only provides API which can be used to instrument PL/SQL code. Log messages, however, are not stored or displayed anywhere. To save or display messages, one or more __message handlers__ must be registered in PL-LOG. Handlers may store messages in a table, file, alert log, write them to ```DBMS_OUTPUT``` or send via e-mail. It is possible to develop custom message handlers and plug them into PL-LOG without recompiling framework's source code. 
+By default, PL-LOG only provides API which can be used to instrument PL/SQL code. Log messages, however, are not stored or displayed anywhere. To save or to display messages, one or more __message handlers__ must be registered in PL-LOG. Handlers may store messages in a table, file, alert log, write them to ```DBMS_OUTPUT``` or send via e-mail. It is possible to develop custom message handlers and plug them into PL-LOG without recompiling framework's source code. 
 
-Message handler API is implemented via the abstract object type ```T_LOG_MESSAGE_HANDLER```:
+There are to types of message handlers in PL-LOG:
+
+- __Raw__ message handlers accept messages directly from the instrumentation routines. Original messages and argument values come separately - all resolving, formatting and handling must occur within a raw message handler itself. Use raw message handlers if you want to store messages disassembled and later present them to the users in different languages.
+- __Formatted__ message handlers receive resolved and formatted messages which are ready to be immediately stored in the desired location. All resolving and formatting happens within PL-LOG automatically according to the configuration.
+
+Message handler API is implemented via three abstract object types ```T_LOG_MESSAGE_HANDLER```, ```T_RAW_MESSAGE_HANDLER``` and ```T_FORMATTED_MESSAGE_HANDLER```:
 
 ```
-CREATE OR REPLACE TYPE t_log_message_handler IS OBJECT (
+TYPE t_log_message_handler IS OBJECT (
 
     dummy CHAR,
         
     NOT INSTANTIABLE MEMBER FUNCTION get_log_level
     RETURN PLS_INTEGER,
     
+    NOT INSTANTIABLE MEMBER PROCEDURE handle_message (
+        p_level IN PLS_INTEGER,
+        p_message IN VARCHAR2
+    )
+    
+) 
+NOT INSTANTIABLE NOT FINAL;
+
+TYPE t_raw_message_handler UNDER t_log_message_handler (
+    
+    NOT INSTANTIABLE MEMBER PROCEDURE handle_message (
+        p_level IN PLS_INTEGER,
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars
+    )
+    
+) 
+NOT INSTANTIABLE NOT FINAL;
+
+TYPE t_formatted_message_handler UNDER t_log_message_handler (
+  
     NOT INSTANTIABLE MEMBER PROCEDURE handle_message (
         p_level IN PLS_INTEGER,
         p_message IN VARCHAR2
@@ -199,7 +225,7 @@ The following two abstract methods must be implemented while developing a messag
 
 - ```GET_LOG_LEVEL``` must return threshold log level of the handler. PL-LOG will call the method while deciding whether to call handler's ```HANDLE_MESSAGE``` method or not. It's up to the developer to decide where the return value for ```GET_LOG_LEVEL``` comes from. It may be a simple session-wide package global variable or a system-wide global value stored in a globally accessed context.
 
-- ```HANDLE_MESSAGE``` is called by PL-LOG when the message passes level threshold and should be persisted. The message text provided in ```P_MESSAGE``` is __translated and formatted__ and can be handled without additional processing.
+- ```HANDLE_MESSAGE``` is called by PL-LOG when the message passes level threshold and should be persisted. Messages received by descendants of ```T_FORMATTED_MESSAGE_HANDLER``` via ```P_MESSAGE``` are __translated and formatted__ and can be handled without additional processing.
 
 Please refer to the [```CREATE TYPE```](https://docs.oracle.com/database/121/LNPLS/create_type.htm) documentation to get familiar with how object type inheritance works in Oracle.
 
@@ -252,7 +278,7 @@ It is a common practice to codify all messages in the system, especially those w
 In PL-LOG, external message store concept is implemented via __message resolvers__ and the ```T_LOG_MESSAGE_RESOLVER`` abstract object type:
 
 ```
-CREATE OR REPLACE TYPE t_log_message_resolver IS OBJECT (
+TYPE t_log_message_resolver IS OBJECT (
 
     dummy CHAR,
 
@@ -262,7 +288,7 @@ CREATE OR REPLACE TYPE t_log_message_resolver IS OBJECT (
     )
     RETURN VARCHAR2
     
-) NOT INSTANTIABLE NOT FINAL
+) NOT INSTANTIABLE NOT FINAL;
 ```
 
 The only method that needs to be implemented in a custom resolver is ```RESOLVE_MESSAGE```. The method is given a ```P_MESSAGE``` to lookup and an optional ```P_LANGUAGE``` and must return the resolved text. If language is not specified then it's up to the implementation to decide which language to return the resolved message in. ```P_MESSAGE``` format is also not strictly defined. While integrating PL-LOG into an existing system developers might want to implement a resolver based on the existing message definition table.
@@ -339,7 +365,7 @@ Formatting is the process of replacing special placeholders in the message text 
 PL-LOG doesn't define any specific message template format, instead it provides an abstract object type called ```T_LOG_MESSAGE_FORMATTER``` which implements the formatter concept:
 
 ```
-CREATE OR REPLACE TYPE t_log_message_formatter IS OBJECT (
+TYPE t_log_message_formatter IS OBJECT (
 
     dummy CHAR,
         
