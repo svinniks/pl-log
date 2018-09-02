@@ -442,7 +442,7 @@ Special log level threshold values ```ALL = 0``` and ```NONE = 601``` can be use
 
 ### Message resolver and handler registration
 
-PL-LOG will always automatically register an instance of ```T_ORACLE_MESSAGE_RESOLVER``` in pair with ```T_ORACLE_MESSAGE_FORMATTER``` formatter. This will immidiately allow to format Oracle built-in messages in any language and custom argument values. ```T_ORACLE_MESSAGE_RESOLVER``` __will always remain the last__ in the list of registered resolvers, which allows developers to override some or all of the ```ORA-``` messages.
+PL-LOG will always automatically register an instance of ```T_ORACLE_MESSAGE_RESOLVER``` in pair with ```T_ORACLE_MESSAGE_FORMATTER``` formatter. This will immidiately allow to format Oracle built-in messages in any language and custom argument values. ```T_ORACLE_MESSAGE_RESOLVER``` __will always remain the last__ in the list of registered resolvers, which allows developers to override some or all of the ```ORA-``` messages. Note, however, that __no NLS language mapper__ will be set up by default. Include a call to ```ORACLE_MESSAGE_RESOLVER.SET_NLS_LANGUAGE_MAPPER``` in the configuration procedure to enable custom language codes for Oracle built-in messages.
 
 To register custom log message resolvers, formatters and handlers in PL-LOG, use the following ```LOG$``` methods in the configuration procedure:
 
@@ -498,6 +498,9 @@ BEGIN
     -- Sets the default formatter.
     -- Message argument placeholders must be prefixed with a colon.
     log$.set_default_message_formatter(t_default_message_formatter(':'));
+
+    -- Sets the ISO-to-NLS language mapper for the T_ORACLE_MESSAGE_RESOLVER resolver:
+    oracle_message_resolver.set_nls_language_mapper(t_iso_language_mapper());
 
     -- Adds circular buffer message handler and sets 
     -- the language accepted to english.
