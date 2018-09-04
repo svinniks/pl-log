@@ -20,11 +20,11 @@ CREATE OR REPLACE PACKAGE error$ IS
 
     PROCEDURE reset;
 
-    PROCEDURE set_error_code (
+    PROCEDURE set_default_error_code (
         p_code IN log$.t_application_error_code
     );
     
-    FUNCTION get_error_code
+    FUNCTION get_default_error_code
     RETURN log$.t_application_error_code;
     
     PROCEDURE set_error_level (
@@ -47,6 +47,13 @@ CREATE OR REPLACE PACKAGE error$ IS
     
     FUNCTION get_display_language
     RETURN VARCHAR2;
+
+    PROCEDURE raise (
+        p_code IN log$.t_application_error_code,
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL,
+        p_service_depth IN NATURALN := 0
+    );
 
     PROCEDURE raise (
         p_message IN VARCHAR2,

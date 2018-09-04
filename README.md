@@ -19,7 +19,8 @@
         * [Data types for storing call stack](#data-types-for-storing-call-stack)
         * [Tracking calls and named values](#tracking-calls-and-named-values)
         * [Obtaining and formatting call stack](#obtaining-and-formatting-call-stack)
-    * [Exception handling](#exception-handling)
+    * [Error raising and handling](#error-raising-and-handling)
+        * [Business error raising](#business-error-raising)
 
 # Summary
 
@@ -110,8 +111,8 @@ BEGIN
     -- Help PL-LOG to track the call stack and 
     -- associate argument values with the current call.
     log$.call()
-        .param('p_name', p_name)
-        .param('p_birth_date', p_birth_date);
+        .value('p_name', p_name)
+        .value('p_birth_date', p_birth_date);
         
     -- Log beginning of the person registration routine
     log$.debug('Registering of a person started.');
@@ -900,6 +901,15 @@ Unlike the previous version, these methods do not require call ID to be specifie
     END;
     ```
 
+3. Some problems might also appear when multiple overloads of the same subprogram are called subsequently or are mutually calling each other.
+
+Instrumentation API routines, such as ```MESSAGE``` or ```INFO``` will __always try to update the call stack__, so the same restrictions apply when using multiple instrumentation calls on one line or on the same line with ```LOG$.CALL```.
+
+Basic recommendations of hassle free call stack tracking and named value logging are:
+
+1. Always try to include ```LOG$.CALL;``` as the first statement of a subrogram.
+2. Always put instrumentation API and unbounded ```VALUE``` calls on separate lines of code.
+
 ### Obtaining and formatting call stack
 
 ```LOG$``` provides two subprograms to obtain the most recent contents of the tracked call stack:
@@ -972,4 +982,125 @@ RETURN VARCHAR2;
         __anonymous_block (line 2)
     ```                 
 
-## Exception handling
+## Error raising and handling
+
+PL-LOG allows not only to instrument your PL/SQL code, but also to manage all kinds of errors - both business related and Oracle built-in ones. 
+
+The main entry point for error handling is the package called ```ERROR$```. Packages's main features are:
+
+- Raising parametrized free-text and codified business errors, using PL-LOG message resolver-formatter-handler pipeline.
+- Handling unexpected Oracle errors, which includes error message translating and processing in the PL-LOG message handler infrastructure.
+- Ensuring that any exception will be logged in the system at most once.
+
+### Business error raising
+
+To raise a business error with parametrized message call ```ERROR$.RAISE```:
+
+```
+PROCEDURE raise (
+    p_message IN VARCHAR2,
+    p_arguments IN t_varchars := NULL,
+    p_service_depth IN NATURALN := 0
+);
+```
+
+The syntax and the meaning of parameters of ```RAISE``` is the same as of ```LOG$.MESSAGE```. ```RAISE``` will actually call ```LOG$.MESSAGE``` to persist the message in the log tables. Then it will raise and application error (code 20000..20999) with the resolved and formatted message.
+
+By default, ```ERROR$.RAISE``` will create a log entry with the level ```ERROR=400``` and use ```RAISE_APPLICATION_ERROR``` to raise ```ORA-20000``` with the message formatted using ```NULL``` language (which means that the resolver must decide which language to return the text in). To alter the default ```ERROR$``` behavior, the following methods must be used in the PL-LOG configuration procedure:
+
+```
+SUBTYPE log$.t_application_error_code IS
+    PLS_INTEGER
+        RANGE 20000..20999
+        NOT NULL;
+
+SUBTYPE log$.t_message_log_level IS 
+    PLS_INTEGER 
+        RANGE 1..600
+        NOT NULL;
+
+PROCEDURE set_default_error_code (
+    p_code IN log$.t_application_error_code
+);
+
+PROCEDURE set_error_level (
+    p_level IN log$.t_message_log_level
+);
+
+PROCEDURE set_display_language (
+    p_language IN VARCHAR2
+);
+```
+
+- Use ```SET_DEFAULT_MESSAGE_CODE``` if you want to change which application error will be raised by ```ERROR$``` by default. Possible code values are ```20000``` to ```20999```.
+- Use ```SET_ERROR_LEVEL``` to change the level error message will be passed to ```LOG$.MESSAGE``` with.
+- Use ```SET_DISPLAY_LANGUAGE``` to set fixed language in which the messages are resolved to be raised by ```RAISE_APPLICATION_ERROR```.
+
+There is an overloaded version of the ```RAISE``` procedure, which allows you to specify the error code to raise:
+
+```
+PROCEDURE raise (
+    p_code IN log$.t_application_error_code,
+    p_message IN VARCHAR2,
+    p_arguments IN t_varchars := NULL,
+    p_service_depth IN NATURALN := 0
+)
+```
+
+There is also a "syntactic sugar" in the form of five overloaded versions of ```RAISE``` which accept from one to five arguments:
+
+```
+PROCEDURE raise (
+    p_message IN VARCHAR2,
+    p_argument_1 IN VARCHAR2,
+    [ ...
+    p_argument_5 IN VARCHAR2 ]
+);
+```
+
+Below is an example of a procedure, which tracks it's argument values and raises a codified business error upon input validation:
+
+```
+CREATE OR REPLACE PROCEDURE register_person (
+    p_name IN VARCHAR2,
+    p_birth_date IN DATE
+) IS
+BEGIN
+
+    log$.call()
+        .value('p_name', p_name)
+        .value('p_birth_date', p_birth_date);
+    
+    IF p_name IS NULL THEN
+        -- :1 is not specified!
+        error$.raise('MSG-00001', 'name');
+    END IF;
+
+END;
+```
+
+Provided that ```MSG-00001``` is resolved to ```':1 is not specified!'``` and that DBMS_OUTPUT handler is enabled and accepts ERROR level messages, anonymous PL/SQL block
+
+```
+BEGIN
+    register_person(NULL, SYSDATE);
+END;
+```
+
+would raise the following exception:
+
+```
+ORA-20000: MSG-00001: name is not specified!
+```
+
+and produce the following output:
+
+```
+19:33:21.342 [ERROR  ] MSG-00001: name is not specified!
+at: PLLOG.REGISTER_PERSON (line 13)
+        p_birth_date: TIMESTAMP '2018-09-04 19:33:21'
+        p_name: NULL
+    __anonymous_block (line 2)
+```
+
+Please note that ```(line 13)``` points directly to the line of code in ```REGISTER_PERSON``` the error has occured at.

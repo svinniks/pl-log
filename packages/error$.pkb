@@ -16,7 +16,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         limitations under the License.
     */
 
-    v_error_code log$.t_application_error_code := 20000;
+    v_default_error_code log$.t_application_error_code := 20000;
     v_error_level log$.t_message_log_level := log$.c_ERROR;
     v_oracle_error_level log$.t_message_log_level := log$.c_FATAL;
     
@@ -27,22 +27,22 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
     
     PROCEDURE reset IS
     BEGIN
-        v_error_code := 20000;
+        v_default_error_code := 20000;
         v_error_level := log$.c_ERROR;
         v_oracle_error_level := log$.c_FATAL;
     END;
 
-    PROCEDURE set_error_code (
+    PROCEDURE set_default_error_code (
         p_code IN log$.t_application_error_code
     ) IS
     BEGIN
-        v_error_code := p_code;
+        v_default_error_code := p_code;
     END;
     
-    FUNCTION get_error_code
+    FUNCTION get_default_error_code
     RETURN log$.t_application_error_code IS
     BEGIN
-        RETURN v_error_code;
+        RETURN v_default_error_code;
     END;
     
     PROCEDURE set_error_level (
@@ -112,6 +112,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
     END;
     
     PROCEDURE raise (
+        p_code IN log$.t_application_error_code,
         p_message IN VARCHAR2,
         p_arguments IN t_varchars := NULL,
         p_service_depth IN NATURALN := 0
@@ -130,10 +131,26 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
     
         -- Handled!
         raise_application_error(
-            -v_error_code, 
+            -p_code, 
             format_message(p_message, p_arguments)
         );
          
+    END;
+    
+    PROCEDURE raise (
+        p_message IN VARCHAR2,
+        p_arguments IN t_varchars := NULL,
+        p_service_depth IN NATURALN := 0
+    ) IS
+    BEGIN
+    
+        error$.raise(
+            v_default_error_code, 
+            p_message, 
+            p_arguments, 
+            p_service_depth + 1
+        );
+        
     END;
         
     PROCEDURE raise (
