@@ -21,6 +21,8 @@
         * [Obtaining and formatting call stack](#obtaining-and-formatting-call-stack)
     * [Error raising and handling](#error-raising-and-handling)
         * [Business error raising](#business-error-raising)
+        * [Unexpected error handling](#unexpected-error-handling)
+* [Miscellaneous](#miscellaneous)
 
 # Summary
 
@@ -1104,3 +1106,20 @@ at: PLLOG.REGISTER_PERSON (line 13)
 ```
 
 Please note that ```(line 13)``` points directly to the line of code in ```REGISTER_PERSON``` the error has occured at.
+
+### Unexpected error handling
+
+Business errors are a part of normal processing - they are raised by intention, their messages are readable and understandable by the end users. It is not even completely necessary to save each business error in the log table. 
+
+Unexpected errors or __exceptions__, on the other hand, need to be carefully handled and persisted, gathering the fullest possible information about where precicely the error has occured and what was the current state of execution at the moment of the exception.
+
+# Miscellaneous
+
+- By default, ```LOG$``` will call ```LOG$INIT``` dynamically, using an ```EXECUTE IMMEDIATE ...``` statement. However, it is always faster (up to 6 times, benchmark proven) to call subprograms from statically compiled code. It is possible to recompile the ```LOG$``` package with an additional compiler flag ```production:TRUE``` which will compile a statical call to ```LOG$INIT```:
+
+    ```
+    ALTER PACKAGE log$ COMPILE PLSQL_CCFLAGS = 'production:TRUE'
+    /
+    ```
+
+    Pleas note though, that in case ```LOG$INIT``` becomes invalid, it will immideately invalidate the ```LOG$``` package itself which can ruin the whole system, so it is not recommended to use this flag unless ```LOG$INIT``` has been carefully tested.
