@@ -195,29 +195,29 @@ CREATE OR REPLACE PACKAGE log$ IS
         p_service_depth IN NATURALN := 0
     );
     
-    PROCEDURE param (
-        p_call_id IN NUMBER,
+    PROCEDURE value (
+        p_call_id IN NUMBERN,
         p_name IN STRINGN,
         p_value IN VARCHAR2,
         p_service_depth IN NATURALN := 0
     );
     
-    PROCEDURE param (
-        p_call_id IN NUMBER,
+    PROCEDURE value (
+        p_call_id IN NUMBERN,
         p_name IN STRINGN,
         p_value IN NUMBER,
         p_service_depth IN NATURALN := 0
     );
     
-    PROCEDURE param (
-        p_call_id IN NUMBER,
+    PROCEDURE value (
+        p_call_id IN NUMBERN,
         p_name IN STRINGN,
         p_value IN BOOLEAN,
         p_service_depth IN NATURALN := 0
     );
     
-    PROCEDURE param (
-        p_call_id IN NUMBER,
+    PROCEDURE value (
+        p_call_id IN NUMBERN,
         p_name IN STRINGN,
         p_value IN DATE,
         p_service_depth IN NATURALN := 0

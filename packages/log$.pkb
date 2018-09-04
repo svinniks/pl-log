@@ -522,7 +522,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         fill_call_stack(p_service_depth + 1, TRUE, TRUE);
     END;
     
-    PROCEDURE param (
+    PROCEDURE value (
         p_call_id IN NUMBER,
         p_name IN VARCHAR2,
         p_type IN VARCHAR2,
@@ -536,13 +536,33 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_call_i PLS_INTEGER;
     BEGIN
     
-        FOR v_i IN REVERSE 1..v_call_stack.COUNT LOOP
-            IF v_call_stack(v_i).id = p_call_id THEN
-                v_call_i := v_i;
-                EXIT;
+        IF p_call_id IS NULL THEN
+        
+            fill_call_stack(
+                p_service_depth => p_service_depth + 1, 
+                p_reset_top => FALSE, 
+                p_track_top => TRUE
+            );
+            
+            IF v_call_stack.COUNT > 0 THEN
+                v_call_i := v_call_stack.COUNT;
             END IF;
-        END LOOP;
-    
+        
+        ELSE
+        
+            FOR v_i IN REVERSE 1..v_call_stack.COUNT LOOP
+                IF v_call_stack(v_i).id = p_call_id THEN
+                    v_call_i := v_i;
+                    EXIT;
+                END IF;
+            END LOOP;
+        
+            IF v_call_i IS NULL THEN
+                log_event('E', 'Invalid call ID "' || p_call_id || '"!', DBMS_UTILITY.FORMAT_CALL_STACK);
+            END IF;
+            
+        END IF;
+        
         IF v_call_i IS NOT NULL THEN
         
             v_value.type := p_type;
@@ -557,15 +577,15 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
-    PROCEDURE param (
-        p_call_id IN NUMBER,
+    PROCEDURE value (
+        p_call_id IN NUMBERN,
         p_name IN STRINGN,
         p_value IN VARCHAR2,
         p_service_depth IN NATURALN := 0
     ) IS
     BEGIN
     
-        param(
+        value(
             p_call_id,
             p_name, 
             'VARCHAR2', 
@@ -575,15 +595,15 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
-    PROCEDURE param (
-        p_call_id IN NUMBER,
+    PROCEDURE value (
+        p_call_id IN NUMBERN,
         p_name IN STRINGN,
         p_value IN NUMBER,
         p_service_depth IN NATURALN := 0
     ) IS
     BEGIN
     
-        param(
+        value(
             p_call_id,
             p_name, 
             'NUMBER', 
@@ -593,15 +613,15 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
-    PROCEDURE param (
-        p_call_id IN NUMBER,
+    PROCEDURE value (
+        p_call_id IN NUMBERN,
         p_name IN STRINGN,
         p_value IN BOOLEAN,
         p_service_depth IN NATURALN := 0
     ) IS
     BEGIN
     
-        param(
+        value(
             p_call_id,
             p_name, 
             'BOOLEAN', 
@@ -611,15 +631,15 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
-    PROCEDURE param (
-        p_call_id IN NUMBER,
+    PROCEDURE value (
+        p_call_id IN NUMBERN,
         p_name IN STRINGN,
         p_value IN DATE,
         p_service_depth IN NATURALN := 0
     ) IS
     BEGIN
     
-        param(
+        value(
             p_call_id,
             p_name, 
             'DATE', 
@@ -630,38 +650,6 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     END;
     
     PROCEDURE value (
-        p_name IN VARCHAR2,
-        p_type IN VARCHAR2,
-        p_service_depth IN PLS_INTEGER,
-        p_varchar2_value IN VARCHAR2 := NULL,
-        p_number_value IN NUMBER := NULL,
-        p_boolean_value IN BOOLEAN := NULL,
-        p_date_value IN DATE := NULL
-    ) IS
-        v_value t_value;
-    BEGIN
-    
-        fill_call_stack(
-            p_service_depth => p_service_depth + 1, 
-            p_reset_top => FALSE, 
-            p_track_top => TRUE
-        );
-        
-        IF v_call_values.COUNT > 0 THEN
-        
-            v_value.type := p_type;
-            v_value.varchar2_value := p_varchar2_value;
-            v_value.number_value := p_number_value;
-            v_value.boolean_value := p_boolean_value;
-            v_value.date_value := p_date_value;
-        
-            v_call_values(v_call_values.COUNT)(p_name) := v_value;
-            
-        END IF;
-    
-    END;
-    
-    PROCEDURE value (
         p_name IN STRINGN,
         p_value IN VARCHAR2,
         p_service_depth IN NATURALN := 0
@@ -669,6 +657,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     BEGIN
     
         value(
+            NULL,
             p_name, 
             'VARCHAR2', 
             p_service_depth + 1,
@@ -685,6 +674,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     BEGIN
     
         value(
+            NULL,
             p_name, 
             'NUMBER', 
             p_service_depth + 1,
@@ -701,6 +691,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     BEGIN
     
         value(
+            NULL,
             p_name, 
             'BOOLEAN', 
             p_service_depth + 1,
@@ -717,6 +708,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     BEGIN
     
         value(
+            NULL,
             p_name, 
             'DATE', 
             p_service_depth + 1,

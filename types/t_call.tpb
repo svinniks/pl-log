@@ -1,13 +1,13 @@
 CREATE OR REPLACE TYPE BODY t_call IS
 
-    MEMBER FUNCTION param (
+    MEMBER FUNCTION value (
         p_name IN VARCHAR2,
         p_value IN VARCHAR2
     )
     RETURN t_call IS
     BEGIN
     
-        log$.param(
+        log$.value(
             id,
             p_name, 
             p_value,
@@ -18,14 +18,14 @@ CREATE OR REPLACE TYPE BODY t_call IS
          
     END;
     
-    MEMBER PROCEDURE param (
+    MEMBER PROCEDURE value (
         self IN t_call,
         p_name IN VARCHAR2,
         p_value IN VARCHAR2
     ) IS
     BEGIN
     
-        log$.param(
+        log$.value(
             id,
             p_name, 
             p_value,
@@ -34,14 +34,14 @@ CREATE OR REPLACE TYPE BODY t_call IS
          
     END;
     
-    MEMBER FUNCTION param (
+    MEMBER FUNCTION value (
         p_name IN VARCHAR2,
         p_value IN NUMBER
     )
     RETURN t_call IS
     BEGIN
     
-        log$.param(
+        log$.value(
             id,
             p_name, 
             p_value,
@@ -52,14 +52,14 @@ CREATE OR REPLACE TYPE BODY t_call IS
          
     END;
     
-    MEMBER PROCEDURE param (
+    MEMBER PROCEDURE value (
         self IN t_call,
         p_name IN VARCHAR2,
         p_value IN NUMBER
     ) IS
     BEGIN
     
-        log$.param(
+        log$.value(
             id,
             p_name, 
             p_value,
@@ -68,14 +68,14 @@ CREATE OR REPLACE TYPE BODY t_call IS
          
     END;
     
-    MEMBER FUNCTION param (
+    MEMBER FUNCTION value (
         p_name IN VARCHAR2,
         p_value IN BOOLEAN
     )
     RETURN t_call IS
     BEGIN
     
-        log$.param(
+        log$.value(
             id,
             p_name, 
             p_value,
@@ -86,14 +86,14 @@ CREATE OR REPLACE TYPE BODY t_call IS
          
     END;
     
-    MEMBER PROCEDURE param (
+    MEMBER PROCEDURE value (
         self IN t_call,
         p_name IN VARCHAR2,
         p_value IN BOOLEAN
     ) IS
     BEGIN
     
-        log$.param(
+        log$.value(
             id,
             p_name, 
             p_value,
@@ -102,14 +102,14 @@ CREATE OR REPLACE TYPE BODY t_call IS
          
     END;
     
-    MEMBER FUNCTION param (
+    MEMBER FUNCTION value (
         p_name IN VARCHAR2,
         p_value IN DATE
     )
     RETURN t_call IS
     BEGIN
     
-        log$.param(
+        log$.value(
             id,
             p_name, 
             p_value,
@@ -120,14 +120,14 @@ CREATE OR REPLACE TYPE BODY t_call IS
          
     END;
     
-    MEMBER PROCEDURE param (
+    MEMBER PROCEDURE value (
         self IN t_call,
         p_name IN VARCHAR2,
         p_value IN DATE
     ) IS
     BEGIN
     
-        log$.param(
+        log$.value(
             id,
             p_name, 
             p_value,
