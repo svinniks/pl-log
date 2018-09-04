@@ -398,11 +398,11 @@ There are two message formatters included in PL-LOG by default:
     t_default_message_formatter(':');
     ```
 
-- ```T_ORACLE_MESSAGE_FORMATTER``` mimics the way Oracle defines and formats it's built-in messages and must be used in pair with ```T_ORACLE_MESSAGE_RESOLVER```.
+- ```T_ORACLE_MESSAGE_FORMATTER``` mimics the way Oracle defines and formats it's built-in messages. Should be used in pair with ```T_ORACLE_MESSAGE_RESOLVER```.
 
-    The message template format used by Oracle most probably has been derived from that of the ```C``` and ```Java``` programming languages. Namely it uses literals like ```%s``` and ```%d``` as argument value placeholders.
+    Message template format used by Oracle has most probably been derived from that of the ```C``` and ```Java``` programming languages. Namely it uses literals like ```%s``` and ```%d``` as argument value placeholders.
 
-    Current implementation of ```T_ORACLE_MESSAGE_FORMATTER``` is very limited and supports only ```%s``` replacing with string argument values, which apparently is more than enough for the most common situations when it is required to translate and format a built-in Oracle message.
+    Current implementation of ```T_ORACLE_MESSAGE_FORMATTER``` is very limited and supports only ```%s``` replacing with string argument values, which most likely is more than enough for situations when it is required to translate and format a built-in Oracle message.
 
 # Public API
 
