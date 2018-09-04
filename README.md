@@ -69,7 +69,7 @@ PL-LOG is based on the [`UTL_CALL_STACK`](https://docs.oracle.com/database/121/A
 
 # Installation
 
-To install PL-LOG, run the ```install.sql``` script using SQL*Plus or a PL/SQL IDE of choice. After installation you may want to make PL-LOG API accessible to other users. At the very minimum you should: 
+To install PL-LOG, make  ```/src``` the __current folder__ and run ```/install/install.sql``` using SQL*Plus or a PL/SQL IDE of choice. After installation you may want to make PL-LOG API accessible to other users. At the very minimum you should: 
 
 ```
 GRANT EXECUTE ON log$ TO <PUBLIC|any_separate_user_or_role>
