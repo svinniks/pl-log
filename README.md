@@ -1389,7 +1389,7 @@ BEGIN
 END;
 ```
 
-Because of this limitation it is recommended to avoid using ```ERROR$.RAISE``` for exception reraising in favour of ```ERROR$.HANDLE``` and ```RAISE``` combination when possible.
+Because of this limitation\ it is recommended to avoid using ```ERROR$.RAISE``` for exception reraising in favour of ```ERROR$.HANDLE``` and ```RAISE``` combination when possible.
 
 #### Mapping Oracle exceptions to business errors
 
