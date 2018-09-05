@@ -22,6 +22,10 @@
     * [Error raising and handling](#error-raising-and-handling)
         * [Business error raising](#business-error-raising)
         * [Unexpected error handling](#unexpected-error-handling)
+            * [Checking fo the handled errors](#checking-for-the-handled-errors)
+            * [Handling ORA- exceptions](#handling-ora--exceptions)
+            * [Reraising exceptions](#reraising-exceptions)
+            * [Mapping Oracle exceptions to business errors](#mapping-oracle-exceptions-to-business-errors)
 * [Miscellaneous](#miscellaneous)
 
 # Summary
@@ -1006,7 +1010,7 @@ PROCEDURE raise (
 );
 ```
 
-The syntax and the meaning of parameters of ```RAISE``` is the same as of ```LOG$.MESSAGE```. ```RAISE``` will actually call ```LOG$.MESSAGE``` to persist the message in the log tables. Then it will raise and application error (code 20000..20999) with the resolved and formatted message.
+The syntax and the meaning of parameters of ```RAISE``` is the same as of ```LOG$.MESSAGE```. ```RAISE``` will actually call ```LOG$.MESSAGE``` to send the message to registered message handlers. Then it will raise and application error (code 20000..20999) with the resolved and formatted message.
 
 By default, ```ERROR$.RAISE``` will create a log entry with the level ```ERROR=400``` and use ```RAISE_APPLICATION_ERROR``` to raise ```ORA-20000``` with the message formatted using ```NULL``` language (which means that the resolver must decide which language to return the text in). To alter the default ```ERROR$``` behavior, the following methods must be used in the PL-LOG configuration procedure:
 
@@ -1049,7 +1053,7 @@ PROCEDURE raise (
 )
 ```
 
-There is also a "syntactic sugar" in the form of five overloaded versions of ```RAISE``` which accept from one to five arguments:
+There five overloaded shortcut versions of ```RAISE``` which accept from one to five arguments:
 
 ```
 PROCEDURE raise (
@@ -1081,7 +1085,7 @@ BEGIN
 END;
 ```
 
-Provided that ```MSG-00001``` is resolved to ```':1 is not specified!'``` and that DBMS_OUTPUT handler is enabled and accepts ERROR level messages, anonymous PL/SQL block
+Provided that ```MSG-00001``` is resolved to ```':1 is not specified!'``` and that DBMS_OUTPUT handler is enabled and accepts `ERROR` level messages, anonymous PL/SQL block
 
 ```
 BEGIN
@@ -1089,7 +1093,7 @@ BEGIN
 END;
 ```
 
-would raise the following exception:
+will raise the following exception:
 
 ```
 ORA-20000: MSG-00001: name is not specified!
@@ -1112,6 +1116,282 @@ Please note that ```(line 13)``` points directly to the line of code in ```REGIS
 Business errors are a part of normal processing - they are raised by intention, their messages are readable and understandable by the end users. It is not even completely necessary to save each business error in the log table. 
 
 Unexpected errors or __exceptions__, on the other hand, need to be carefully handled and persisted, gathering the fullest possible information about where precicely the error has occured and what was the current state of execution at the moment of the exception.
+
+It is a good practice to handle unexpected errors __on the outermost level of code__, that is in subprograms which are directly called by the user program. None of the internal API subprograms should contain ```WHEN OTHERS THEN ...``` unless absolutely necessary. This approach allows developers to track exceptions in the fastest and the most natural way. Placing catches and reraises in the internal API routines will hide the true source of errors and make debugging process difficult and unpleasant.
+
+Methods described in this chapter are designed to be used in an ```EXCEPTION WHEN ... THEN``` block or in a subprogram, which is called from an exception handling block. When using while PL/SQL error stack is empty, the methods won't take any effect.
+
+#### Checking for the handled errors
+
+To check if an exception has already been handled by PL-LOG use the ```ERROR$.HANDLED``` function:
+
+```
+FUNCTION handled
+RETURN BOOLEAN;
+```
+
+```HANDLED``` checks if the exception currently being handled has been raised by one of the ```ERROR$``` subprograms (eg. ```RAISE```). If the function returns ```FALSE```, the error has originated elsewhere and needs manual processing.
+
+#### Handling ORA- exceptions
+
+In case an unhandled exception has been determined by ```HANDLED```, one can call ```LOG$.ORACLE_ERROR``` to persist exception details in the log table or other destinations:
+
+```
+PROCEDURE oracle_error (
+    p_level IN t_message_log_level := c_FATAL,
+    p_service_depth IN NATURALN := 0
+);
+```
+
+```ORACLE_ERROR``` will send the exception message to the handlers even if the error has already been handled once, so use this procedure only after ```ERROR$.HANDLED``` has returned ```FALSE```.
+
+PL-LOG is capable of __translating ```ORA-``` errors__ into handler's preferred language. Imagine the following situation:
+    
+- There is a table with a unique key constraint:
+    
+    ```
+    CREATE TABLE things (
+        id NUMBER PRIMARY KEY
+    );
+    ```
+
+- PL-LOG is configured to output log messages to the ```DBMS_OUTPUT``` handler __always in english__:
+
+    ```
+    CREATE OR REPLACE PROCEDURE log$init IS
+    BEGIN
+        ...
+        log$.add_message_handler(t_dbms_output_handler(), 'ENG');
+        ...
+    END;
+    ```
+
+- Session's ```NLS_LANGUAGE``` hes been set to ```'FRENCH'```:
+
+    ```
+    ALTER SESSION SET NLS_LANGUAGE = 'FRENCH';
+    ```
+- After running
+
+    ```
+    BEGIN
+        INSERT INTO things VALUES(1);
+        INSERT INTO things VALUES(1);
+    EXCEPTION
+        WHEN OTHERS THEN
+            log$.oracle_error;
+            RAISE;
+    END;
+    ```
+
+    the following exception (in french) will be raised
+
+    ```
+    ORA-00001: violation de contrainte unique (PLLOG.SYS_C0046901)
+    ```
+
+    and the following message (in english) will appear in ```DBMS_OUTPUT```:
+
+    ```
+    17:01:57.849 [FATAL  ] ORA-00001: unique constraint (PLLOG.SYS_C0046901) violated
+    at: __anonymous_block (line 4)
+    ```
+
+If ```LOG$.ORACLE_ERROR``` has been called while handling a "handled" exception, the message will be passed to the handlers twice:
+
+```
+BEGIN
+    error$.raise('Hello, World!');
+EXCEPTION
+    WHEN OTHERS THEN
+        log$.oracle_error;
+END;
+```
+
+```
+17:06:19.120 [ERROR  ] Hello, World!
+at: __anonymous_block (line 2)
+
+17:06:19.121 [FATAL  ] ORA-20000: Hello, World!
+at: PLLOG.ERROR$ (line 133)
+    PLLOG.ERROR$ (line 147)
+    __anonymous_block (line 2)
+```
+
+In the example above, the first message in ```DBMS_OUTPUT``` is the result of the original call to ```ERROR$.RAISE```. The second message looks like an unexpected ```ORA-20000``` exception - it has the `ORA-20000:` prefix, it's call stack contains ```ERROR$``` entries which would normally be considered as internal (or "service").
+
+```LOG$.ORACLE_ERROR``` will try to preserve as much of the tracked call stack and named values as possible. Consider the example below:
+
+```
+DECLARE
+
+    PROCEDURE proc2 IS
+    BEGIN
+        log$.call()
+            .value('proc2_param', 'proc2_value');
+        RAISE NO_DATA_FOUND;
+    END;
+
+    PROCEDURE proc1 IS
+    BEGIN
+        log$.call()
+            .value('proc1_param', 'proc1_value');
+        proc2;
+    END;
+
+BEGIN
+    log$.call()
+        .value('hello', 'world');
+    proc1;
+EXCEPTION
+    WHEN OTHERS THEN
+        log$.oracle_error;
+END;
+```
+
+Here is what the output will look like:
+
+```
+20:35:02.022 [FATAL  ] ORA-01403: no data found
+at: __anonymous_block.PROC2 (line 7)
+        proc2_param: 'proc2_value'
+    __anonymous_block.PROC1 (line 14)
+        proc1_param: 'proc1_value'
+    __anonymous_block (line 20)
+        hello: 'world'
+```
+
+Note that the call stack, including the argument values, has been reported correctly up to the very line where ```NO_DATA_FOUND``` has been raised.
+
+#### Shortcut for exception handling
+
+According to the last two chapters, each outermost PL/SQL subprogram should contain the following exception handling block (the ```RAISE``` statement is necessary to reraise the exception regardless whether or not it is a "handled" error):
+
+```
+BEGIN
+    ...
+EXCEPTION
+    WHEN OTHERS THEN
+        IF NOT error$.handled THEN
+            log$.oracle_error;
+        END IF;
+        RAISE;
+END;
+```
+
+There is a shortcut method in ```ERROR$``` called ```HANDLE``` which simplifies handling of unexpected errors:
+
+```
+PROCEDURE handle (
+    p_raise_mapped_error IN log$.BOOLEANN := FALSE,
+    p_service_depth IN NATURALN := 0
+);
+```
+
+With ```ERROR$.HANDLE``` the foregoing code example can be reduced to:
+
+```
+BEGIN
+    ...
+EXCEPTION
+    WHEN OTHERS THEN
+        error$.handle;
+        RAISE;
+END;
+```
+
+```HANDLE``` will first check if the exception is a handled one and if not will call ```LOG$.ORACLE_ERROR```.
+
+There is an argument ```P_LEVEL``` in ```LOG$.ORACLE_ERROR```, which allows to manually specify  log level the error must be handled with. While using ```ERROR$.HANDLE```, PL-LOG will use the default value for ```P_LEVEL```, which can be altered by using ```ERROR$.SET_ORACLE_ERROR_LEVEL``` in the configuration procedure:
+
+```
+PROCEDURE set_error_level (
+    p_level IN log$.t_message_log_level
+);
+```
+
+Details about using the ```P_RAISE_MAPPED_ERROR``` argument can be found in the chapter "[Mapping Oracle exceptions to business errors](#mapping-oracle-exceptions-to-business-errors)".
+
+#### Reraising exceptions
+
+The best way to handle and to later reraise exceptions is using ```ERROR$.HANDLE``` followed by the ```RAISE``` statement in the exception handling block of the outermost PL/SQL subprogram:
+
+```
+BEGIN
+    ...
+EXCEPTION
+    WHEN OTHERS THEN
+        error$.handle;
+        RAISE;
+END;
+```
+
+Sometimes, however, it is required to reraise an error not from the exception handling block directly, but from a subprogram:
+
+```
+DECLARE
+    
+    PROCEDURE handle_and_reraise IS
+    BEGIN
+        error$.handle;
+        RAISE; -- This will fail to compile!
+    END;
+
+EXCEPTION
+    WHEN OTHERS THEN
+        handle_and_reraise;
+END;
+```
+
+This anonymous block will fail to run, because ```RAISE``` can't be used outside exception handling block.
+
+The issue can be solved by using another version of ```ERROR$.RAISE```:
+
+```
+PROCEDURE raise (
+    p_service_depth IN NATURALN := 0
+);
+```
+
+This version will first handle any unhandled error, then it will raise an exception with the same ```ORA-``` code as the original one. For error codes from ```20000``` to ```20999``` it will call ```RAISE_APPLICATION_ERROR```, for all other exceptions ```RAISE``` will execute a dynamic PL/SQL block, which throws an exception, that has been initialized with the required code by the ```EXCEPTION_INIT``` pragma. Using ```ERROR$.RAISE``` to reraise an exception is demonstrated in the example below:
+
+```
+BEGIN
+    INSERT INTO things VALUES(1);
+    INSERT INTO things VALUES(1);
+EXCEPTION
+    WHEN OTHERS THEN
+        error$.raise;
+END;
+```
+
+The error will be correctly displayed in ```DBMS_OUTPUT```:
+
+```
+21:38:39.744 [FATAL  ] ORA-00001: unique constraint (PLLOG.SYS_C0046901) violated
+at: __anonymous_block (line 3)
+```
+
+However, exception message displayed to the user will miss the original name of the constraint:
+
+```
+ORA-00001: unique constraint (.) violated
+```
+
+This happens because there is no way in Oracle to specify message arguments while raising a ```PRAGMA EXCEPTION_INIT``` initialized exception:
+
+```
+DECLARE
+    e_unique_constraint_violated EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_unique_constraint_violated, -1);
+BEGIN
+    RAISE e_unique_constraint_violated; -- "ORA-00001: unique constraint (.) violated"
+END;
+```
+
+Because of this limitation it is recommended to avoid using ```ERROR$.RAISE``` for exception reraising in favour of ```ERROR$.HANDLE``` and ```RAISE``` combination when possible.
+
+#### Mapping Oracle exceptions to business errors
 
 # Miscellaneous
 
