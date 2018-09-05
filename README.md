@@ -22,7 +22,7 @@
     * [Error raising and handling](#error-raising-and-handling)
         * [Business error raising](#business-error-raising)
         * [Unexpected error handling](#unexpected-error-handling)
-            * [Checking fo the handled errors](#checking-for-the-handled-errors)
+            * [Checking for the handled errors](#checking-for-the-handled-errors)
             * [Handling ORA- exceptions](#handling-ora--exceptions)
             * [Reraising exceptions](#reraising-exceptions)
             * [Mapping Oracle exceptions to business errors](#mapping-oracle-exceptions-to-business-errors)
@@ -1343,9 +1343,7 @@ EXCEPTION
 END;
 ```
 
-This anonymous block will fail to run, because ```RAISE``` can't be used outside exception handling block.
-
-The issue can be solved by using another version of ```ERROR$.RAISE```:
+This anonymous block will fail to run, because ```RAISE``` can't be used outside exception handling block. The issue can be solved by using another overload of ```ERROR$.RAISE```:
 
 ```
 PROCEDURE raise (
@@ -1389,7 +1387,7 @@ BEGIN
 END;
 ```
 
-Because of this limitation\ it is recommended to avoid using ```ERROR$.RAISE``` for exception reraising in favour of ```ERROR$.HANDLE``` and ```RAISE``` combination when possible.
+Because of this limitation it is recommended to avoid using ```ERROR$.RAISE``` for exception reraising in favour of ```ERROR$.HANDLE``` and ```RAISE``` combination when possible.
 
 #### Mapping Oracle exceptions to business errors
 
