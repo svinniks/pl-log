@@ -26,6 +26,7 @@
             * [Handling ORA- exceptions](#handling-ora--exceptions)
             * [Reraising exceptions](#reraising-exceptions)
             * [Mapping Oracle exceptions to business errors](#mapping-oracle-exceptions-to-business-errors)
+* [Internal PL-LOG exception handling](#internal-pl-log-exception-handling)            
 * [Miscellaneous](#miscellaneous)
 
 # Summary
@@ -1387,9 +1388,181 @@ BEGIN
 END;
 ```
 
-Because of this limitation it is recommended to avoid using ```ERROR$.RAISE``` for exception reraising in favour of ```ERROR$.HANDLE``` and ```RAISE``` combination when possible.
+Because of this limitation it is recommended to avoid using `ERROR$.RAISE` for exception reraising in favor of `ERROR$.HANDLE` and `RAISE` combination when possible.
 
 #### Mapping Oracle exceptions to business errors
+
+PL-LOG allows to map Oracle built-in exceptions to `20000..20999` errors with custom business messages. This can be useful when developers need to use a subset of `ORA-` exceptions as business errors. For example, instead of `'ORA-00001: unique constraint (OWNER.CONSTRAINT) violated'` one would consider displaying a more readable error message like `'MSG-00001: such record already exists!'`.
+
+__Caution!__ Allowing end users to see unexpected database errors either directly or via mapping is considered a __bad practice__ and should be avoided. Explicit data validations with meaningful error messages must be included in the API instead!
+
+Oracle error mapping concept is implemented via the `T_ORACLE_ERROR_MAPPER` abstract object type:
+
+```
+CREATE OR REPLACE TYPE t_oracle_error_mapper IS OBJECT (
+
+    dummy CHAR,
+
+    NOT INSTANTIABLE MEMBER PROCEDURE map_oracle_error (
+        p_source_code IN NATURALN,
+        p_target_code OUT NATURAL,
+        p_target_message OUT VARCHAR2
+    )
+    
+) NOT INSTANTIABLE NOT FINAL;
+
+```
+
+The only method `MAP_ORACLE_ERROR` receives a (positive) `ORA-` error code and must return a "target" application error code (`20000..20999`) and a business error message. Codified messages will be resolved by the normal resolver-formatter-handler flow. PL-LOG will ignore message codes which are not in the valid range of `20000..20999`.
+
+Oracle error mappers can be registered in PL-LOG by calling `LOG$.ADD_ORACLE_ERROR_MAPPER` in the configuration procedure. In case multiple mappers have been registered, the first one to return a non-NULL target error code will win.
+
+PL-LOG will apply mappings __while handling an error__ with `LOG$.ORACLE_ERROR`, `ERROR$.HANDLE` or `ERROR$.RAISE`. Below is an example of creating and using an error mapper in PL-LOG:
+
+- Implement the mapper interface:
+
+    ```
+    CREATE OR REPLACE TYPE t_dummy_error_mapper UNDER t_oracle_error_mapper (
+
+        CONSTRUCTOR FUNCTION t_dummy_error_mapper
+        RETURN self AS RESULT,
+
+        OVERRIDING MEMBER PROCEDURE map_oracle_error (
+            p_source_code IN NATURALN,
+            p_target_code OUT NATURAL,
+            p_target_message OUT VARCHAR2
+        )
+
+    );
+
+    CREATE OR REPLACE TYPE BODY t_dummy_error_mapper IS
+
+        CONSTRUCTOR FUNCTION t_dummy_error_mapper
+        RETURN self AS RESULT IS
+        BEGIN
+            RETURN;
+        END;
+
+        OVERRIDING MEMBER PROCEDURE map_oracle_error (
+            p_source_code IN NATURALN,
+            p_target_code OUT NATURAL,
+            p_target_message OUT VARCHAR2
+        ) IS
+        BEGIN
+        
+            IF p_source_code = 1403 THEN
+                p_target_code := 20100;
+                p_target_message := 'MSG-00001';
+            END IF;
+        
+        END;
+
+    END;
+    ```
+
+    The mapper will translate `NO_DATA_FOUND` exception (code 1403) into `MSG-00001` and raise `ORA-20100` if necessary.
+
+- Register the mapper in the configuration procedure:
+
+    ```
+    CREATE OR REPLACE PROCEDURE log$init IS
+    BEGIN
+        ...
+        log$.add_oracle_error_mapper(t_dummy_error_mapper());
+        ...
+    END;
+    ```
+
+- Register `MSG-00001` in the default message resolver:
+
+    ```
+    default_message_resolver.register_message('MSG-00001', 'Requested records could not be found!');
+    ```
+
+- Call the anonymous block:
+
+ 
+    ```
+    BEGIN
+        RAISE NO_DATA_FOUND;
+    EXCEPTION
+        WHEN OTHERS THEN
+            log$.oracle_error;
+            RAISE;
+    END;
+    ```
+
+    The following output will be displayed in `DBMS_OUTPUT`:
+
+    ```
+    13:26:46.251 [FATAL  ] MSG-00001: Requested records could not be found!
+    at: __anonymous_block (line 2)
+    ```
+
+    and the following exception message will be displayed to the user:
+
+    ```
+    ORA-01403: no data found
+    ```
+
+`RAISE` will still reraise the original `NO_DATA_FOUND` exception. `'MSG-00001'` will be sent only to the message handlers. To reraise the mapped error (`ORA-20100` with `'MSG-00001'` in our case), one of the following methods should be used:
+
+1. Instead `LOG$.ORACLE_ERROR` use `ERROR$.HANDLE` with the optional argument `P_RAISE_MAPPED_ERROR` equal to `TRUE`:
+
+    ```
+    BEGIN
+        RAISE NO_DATA_FOUND;
+    EXCEPTION
+        WHEN OTHERS THEN
+            error$.handle(TRUE);
+            RAISE;
+    END;
+    ```     
+
+    will now raise
+
+    ```
+    ORA-20100: MSG-00001: Requested records could not be found!
+    ```
+
+    Please note, that in the last example `ORA-20100` has been raised from within the `ERROR$.HANDLE` procedure and not by the `RAISE` statement. However, `RAISE` must still be left in the code to handle non-mapped exceptions:
+
+    ```
+    BEGIN
+        RAISE TOO_MANY_ROWS;
+    EXCEPTION
+        WHEN OTHERS THEN
+            error$.handle(TRUE);
+            RAISE;
+    END;
+    ``` 
+
+    will normally handle and reraise
+
+    ```
+    ORA-01422: exact fetch returns more than requested number of rows
+    ```
+
+2. Use `ERROR$.RAISE` to reraise the error, which internally calls `HANDLE(TRUE)`.
+3. Use the overloaded version of `LOG$.ORACLE_ERROR` which returns mapped error code and message if any:
+
+    ```
+    PROCEDURE oracle_error (
+        p_level IN t_message_log_level,
+        p_service_depth IN NATURALN,
+        p_mapped_code OUT PLS_INTEGER,
+        p_mapped_message OUT VARCHAR2
+    );
+    ```
+
+    This version of `ORACLE_ERROR` is used internally by the `ERROR$.HANDLE` procedure.
+
+# Internal PL-LOG exception handling
+
+PL-LOG is designed not to raise any internal exceptions which may occur in the `LOG$` and `ERROR$` code itself. Two techniques are used to avoid seeing `LOG$` and `$ERROR` on the error stack:
+
+1. Extensive use of constrainted data types in the public API methods. For example, if a subprogram argument is defined as `NATURALN`, which is a "non-NULL natural number", instead of just `PLS_INTEGER`, the code will fail to compile or to run in the __calling routine__ instead of the subprogram itself.
+2. All plugable component (resolver, handler, etc.) calls are wrapped into `BEGIN ... EXCEPTION ... END` blocks which catch all the exceptions and write them into the internal log table `LOG$EVENTS`. If a handler raises an error, your main business code won't fail, although the message won't be handled correctly, so it is essential to periodically check `LOG$EVENTS` for the new errors.
 
 # Miscellaneous
 
