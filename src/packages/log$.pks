@@ -104,6 +104,9 @@ CREATE OR REPLACE PACKAGE log$ IS
             argument_notation BOOLEANN := FALSE
         );
         
+    FUNCTION version
+    RETURN VARCHAR;    
+        
     /* Initilalization methods */
     
     PROCEDURE reset;

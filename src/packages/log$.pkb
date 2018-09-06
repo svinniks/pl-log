@@ -16,6 +16,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         limitations under the License.
     */
 
+    c_VERSION CONSTANT VARCHAR2(8) := '1.0.0';
+
     SUBTYPE CHARN IS CHAR NOT NULL;
 
     TYPE t_message_resolvers IS 
@@ -58,6 +60,12 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         INDEX BY STRING;
         
     v_message_cache t_message_cache;
+    
+    FUNCTION version
+    RETURN VARCHAR IS
+    BEGIN
+        RETURN c_VERSION;
+    END;
     
     /* Logger internal warnings and errors */
     

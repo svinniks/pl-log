@@ -1,3 +1,9 @@
+# Version
+
+1.0.0 
+
+[Release notes](RELEASE_NOTES.md)
+
 # Table of contents
 
 * [Summary](#summary)
