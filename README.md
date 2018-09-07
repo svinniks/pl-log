@@ -1173,7 +1173,7 @@ PL-LOG is capable of __translating ```ORA-``` errors__ into handler's preferred 
     END;
     ```
 
-- Session's ```NLS_LANGUAGE``` hes been set to ```'FRENCH'```:
+- Session's ```NLS_LANGUAGE``` has been set to ```'FRENCH'```:
 
     ```
     ALTER SESSION SET NLS_LANGUAGE = 'FRENCH';
