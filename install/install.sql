@@ -41,6 +41,8 @@ SET DEFINE OFF
 /
 @@types/t_call.tps
 /
+@@types/t_oracle_error_mapper.tps
+/
 @@packages/log$.pks
 /
 @@packages/error$.pks
@@ -78,11 +80,6 @@ SET DEFINE OFF
 @@packages/dbms_output_handler.pks
 /
 @@types/t_dbms_output_handler.tps
-/
-
--- Oracle error mapper
-
-@@types/t_oracle_error_mapper.tps
 /
 
 -- Contexts

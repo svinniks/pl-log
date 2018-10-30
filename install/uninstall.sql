@@ -62,6 +62,8 @@ DROP PACKAGE log$
 /
 DROP TYPE t_call
 /
+DROP TYPE t_oracle_error_mapper
+/
 DROP TYPE t_formatted_message_handler
 /
 DROP TYPE t_raw_message_handler

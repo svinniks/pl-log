@@ -172,7 +172,7 @@ BEGIN
 END;
 ```
 
-To integrate PL-LOG into an existing PL/SQL project, you will have to develop custom message resolvers, formatters and handlers. Please to the next chapters for more details. 
+To integrate PL-LOG into an existing PL/SQL project, you will have to develop custom message resolvers, formatters and handlers. Please refer to the next chapters for more details. 
 
 # Architecture
 
@@ -188,7 +188,7 @@ Threshold log level for each message handler gets calculated as ```COALESCE(hand
 
 By default, PL-LOG only provides API which can be used to instrument PL/SQL code. Log messages, however, are not stored or displayed anywhere. To save or to display messages, one or more __message handlers__ must be registered in PL-LOG. Handlers may store messages in a table, file, alert log, write them to ```DBMS_OUTPUT``` or send via e-mail. It is possible to develop custom message handlers and plug them into PL-LOG without recompiling framework's source code. 
 
-There are to types of message handlers in PL-LOG:
+There are two types of message handlers in PL-LOG:
 
 - __Raw__ message handlers accept messages directly from the instrumentation routines. Original messages and argument values come separately - all resolving, formatting and handling must occur within a raw message handler itself. Use raw message handlers if you want to store messages disassembled and later present them to the users in different languages.
 - __Formatted__ message handlers receive resolved and formatted messages which are ready to be immediately stored in the desired location. All resolving and formatting happens within PL-LOG automatically according to the configuration.
@@ -257,7 +257,7 @@ There are two message handlers PL-LOG comes bundled with:
 
     Call ```DEFAULT_MESSAGE_HANDLER.RESET``` to clear message buffer.
 
-- ```T_DBMS_OUTPUT_HANDLER``` writes log messages to ```DBMS_OUTPUT```. Handler's implementation logic is located in the ```DBMS_OUTPUT_HANDLER``` package.
+- ```T_DBMS_OUTPUT_HANDLER``` writes log messages to ```DBMS_OUTPUT```. Handler's implementation logic is incapsulated within the ```DBMS_OUTPUT_HANDLER``` package.
 
     Log level threshold can be changed by calling ```DBMS_OUTPUT_HANDLER.SET_LOG_LEVEL``` (applies only to the current session).
 
@@ -289,7 +289,7 @@ There are two message handlers PL-LOG comes bundled with:
 
 It is a common practice to codify all messages in the system, especially those which are displayed to the end users. Codifying means assigning each message a unique code and storing texts somewhere outside the PL/SQL code, for example in a table. This approach helps to implement multi-language message support and eases message reusing throughout the project.
 
-In PL-LOG, external message store concept is implemented via __message resolvers__ and the ```T_LOG_MESSAGE_RESOLVER`` abstract object type:
+In PL-LOG, external message store concept is implemented via __message resolvers__ and the `T_LOG_MESSAGE_RESOLVER` abstract object type:
 
 ```
 TYPE t_log_message_resolver IS OBJECT (
@@ -309,7 +309,7 @@ The only method that needs to be implemented in a custom resolver is ```RESOLVE_
 
 Please note, that PL-LOG __will not add the original message__ to the resolved text. For example, if there is a message with the code ```'MSG-00001'``` which resolves to the text ```'Invalid value!'```, the resolver might consider to concatenate them together before returning: ```'MSG-00001: Invalid value!'```.
 
-If the message could not be resolved, ```NULL``` must be returned from ```RESOLVE_MESSAGE```. PL-LOG allows to define multiple resolvers. These resolvers will be called by the framework in the same order they have been registered in. The firts one which returns a non-NULL value will "win", so no other resolver will be called.
+If the message could not be resolved, ```NULL``` must be returned from ```RESOLVE_MESSAGE```. PL-LOG allows to define multiple resolvers. These resolvers will be called by the framework in the same order they have been registered in. The first one which returns a non-NULL value will "win", so no other resolver will be called.
 
 In case a message could not be resolved by any of the registered resolvers, __the original text__ will be passed to the handlers.
 
@@ -368,7 +368,7 @@ PL-LOG comes bundled with two message resolvers:
 
     There is one NLS language mapper included in the PL-LOG installation as an example - ```T_ISO_LANGUAGE_MAPPER```. The mapper uses a prepopulated table called ```ISO_LANGUAGE_MAP``` to translate ```ISO 639-2``` three letter language codes into valid NLS language names. *Please note that currently this table does not contain all languages defined in the standart!*
 
-    If no language mapper has been specified, ```T_ORACLE_MESSAGE_RESOLVER``` __will accept on;y NLS language names__.
+    If no language mapper has been specified, ```T_ORACLE_MESSAGE_RESOLVER``` __will accept only NLS language names__.
 
     Refer to the chapter [Message resolver and handler registration](#message-resolver-and-handler-registration) for the details of how ```T_ORACLE_MESSAGE_RESOLVER``` gets registered in PL-LOG.
 
@@ -812,7 +812,6 @@ PROCEDURE register_person (
     p_birth_date IN DATE,
     p_married IN BOOLEAN
 ) IS
-    v_call_id NUMBER;
 BEGIN
 
     log$.call()
@@ -1045,7 +1044,7 @@ PROCEDURE set_display_language (
 );
 ```
 
-- Use ```SET_DEFAULT_MESSAGE_CODE``` if you want to change which application error will be raised by ```ERROR$``` by default. Possible code values are ```20000``` to ```20999```.
+- Use ```SET_DEFAULT_ERROR_CODE``` if you want to change which application error will be raised by ```ERROR$``` by default. Possible code values are ```20000``` to ```20999```.
 - Use ```SET_ERROR_LEVEL``` to change the level error message will be passed to ```LOG$.MESSAGE``` with.
 - Use ```SET_DISPLAY_LANGUAGE``` to set fixed language in which the messages are resolved to be raised by ```RAISE_APPLICATION_ERROR```.
 
@@ -1060,7 +1059,7 @@ PROCEDURE raise (
 )
 ```
 
-There five overloaded shortcut versions of ```RAISE``` which accept from one to five arguments:
+There are also five overloaded shortcut versions of ```RAISE``` which accept from one to five arguments:
 
 ```
 PROCEDURE raise (
@@ -1092,7 +1091,7 @@ BEGIN
 END;
 ```
 
-Provided that ```MSG-00001``` is resolved to ```':1 is not specified!'``` and that DBMS_OUTPUT handler is enabled and accepts `ERROR` level messages, anonymous PL/SQL block
+Provided that ```MSG-00001``` is resolved to ```':1 is not specified!'``` and that `DBMS_OUTPUT` handler is enabled and accepts `ERROR` level messages, anonymous PL/SQL block
 
 ```
 BEGIN
