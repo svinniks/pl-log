@@ -184,6 +184,8 @@ CREATE OR REPLACE PACKAGE log$ IS
         );
     $END
     
+    PROCEDURE adjust_call_stack;
+    
     PROCEDURE call (
         p_id OUT NUMBER,
         p_service_depth IN NATURALN := 0
@@ -507,6 +509,9 @@ CREATE OR REPLACE PACKAGE log$ IS
         p_argument_4 IN VARCHAR2,
         p_argument_5 IN VARCHAR2
     );
+
+    procedure reset_values(id in number);
+
     
 END;
 

@@ -52,14 +52,22 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     v_default_language STRING;
     
     v_call_id NUMBER(30);    
+    
     v_call_stack t_call_stack;
-    v_call_values t_call_values;   
+    v_call_stack_capacity PLS_INTEGER;
+    v_call_stack_height PLS_INTEGER;
+    v_top_call_id NUMBER(30);
+    v_call_stack_adjusted BOOLEAN;
+    
+    v_call_values t_call_values;  
     
     TYPE t_message_cache IS
         TABLE OF STRING
         INDEX BY STRING;
         
     v_message_cache t_message_cache;
+    
+    v_value t_value;
     
     FUNCTION version
     RETURN VARCHAR IS
@@ -374,8 +382,15 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     PROCEDURE reset_call_stack IS
     BEGIN
+    
         v_call_stack := t_call_stack();
+        v_call_stack_capacity := 0;
+        v_call_stack_height := 0;
+        v_top_call_id := NULL;
+        v_call_stack_adjusted := TRUE;
+        
         v_call_values := t_call_values();
+        
     END;
     
     FUNCTION call_stack_unit (
@@ -383,15 +398,29 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     )
     RETURN VARCHAR2 IS
         v_unit STRING;
+        v_subprogram utl_call_stack.unit_qualified_name;
     BEGIN
     
         v_unit := utl_call_stack.owner(p_depth + 1);
+        v_subprogram := utl_call_stack.subprogram(p_depth + 1); 
         
         IF v_unit IS NULL THEN
-            RETURN utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(p_depth + 1));
+        
+            v_unit := v_subprogram(1);
+            
+            FOR v_i IN 2..v_subprogram.COUNT LOOP
+                v_unit := v_unit || '.' || v_subprogram(v_i);
+            END LOOP;
+            
         ELSE
-            RETURN v_unit || '.' || utl_call_stack.concatenate_subprogram(utl_call_stack.subprogram(p_depth + 1));
+            
+            FOR v_i IN 1..v_subprogram.COUNT LOOP
+                v_unit := v_unit || '.' || v_subprogram(v_i);
+            END LOOP;
+        
         END IF;
+    
+        RETURN v_unit;
     
     END;
     
@@ -505,6 +534,131 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
+    PROCEDURE adjust_call_stack IS
+    
+        v_dynamic_depth PLS_INTEGER;
+        v_call_depth PLS_INTEGER;
+
+        v_actual_call t_call_entry;
+        v_tracked_call t_call_entry;
+    
+    BEGIN
+    
+        IF v_call_stack_adjusted THEN
+            RETURN;
+        END IF;
+        
+        v_dynamic_depth := utl_call_stack.dynamic_depth;
+        
+        FOR v_i IN 1..LEAST(v_call_stack_height, v_dynamic_depth) LOOP
+            
+            v_call_depth := v_dynamic_depth - v_i + 1; 
+            v_actual_call.unit := call_stack_unit(v_call_depth);
+            v_actual_call.line := utl_call_stack.unit_line(v_call_depth);
+            
+            v_tracked_call := v_call_stack(v_i);
+            
+            IF v_actual_call.unit = v_tracked_call.unit
+               AND v_actual_call.line >= v_tracked_call.first_tracked_line
+            THEN
+                v_tracked_call.line := v_actual_call.line;
+                v_call_stack(v_i) := v_tracked_call;
+            ELSE
+                
+                v_call_id := v_call_id + 1;
+                v_actual_call.id := v_call_id;
+                v_actual_call.first_tracked_line := v_actual_call.line;
+                
+                v_call_stack(v_i) := v_actual_call;
+                v_call_values(v_i).DELETE;
+            
+            END IF;
+        
+        END LOOP;
+        
+        IF v_call_stack_capacity > v_call_stack_height THEN
+        
+            v_call_stack.TRIM(v_call_stack_capacity - v_call_stack_height);
+            v_call_values.TRIM(v_call_stack_capacity - v_call_stack_height);
+            
+            v_call_stack_capacity := v_call_stack_height;
+            
+        END IF;
+    
+        v_call_stack_adjusted := TRUE;
+        
+    END;
+    
+    PROCEDURE call (
+        p_service_depth IN PLS_INTEGER,
+        p_update IN BOOLEAN
+    ) IS
+    
+        v_dynamic_depth PLS_INTEGER;
+        v_actual_height PLS_INTEGER;
+        v_call_depth PLS_INTEGER;
+        
+        v_actual_call t_call_entry;
+        v_tracked_call t_call_entry;
+        
+        v_updated BOOLEAN;
+        
+    BEGIN
+    
+        v_call_stack_adjusted := FALSE;
+    
+        v_dynamic_depth := utl_call_stack.dynamic_depth;
+        v_actual_height := v_dynamic_depth - p_service_depth - 1;
+        v_call_depth := p_service_depth + 2; 
+        
+        v_actual_call.unit := call_stack_unit(v_call_depth);
+        v_actual_call.line := utl_call_stack.unit_line(v_call_depth);
+        
+        v_updated := FALSE;
+        
+        IF p_update AND v_call_stack_height = v_actual_height THEN
+            
+            v_tracked_call := v_call_stack(v_actual_height);
+            
+            IF v_tracked_call.unit = v_actual_call.unit
+               AND v_tracked_call.first_tracked_line < v_actual_call.line
+            THEN
+            
+                v_tracked_call.line := v_actual_call.line;
+                v_call_stack(v_actual_height) := v_tracked_call;
+                
+                v_updated := TRUE;
+                
+            END IF;
+        
+        END IF;
+        
+        IF NOT v_updated THEN
+        
+            v_call_stack_height := v_actual_height;
+            
+            IF v_call_stack_height > v_call_stack_capacity THEN
+            
+                v_call_stack.EXTEND(v_call_stack_height - v_call_stack_capacity);
+                v_call_values.EXTEND(v_call_stack_height - v_call_stack_capacity);
+                
+                v_call_stack_capacity := v_call_stack_height;
+            
+            ELSE
+                v_call_values(v_call_stack_height).DELETE;    
+            END IF;
+            
+            v_call_id := v_call_id + 1;
+            v_actual_call.id := v_call_id;
+            v_actual_call.first_tracked_line := v_actual_call.line;
+            
+            v_call_stack(v_call_stack_height) := v_actual_call;
+            v_top_call_id := v_call_id;
+        
+        END IF;
+        
+    END;
+       
     PROCEDURE call (
         p_id OUT NUMBER,
         p_service_depth IN NATURALN := 0
@@ -519,15 +673,15 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     )
     RETURN t_call IS
     BEGIN
-        fill_call_stack(p_service_depth + 1, TRUE, TRUE);
-        RETURN t_call(v_call_stack(v_call_stack.COUNT).id);   
+        call(p_service_depth + 1, TRUE);
+        RETURN t_call(v_top_call_id);   
     END;
     
     PROCEDURE call (
         p_service_depth IN NATURALN := 0
     ) IS
     BEGIN
-        fill_call_stack(p_service_depth + 1, TRUE, TRUE);
+        call(p_service_depth + 1, TRUE);
     END;
     
     PROCEDURE value (
@@ -540,7 +694,6 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         p_boolean_value IN BOOLEAN := NULL,
         p_date_value IN DATE := NULL
     ) IS
-        v_value t_value;
         v_call_i PLS_INTEGER;
     BEGIN
     
@@ -558,20 +711,21 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         
         ELSE
         
-            FOR v_i IN REVERSE 1..v_call_stack.COUNT LOOP
+            /*FOR v_i IN REVERSE 1..v_call_stack_height LOOP
                 IF v_call_stack(v_i).id = p_call_id THEN
                     v_call_i := v_i;
                     EXIT;
                 END IF;
             END LOOP;
-        
+            
             IF v_call_i IS NULL THEN
                 log_event('E', 'Invalid call ID "' || p_call_id || '"!', DBMS_UTILITY.FORMAT_CALL_STACK);
-            END IF;
+            END IF;*/
+            NULL;
             
         END IF;
         
-        IF v_call_i IS NOT NULL THEN
+        IF p_call_id = v_top_call_id THEN
         
             v_value.type := p_type;
             v_value.varchar2_value := p_varchar2_value;
@@ -579,7 +733,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             v_value.boolean_value := p_boolean_value;
             v_value.date_value := p_date_value;
         
-            v_call_values(v_call_i)(p_name) := v_value;
+            v_call_values(v_call_stack_height)(p_name) := v_value; 
             
         END IF;
     
@@ -597,7 +751,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             p_call_id,
             p_name, 
             'VARCHAR2', 
-            p_service_depth + 1,
+            p_service_depth + 1, 
             p_varchar2_value => p_value
         );
     
@@ -898,8 +1052,12 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         p_values OUT t_call_values
     ) IS
     BEGIN
+    
+        adjust_call_stack;
+    
         p_calls := v_call_stack;
         p_values := v_call_values;
+        
     END;
     
     FUNCTION format_call_stack (
@@ -936,6 +1094,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         END;
     
     BEGIN
+    
+        adjust_call_stack;
     
         FOR v_i IN REVERSE 1..v_call_stack.COUNT LOOP
 
@@ -1259,15 +1419,8 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_message_cache.DELETE;
     
         IF handling(p_level) THEN
-        
-            fill_call_stack(
-                p_service_depth => p_service_depth + 1,
-                p_reset_top => FALSE,
-                p_track_top => TRUE
-            );
-            
+            call(p_service_depth + 1, TRUE);
             handle_message(p_level, p_message, p_arguments);
-            
         END IF;
        
     END;
@@ -2001,8 +2154,13 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         );
     
     END;
-    
+
+    procedure reset_values(id in number) is
+    begin
+        v_call_values(id).delete;
+    end;
+        
 BEGIN
-    init;    
+    init;
 END;
 
