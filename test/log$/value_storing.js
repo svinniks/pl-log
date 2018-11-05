@@ -93,7 +93,6 @@ suite("Storing values in the tracked call stack nodes", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: 1,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -101,13 +100,7 @@ suite("Storing values in the tracked call stack nodes", function() {
                 ],
                 p_values: [
                     {
-                        hello: {
-                            type: "VARCHAR2",
-                            varchar2_value: "world",
-                            number_value: null,
-                            boolean_value: null,
-                            date_value: null
-                        }
+                        hello: "Sworld"
                     }
                 ]
             });
@@ -129,7 +122,6 @@ suite("Storing values in the tracked call stack nodes", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: 2,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -137,13 +129,7 @@ suite("Storing values in the tracked call stack nodes", function() {
                 ],
                 p_values: [
                     {
-                        hello: {
-                            type: "VARCHAR2",
-                            varchar2_value: "world",
-                            number_value: null,
-                            boolean_value: null,
-                            date_value: null
-                        }
+                        hello: "Sworld"
                     }
                 ]
             });
@@ -170,7 +156,6 @@ suite("Storing values in the tracked call stack nodes", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: 1,
                         unit: "__anonymous_block",
                         line: 8,
                         first_tracked_line: 8
@@ -178,13 +163,7 @@ suite("Storing values in the tracked call stack nodes", function() {
                 ],
                 p_values: [
                     {
-                        hello: {
-                            type: "VARCHAR2",
-                            varchar2_value: "world",
-                            number_value: null,
-                            boolean_value: null,
-                            date_value: null
-                        }
+                        hello: "Sworld"
                     }
                 ]
             });
@@ -284,7 +263,6 @@ suite("Storing values in the tracked call stack nodes", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: 1,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -292,13 +270,7 @@ suite("Storing values in the tracked call stack nodes", function() {
                 ],
                 p_values: [
                     {
-                        hello: {
-                            type: "NUMBER",
-                            varchar2_value: null,
-                            number_value: 123,
-                            boolean_value: null,
-                            date_value: null
-                        }
+                        hello: "N123"
                     }
                 ]
             });
@@ -320,7 +292,6 @@ suite("Storing values in the tracked call stack nodes", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: 2,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -328,13 +299,7 @@ suite("Storing values in the tracked call stack nodes", function() {
                 ],
                 p_values: [
                     {
-                        hello: {
-                            type: "NUMBER",
-                            varchar2_value: null,
-                            number_value: 123,
-                            boolean_value: null,
-                            date_value: null
-                        }
+                        hello: "N123"
                     }
                 ]
             });
@@ -361,7 +326,6 @@ suite("Storing values in the tracked call stack nodes", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: 1,
                         unit: "__anonymous_block",
                         line: 8,
                         first_tracked_line: 8
@@ -369,13 +333,7 @@ suite("Storing values in the tracked call stack nodes", function() {
                 ],
                 p_values: [
                     {
-                        hello: {
-                            type: "NUMBER",
-                            varchar2_value: null,
-                            number_value: 123,
-                            boolean_value: null,
-                            date_value: null
-                        }
+                        hello: "N123"
                     }
                 ]
             });
@@ -475,7 +433,6 @@ suite("Storing values in the tracked call stack nodes", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: 1,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -483,13 +440,7 @@ suite("Storing values in the tracked call stack nodes", function() {
                 ],
                 p_values: [
                     {
-                        hello: {
-                            type: "BOOLEAN",
-                            varchar2_value: null,
-                            number_value: null,
-                            boolean_value: true,
-                            date_value: null
-                        }
+                        hello: "BTRUE"
                     }
                 ]
             });
@@ -511,7 +462,6 @@ suite("Storing values in the tracked call stack nodes", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: 2,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -519,13 +469,7 @@ suite("Storing values in the tracked call stack nodes", function() {
                 ],
                 p_values: [
                     {
-                        hello: {
-                            type: "BOOLEAN",
-                            varchar2_value: null,
-                            number_value: null,
-                            boolean_value: true,
-                            date_value: null
-                        }
+                        hello: "BTRUE"
                     }
                 ]
             });
@@ -552,7 +496,6 @@ suite("Storing values in the tracked call stack nodes", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: 1,
                         unit: "__anonymous_block",
                         line: 8,
                         first_tracked_line: 8
@@ -560,13 +503,7 @@ suite("Storing values in the tracked call stack nodes", function() {
                 ],
                 p_values: [
                     {
-                        hello: {
-                            type: "BOOLEAN",
-                            varchar2_value: null,
-                            number_value: null,
-                            boolean_value: true,
-                            date_value: null
-                        }
+                        hello: "BTRUE"
                     }
                 ]
             });
@@ -666,7 +603,6 @@ suite("Storing values in the tracked call stack nodes", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: 1,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -674,13 +610,7 @@ suite("Storing values in the tracked call stack nodes", function() {
                 ],
                 p_values: [
                     {
-                        hello: {
-                            type: "DATE",
-                            varchar2_value: null,
-                            number_value: null,
-                            boolean_value: null,
-                            date_value: "1913-08-25 13:49:03"
-                        }
+                        hello: "D1913-08-25 13:49:03"
                     }
                 ]
             });
@@ -702,7 +632,6 @@ suite("Storing values in the tracked call stack nodes", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: 2,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -710,13 +639,7 @@ suite("Storing values in the tracked call stack nodes", function() {
                 ],
                 p_values: [
                     {
-                        hello: {
-                            type: "DATE",
-                            varchar2_value: null,
-                            number_value: null,
-                            boolean_value: null,
-                            date_value: "1913-08-25 13:49:03"
-                        }
+                        hello: "D1913-08-25 13:49:03"
                     }
                 ]
             });
@@ -743,7 +666,6 @@ suite("Storing values in the tracked call stack nodes", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: 1,
                         unit: "__anonymous_block",
                         line: 8,
                         first_tracked_line: 8
@@ -751,13 +673,7 @@ suite("Storing values in the tracked call stack nodes", function() {
                 ],
                 p_values: [
                     {
-                        hello: {
-                            type: "DATE",
-                            varchar2_value: null,
-                            number_value: null,
-                            boolean_value: null,
-                            date_value: "1913-08-25 13:49:03"
-                        }
+                        hello: "D1913-08-25 13:49:03"
                     }
                 ]
             });
@@ -810,7 +726,6 @@ suite("Storing values in the tracked call stack nodes", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: 1,
                     unit: "__anonymous_block",
                     line: 6,
                     first_tracked_line: 4
@@ -818,27 +733,9 @@ suite("Storing values in the tracked call stack nodes", function() {
             ],
             p_values: [
                 {
-                    hello: {
-                        type: "VARCHAR2",
-                        varchar2_value: "world",
-                        number_value: null,
-                        boolean_value: null,
-                        date_value: null
-                    },
-                    sveiki: {
-                        type: "NUMBER",
-                        varchar2_value: null,
-                        number_value: 123,
-                        boolean_value: null,
-                        date_value: null
-                    },
-                    "good bye": {
-                        type: "BOOLEAN",
-                        varchar2_value: null,
-                        number_value: null,
-                        boolean_value: true,
-                        date_value: null
-                    }
+                    hello: "Sworld",
+                    sveiki: "N123",
+                    "good bye": "BTRUE"
                 }
             ]
         });
@@ -862,7 +759,6 @@ suite("Storing values in the tracked call stack nodes", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: 1,
                     unit: "__anonymous_block",
                     line: 5,
                     first_tracked_line: 4
@@ -870,13 +766,7 @@ suite("Storing values in the tracked call stack nodes", function() {
             ],
             p_values: [
                 {
-                    hello: {
-                        type: "NUMBER",
-                        varchar2_value: null,
-                        number_value: 123,
-                        boolean_value: null,
-                        date_value: null
-                    }
+                    hello: "N123"
                 }
             ]
         });
@@ -911,31 +801,13 @@ suite("Storing values in the tracked call stack nodes", function() {
 
         expect(callStack.p_values).to.eql([
             {
-                "hello": {
-                    type: "VARCHAR2",
-                    varchar2_value: "world",
-                    number_value: null,
-                    boolean_value: null,
-                    date_value: null
-                }
+                "hello": "Sworld"
             },
             {
-                "sveiki": {
-                    type: "NUMBER",
-                    varchar2_value: null,
-                    number_value: 123,
-                    boolean_value: null,
-                    date_value: null
-                }
+                "sveiki": "N123"
             },
             {
-                "good bye": {
-                    type: "BOOLEAN",
-                    varchar2_value: null,
-                    number_value: null,
-                    boolean_value: true,
-                    date_value: null
-                }
+                "good bye": "BTRUE"
             }
         ]);
     

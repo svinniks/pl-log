@@ -72,7 +72,6 @@ CREATE OR REPLACE PACKAGE log$ IS
     
     TYPE t_call_entry IS
         RECORD (
-            id NUMBER(30),
             unit STRING,
             line PLS_INTEGER,
             first_tracked_line PLS_INTEGER
@@ -81,17 +80,8 @@ CREATE OR REPLACE PACKAGE log$ IS
     TYPE t_call_stack IS
         TABLE OF t_call_entry;
     
-    TYPE t_value IS
-        RECORD (
-            type VARCHAR2(9),
-            varchar2_value STRING,
-            number_value NUMBER,
-            boolean_value BOOLEAN,
-            date_value DATE
-        );
-    
     TYPE t_values IS
-        TABLE OF t_value
+        TABLE OF STRING
         INDEX BY STRING;
     
     TYPE t_call_values IS
@@ -177,52 +167,53 @@ CREATE OR REPLACE PACKAGE log$ IS
     PROCEDURE reset_call_stack;
     
     $IF $$test $THEN 
-        PROCEDURE fill_call_stack (
-            p_service_depth IN NATURALN,
-            p_reset_top IN BOOLEAN,
-            p_track_top IN BOOLEAN
+        PROCEDURE call (
+            p_service_depth IN PLS_INTEGER,
+            p_reset IN BOOLEAN,
+            p_adjust IN BOOLEAN
         );
     $END
     
-    PROCEDURE adjust_call_stack;
-    
     PROCEDURE call (
-        p_id OUT NUMBER,
-        p_service_depth IN NATURALN := 0
+        p_height OUT NUMBER,
+        p_service_depth IN NATURALN := 0,
+        p_adjust IN BOOLEANN := FALSE
     );
     
     FUNCTION call (
-        p_service_depth IN NATURALN := 0
+        p_service_depth IN NATURALN := 0,
+        p_adjust IN BOOLEANN := FALSE
     )
     RETURN t_call;
     
     PROCEDURE call (
-        p_service_depth IN NATURALN := 0
+        p_service_depth IN NATURALN := 0,
+        p_adjust IN BOOLEANN := FALSE
     );
     
     PROCEDURE value (
-        p_call_id IN NUMBERN,
+        p_height IN NUMBERN,
         p_name IN STRINGN,
         p_value IN VARCHAR2,
         p_service_depth IN NATURALN := 0
     );
     
     PROCEDURE value (
-        p_call_id IN NUMBERN,
+        p_height IN NUMBERN,
         p_name IN STRINGN,
         p_value IN NUMBER,
         p_service_depth IN NATURALN := 0
     );
     
     PROCEDURE value (
-        p_call_id IN NUMBERN,
+        p_height IN NUMBERN,
         p_name IN STRINGN,
         p_value IN BOOLEAN,
         p_service_depth IN NATURALN := 0
     );
     
     PROCEDURE value (
-        p_call_id IN NUMBERN,
+        p_height IN NUMBERN,
         p_name IN STRINGN,
         p_value IN DATE,
         p_service_depth IN NATURALN := 0

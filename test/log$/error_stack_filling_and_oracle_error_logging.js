@@ -151,7 +151,6 @@ suite("Error stack filling and oracle error logging", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: 1,
                     unit: "__anonymous_block",
                     line: 3,
                     first_tracked_line: null
@@ -183,7 +182,6 @@ suite("Error stack filling and oracle error logging", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: 1,
                     unit: "__anonymous_block",
                     line: 4,
                     first_tracked_line: 3
@@ -191,13 +189,7 @@ suite("Error stack filling and oracle error logging", function() {
             ],
             p_values: [
                 {
-                    hello: {
-                        type: "VARCHAR2",
-                        varchar2_value: "world",
-                        number_value: null,
-                        boolean_value: null,
-                        date_value: null
-                    }
+                    hello: "Sworld"
                 }
             ]
         });
@@ -235,19 +227,16 @@ suite("Error stack filling and oracle error logging", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: 1,
                     unit: "__anonymous_block",
                     line: 16,
                     first_tracked_line: 15
                 }, 
                 {
-                    id: 2,
                     unit: "__anonymous_block",
                     line: 11,
                     first_tracked_line: null
                 }, 
                 {
-                    id: 3,
                     unit: "__anonymous_block",
                     line: 6,
                     first_tracked_line: null
@@ -255,13 +244,7 @@ suite("Error stack filling and oracle error logging", function() {
             ],
             p_values: [
                 {
-                    hello: {
-                        type: "VARCHAR2",
-                        varchar2_value: "world",
-                        number_value: null,
-                        boolean_value: null,
-                        date_value: null
-                    }
+                    hello: "Sworld"
                 }, 
                 {}, 
                 {}
@@ -302,19 +285,16 @@ suite("Error stack filling and oracle error logging", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: 1,
                     unit: "__anonymous_block",
                     line: 17,
                     first_tracked_line: 16
                 }, 
                 {
-                    id: 2,
                     unit: "__anonymous_block.PROC1",
                     line: 12,
                     first_tracked_line: 11
                 }, 
                 {
-                    id: 3,
                     unit: "__anonymous_block",
                     line: 6,
                     first_tracked_line: null
@@ -322,13 +302,7 @@ suite("Error stack filling and oracle error logging", function() {
             ],
             p_values: [
                 {
-                    hello: {
-                        type: "VARCHAR2",
-                        varchar2_value: "world",
-                        number_value: null,
-                        boolean_value: null,
-                        date_value: null
-                    }
+                    hello: "Sworld"
                 }, 
                 {}, 
                 {}
@@ -369,13 +343,11 @@ suite("Error stack filling and oracle error logging", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: 1,
                     unit: "__anonymous_block",
                     line: 17,
                     first_tracked_line: 15
                 }, 
                 {
-                    id: 3,
                     unit: "__anonymous_block",
                     line: 6,
                     first_tracked_line: null
@@ -383,13 +355,7 @@ suite("Error stack filling and oracle error logging", function() {
             ],
             p_values: [
                 {
-                    hello: {
-                        type: "VARCHAR2",
-                        varchar2_value: "world",
-                        number_value: null,
-                        boolean_value: null,
-                        date_value: null
-                    }
+                    hello: "Sworld"
                 }, 
                 {}
             ]
@@ -440,25 +406,21 @@ suite("Error stack filling and oracle error logging", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: 1,
                     unit: "__anonymous_block",
                     line: 28,
                     first_tracked_line: 27
                 }, 
                 {
-                    id: 2,
                     unit: "__anonymous_block.PROC1",
                     line: 23,
                     first_tracked_line: 21
                 },
                 {
-                    id: 4,
                     unit: "__anonymous_block",
                     line: 11,
                     first_tracked_line: null
                 },
                 {
-                    id: 5,
                     unit: "__anonymous_block",
                     line: 6,
                     first_tracked_line: null
@@ -466,13 +428,7 @@ suite("Error stack filling and oracle error logging", function() {
             ],
             p_values: [
                 {
-                    hello: {
-                        type: "VARCHAR2",
-                        varchar2_value: "world",
-                        number_value: null,
-                        boolean_value: null,
-                        date_value: null
-                    }
+                    hello: "Sworld"
                 }, 
                 {},
                 {},
@@ -523,31 +479,26 @@ suite("Error stack filling and oracle error logging", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: 1,
                     unit: "__anonymous_block",
                     line: 29,
                     first_tracked_line: 28
                 }, 
                 {
-                    id: 2,
                     unit: "__anonymous_block.PROC1",
                     line: 24,
                     first_tracked_line: null
                 },
                 {
-                    id: 3,
                     unit: "__anonymous_block.PROC2",
                     line: 16,
                     first_tracked_line: null
                 },
                 {
-                    id: 4,
                     unit: "__anonymous_block",
                     line: 11,
                     first_tracked_line: null
                 },
                 {
-                    id: 5,
                     unit: "__anonymous_block",
                     line: 6,
                     first_tracked_line: null
@@ -555,13 +506,7 @@ suite("Error stack filling and oracle error logging", function() {
             ],
             p_values: [
                 {
-                    hello: {
-                        type: "VARCHAR2",
-                        varchar2_value: "world",
-                        number_value: null,
-                        boolean_value: null,
-                        date_value: null
-                    }
+                    hello: "Sworld"
                 }, 
                 {},
                 {},
@@ -618,31 +563,26 @@ suite("Error stack filling and oracle error logging", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: 1,
                     unit: "__anonymous_block",
                     line: 34,
                     first_tracked_line: 33
                 }, 
                 {
-                    id: 2,
                     unit: "__anonymous_block.PROC1",
                     line: 29,
                     first_tracked_line: null
                 },
                 {
-                    id: 3,
                     unit: "__anonymous_block.PROC2",
                     line: 21,
                     first_tracked_line: null
                 },
                 {
-                    id: 4,
                     unit: "__anonymous_block",
                     line: 16,
                     first_tracked_line: null
                 },
                 {
-                    id: 5,
                     unit: "__anonymous_block",
                     line: 11,
                     first_tracked_line: null
@@ -650,13 +590,81 @@ suite("Error stack filling and oracle error logging", function() {
             ],
             p_values: [
                 {
-                    hello: {
-                        type: "VARCHAR2",
-                        varchar2_value: "world",
-                        number_value: null,
-                        boolean_value: null,
-                        date_value: null
-                    }
+                    hello: "Sworld"
+                }, 
+                {},
+                {},
+                {},
+                {}
+            ]
+        });
+    
+    });
+
+    test("Test", function() {
+    
+        resetPackage();
+    
+        database.run(`
+            DECLARE
+    
+                PROCEDURE proc3 IS
+                BEGIN
+                    RAISE NO_DATA_FOUND;
+                END;
+    
+                PROCEDURE proc2 IS
+                BEGIN
+                    log$.value('hello', 'world');
+                    proc3;
+                END;
+    
+                PROCEDURE proc1 IS
+                BEGIN
+                    proc2;
+                END;
+    
+            BEGIN
+                proc1;
+            EXCEPTION
+                WHEN OTHERS THEN
+                    log$.fill_error_stack(0);    
+            END;
+        `);
+    
+        let callStack = getCallStack();
+    
+        expect(callStack).to.eql({
+            p_calls: [
+                {
+                    unit: "__anonymous_block",
+                    line: 29,
+                    first_tracked_line: 28
+                }, 
+                {
+                    unit: "__anonymous_block.PROC1",
+                    line: 24,
+                    first_tracked_line: null
+                },
+                {
+                    unit: "__anonymous_block.PROC2",
+                    line: 16,
+                    first_tracked_line: null
+                },
+                {
+                    unit: "__anonymous_block",
+                    line: 11,
+                    first_tracked_line: null
+                },
+                {
+                    unit: "__anonymous_block",
+                    line: 6,
+                    first_tracked_line: null
+                }
+            ],
+            p_values: [
+                {
+                    hello: "Sworld"
                 }, 
                 {},
                 {},

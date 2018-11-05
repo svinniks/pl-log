@@ -16,7 +16,7 @@ CREATE OR REPLACE TYPE t_call IS OBJECT (
         limitations under the License.
     */
 
-    id NUMBER,
+    height NUMBER,
     
     PRAGMA RESTRICT_REFERENCES(DEFAULT, RNDS, WNDS, RNPS, WNPS, TRUST),
     
