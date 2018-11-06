@@ -21,7 +21,7 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
     v_oracle_error_level log$.t_message_log_level := log$.c_FATAL;
     
     c_handler_unit CONSTANT VARCHAR2(4000) := $$PLSQL_UNIT_OWNER || '.' || $$PLSQL_UNIT;
-    v_handled_lines t_numbers := t_numbers(132, 228, 233, 238, 306);
+    v_handled_lines t_numbers := t_numbers(133, 244, 249, 254, 322);
     
     v_display_language log$.STRING;
     
@@ -237,7 +237,6 @@ CREATE OR REPLACE PACKAGE BODY error$ IS
         
             v_code := utl_call_stack.error_number(1);
             v_message := get_error_message(1);
-            
                         
             IF v_code BETWEEN 20000 AND 20999 THEN
         

@@ -326,7 +326,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: 1,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -626,7 +625,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -672,7 +670,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -718,7 +715,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -764,7 +760,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -810,7 +805,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -856,7 +850,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -902,7 +895,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -948,7 +940,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -994,7 +985,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1040,7 +1030,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1086,7 +1075,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1132,7 +1120,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1178,7 +1165,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1224,7 +1210,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1270,7 +1255,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1316,7 +1300,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1362,7 +1345,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1408,7 +1390,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1454,7 +1435,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1500,7 +1480,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1546,7 +1525,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1592,7 +1570,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1638,7 +1615,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1684,7 +1660,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1730,7 +1705,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1776,7 +1750,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1822,7 +1795,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1868,7 +1840,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1914,7 +1885,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -1960,7 +1930,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -2006,7 +1975,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -2052,7 +2020,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -2098,7 +2065,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3
@@ -2144,7 +2110,6 @@ suite("Message handling", function() {
             expect(callStack).to.eql({
                 p_calls: [
                     {
-                        id: callStack.p_calls[0].id,
                         unit: "__anonymous_block",
                         line: 3,
                         first_tracked_line: 3

@@ -166,29 +166,25 @@ CREATE OR REPLACE PACKAGE log$ IS
     
     PROCEDURE reset_call_stack;
     
-    $IF $$test $THEN 
-        PROCEDURE call (
-            p_service_depth IN PLS_INTEGER,
-            p_reset IN BOOLEAN,
-            p_adjust IN BOOLEAN
-        );
-    $END
+$IF $$test $THEN
+    PROCEDURE call (
+        p_service_depth IN PLS_INTEGER,
+        p_reset_top IN BOOLEAN
+    );
+$END    
     
     PROCEDURE call (
         p_height OUT NUMBER,
-        p_service_depth IN NATURALN := 0,
-        p_adjust IN BOOLEANN := FALSE
+        p_service_depth IN NATURALN := 0
     );
     
     FUNCTION call (
-        p_service_depth IN NATURALN := 0,
-        p_adjust IN BOOLEANN := FALSE
+        p_service_depth IN NATURALN := 0
     )
     RETURN t_call;
     
     PROCEDURE call (
-        p_service_depth IN NATURALN := 0,
-        p_adjust IN BOOLEANN := FALSE
+        p_service_depth IN NATURALN := 0
     );
     
     PROCEDURE value (
@@ -501,8 +497,5 @@ CREATE OR REPLACE PACKAGE log$ IS
         p_argument_5 IN VARCHAR2
     );
 
-    procedure reset_values(id in number);
-
-    
 END;
 

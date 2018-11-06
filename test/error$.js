@@ -84,7 +84,7 @@ suite("Error handler configuration", function() {
     
         expect(function() {
         
-            database.call("error$.set_error_code", {
+            database.call("error$.set_default_error_code", {
                 p_code: null
             });
         
@@ -96,7 +96,7 @@ suite("Error handler configuration", function() {
     
         expect(function() {
         
-            database.call("error$.set_error_code", {
+            database.call("error$.set_default_error_code", {
                 p_code: 10
             });
         
@@ -106,11 +106,11 @@ suite("Error handler configuration", function() {
 
     test("Set valid error code", function() {
     
-        database.call("error$.set_error_code", {
+        database.call("error$.set_default_error_code", {
             p_code: 20123
         });
         
-        let errorCode = database.call("error$.get_error_code");
+        let errorCode = database.call("error$.get_default_error_code");
 
         expect(errorCode).to.be(20123);
     
@@ -162,7 +162,7 @@ suite("Error raising and handling", function() {
             BEGIN
                 log$.reset_call_stack;
                 default_message_handler.reset;
-                error$.set_error_code(20123);
+                error$.set_default_error_code(20123);
                 error$.set_error_level(550);
             END;
         `);
@@ -231,7 +231,6 @@ suite("Error raising and handling", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 4,
                     first_tracked_line: 3
@@ -239,13 +238,7 @@ suite("Error raising and handling", function() {
             ],
             p_values: [
                 {
-                    hello: {
-                        type: "VARCHAR2",
-                        varchar2_value: "world",
-                        number_value: null,
-                        boolean_value: null,
-                        date_value: null
-                    }
+                    hello: "Sworld"
                 }
             ]
         });
@@ -292,7 +285,6 @@ suite("Error raising and handling", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 9,
                     first_tracked_line: 8
@@ -300,13 +292,7 @@ suite("Error raising and handling", function() {
             ],
             p_values: [
                 {
-                    hello: {
-                        type: "VARCHAR2",
-                        varchar2_value: "world",
-                        number_value: null,
-                        boolean_value: null,
-                        date_value: null
-                    }
+                    hello: "Sworld"
                 }
             ]
         });
@@ -348,7 +334,6 @@ suite("Error raising and handling", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 4,
                     first_tracked_line: 3
@@ -356,13 +341,7 @@ suite("Error raising and handling", function() {
             ],
             p_values: [
                 {
-                    hello: {
-                        type: "VARCHAR2",
-                        varchar2_value: "world",
-                        number_value: null,
-                        boolean_value: null,
-                        date_value: null
-                    }
+                    hello: "Sworld"
                 }
             ]
         });
@@ -404,7 +383,6 @@ suite("Error raising and handling", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 4,
                     first_tracked_line: 3
@@ -412,13 +390,7 @@ suite("Error raising and handling", function() {
             ],
             p_values: [
                 {
-                    hello: {
-                        type: "VARCHAR2",
-                        varchar2_value: "world",
-                        number_value: null,
-                        boolean_value: null,
-                        date_value: null
-                    }
+                    hello: "Sworld"
                 }
             ]
         });
@@ -460,7 +432,6 @@ suite("Error raising and handling", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 4,
                     first_tracked_line: 3
@@ -468,13 +439,7 @@ suite("Error raising and handling", function() {
             ],
             p_values: [
                 {
-                    hello: {
-                        type: "VARCHAR2",
-                        varchar2_value: "world",
-                        number_value: null,
-                        boolean_value: null,
-                        date_value: null
-                    }
+                    hello: "Sworld"
                 }
             ]
         });
@@ -516,7 +481,6 @@ suite("Error raising and handling", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 4,
                     first_tracked_line: 3
@@ -524,13 +488,7 @@ suite("Error raising and handling", function() {
             ],
             p_values: [
                 {
-                    hello: {
-                        type: "VARCHAR2",
-                        varchar2_value: "world",
-                        number_value: null,
-                        boolean_value: null,
-                        date_value: null
-                    }
+                    hello: "Sworld"
                 }
             ]
         });
@@ -572,7 +530,6 @@ suite("Error raising and handling", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 4,
                     first_tracked_line: 3
@@ -580,13 +537,7 @@ suite("Error raising and handling", function() {
             ],
             p_values: [
                 {
-                    hello: {
-                        type: "VARCHAR2",
-                        varchar2_value: "world",
-                        number_value: null,
-                        boolean_value: null,
-                        date_value: null
-                    }
+                    hello: "Sworld"
                 }
             ]
         });
@@ -680,7 +631,6 @@ suite("Error reraising", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 3,
                     first_tracked_line: null
@@ -733,7 +683,6 @@ suite("Error reraising", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 3,
                     first_tracked_line: null
@@ -786,7 +735,6 @@ suite("Error reraising", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 3,
                     first_tracked_line: null
@@ -841,7 +789,6 @@ suite("Error reraising", function() {
         expect(callStack).to.eql({
             p_calls: [
                 {
-                    id: callStack.p_calls[0].id,
                     unit: "__anonymous_block",
                     line: 8,
                     first_tracked_line: null
