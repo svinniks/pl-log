@@ -51,8 +51,8 @@ CREATE OR REPLACE PACKAGE error$ IS
     PROCEDURE raise (
         p_code IN log$.t_application_error_code,
         p_message IN VARCHAR2,
-        p_arguments IN t_varchars := NULL,
-        p_service_depth IN NATURALN := 0
+        p_arguments IN t_varchars,
+        p_service_depth IN NATURALN
     );
 
     PROCEDURE raise (
