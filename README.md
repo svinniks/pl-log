@@ -1,6 +1,6 @@
 # Version
 
-1.0.2 
+1.1.0
 
 [Release notes](RELEASE_NOTES.md)
 

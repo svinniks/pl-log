@@ -1,3 +1,6 @@
+# 1.1.0
+- Improved performance of call stack and value tracking
+
 # 1.0.2
 - Fixed install.sql and uninstall.sql
 - Added licence to some files
