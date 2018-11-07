@@ -427,11 +427,20 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
         v_call_depth PLS_INTEGER;
     BEGIN
     
+        IF p_adjust_height > v_call_stack_capacity THEN
+                
+            v_call_stack.EXTEND(p_adjust_height - v_call_stack_capacity);
+            v_call_values.EXTEND(p_adjust_height - v_call_stack_capacity);
+                    
+            v_call_stack_capacity := p_adjust_height;
+            
+        END IF;
+    
         FOR v_i IN REVERSE 1..p_adjust_height LOOP
             
             v_call_depth := p_dynamic_depth - v_i + 1; 
             v_actual_call.unit := call_stack_unit(v_call_depth);
-            v_actual_call.line := utl_call_stack.unit_line(v_call_depth);
+            v_actual_call.line := NVL(utl_call_stack.unit_line(v_call_depth), 1);
                 
             v_tracked_call := v_call_stack(v_i);
                 
@@ -457,7 +466,7 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     END;
     
-    PROCEDURE call  (
+    PROCEDURE call (
         p_service_depth IN PLS_INTEGER,
         p_reset_top IN BOOLEAN
     ) IS
@@ -475,15 +484,6 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
             RETURN;
         END IF;
     
-        IF v_actual_height > v_call_stack_capacity THEN
-                
-            v_call_stack.EXTEND(v_actual_height - v_call_stack_capacity);
-            v_call_values.EXTEND(v_actual_height - v_call_stack_capacity);
-                    
-            v_call_stack_capacity := v_actual_height;
-            
-        END IF; 
-        
         adjust_call_stack(v_dynamic_depth + 1, v_actual_height);
         
         v_tracked_call := v_call_stack(v_actual_height);
