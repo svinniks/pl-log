@@ -951,7 +951,7 @@ $END
                             put(v_value_value);
                         END IF;
                             
-                    WHEN 'DATE' THEN
+                    WHEN 'D' THEN
                         
                         IF v_value_value IS NULL THEN
                             put('NULL');
