@@ -660,7 +660,6 @@ PL-LOG stores it's own representation of the most recent call stack in a set of 
 ```
 TYPE t_call_entry IS
     RECORD (
-        id NUMBER(30),
         unit STRING,
         line PLS_INTEGER,
         first_tracked_line PLS_INTEGER
@@ -669,17 +668,8 @@ TYPE t_call_entry IS
 TYPE t_call_stack IS
     TABLE OF t_call_entry;
 
-TYPE t_value IS
-    RECORD (
-        type VARCHAR2(9),
-        varchar2_value STRING,
-        number_value NUMBER,
-        boolean_value BOOLEAN,
-        date_value DATE
-    );
-
 TYPE t_values IS
-    TABLE OF t_value
+    TABLE OF STRING
     INDEX BY STRING;
 
 TYPE t_call_values IS
@@ -687,8 +677,6 @@ TYPE t_call_values IS
 ```
 
 ```T_CALL_ENTRY``` represents one entry in the call stack:
-
--  ```ID``` is an internal unique identifier of the call;
 
 - ```UNIT``` is a fully qualified name of the unit. In case of successfull flow or a businness error raised by PL-LOG itself, ```UNIT``` will resolve down to the subprogram of the package being called. In case of an unexpected Oracle error (eg. ```NO_DATA_FOUND```), some upper entries of the call stack may be resolved only to the package, because of the ```UTL_CALL_STACK``` limitations.
 
@@ -700,21 +688,21 @@ TYPE t_call_values IS
 
 ```T_CALL_VALUES``` represents named values associated with the call stack entries:
 
-- Each element of ```T_CALL_VALUES``` is a ```VARCHAR2``` indexed (the name) associative array of ```T_VALUE``` (the value) and represents a set of values associated with one call stack entry. 
+- Each element of `T_CALL_VALUES` is a `VARCHAR2` indexed (the name) associative array of `VARCHAR2` (the value) and represents a set of values associated with one call stack entry. 
 
-- ```T_CALL_STACK``` and ```T_CALL_VALUES``` variables always contain the same number of elements. The first element of ```T_CALL_VALUES``` corresponds to the first element of ```T_CALL_STACK```, the second corresponds to the second and so on. 
+    Value is a codified string with the first character always denoting value's type and the rest denoting actual value (this solution is faster than using `RECORD`). Possible values for value types are `'S'`, `'N'`, `'D'`, `'B'` for strings, numbers, dates and booleans respectively.
 
-- Possible values of ```T_VALUE.TYPE``` are ```'VARCHAR2'```, ```'NUMBER'```, ```'BOOLEAN'``` and ```'DATE'```. Depending on the type, one of ```VARCHAR2_VALUE```, ```NUMBER_VALUE```, ```BOOLEAN_VALUE``` and ```DATE_VALUE``` is filled with the actual value.
+- `T_CALL_STACK` and `T_CALL_VALUES` variables always contain the same number of elements. The first element of `T_CALL_VALUES` corresponds to the first element of `T_CALL_STACK`, the second corresponds to the second and so on. 
 
 ### Tracking calls and named values
 
-PL-SQL has a built-in call stack tracking mechanism, based on the ```UTL_CALL_STACK``` package. The idea behind this feature was to enable logging of actual argument values of subprograms in the call stack.
+PL-SQL has a built-in call stack tracking mechanism, based on the `UTL_CALL_STACK` package. The idea behind this feature was to enable logging of actual argument values of subprograms in the call stack.
 
-Unfortunately, ```UTL_CALL_STACK``` is still quite limited in functionality, namely it's resolution is one line of code (not one character!) which makes it impossible to distinguish two calls on the same line. The package also doesn't provide any means to identify subsequent calls of the same PL/SQL subprogram.
+Unfortunately, `UTL_CALL_STACK` is still quite limited in functionality, namely it's resolution is one line of code (not one character!) which makes it impossible to distinguish two calls on the same line. The package also doesn't provide any means to identify subsequent calls of the same PL/SQL subprogram.
 
-As a consequence of the foregoing, to avoid strange and undesirable behavior, developers must be careful and obey some rules while working with the ```LOG$``` call stack tracking subprograms.
+As a consequence of the foregoing, to avoid strange and undesirable behavior, developers must be careful and obey some rules while working with the `LOG$` call stack tracking subprograms.
 
-The most reliable way of tracking call stack is to make ```LOG$.CALL;``` the first statement of each businness subprogram:
+The most reliable way of tracking call stack is to make `LOG$.CALL;` the first statement of each businness subprogram:
 
 ```
 PROCEDURE call (
@@ -722,31 +710,30 @@ PROCEDURE call (
 );
 ```
 
-```CALL``` will make sure that the tracked call stack is actualized and synchronized with ```UTL_CALL_STACK```. Also collection of the named values associated to the call will be cleared. Line number ```LOG$.CALL;``` statement is located at will be written into the ```FIRST_TRACKED_LINE``` field of the call stack top entry.
+`CALL` will make sure that the tracked call stack is actualized and synchronized with `UTL_CALL_STACK`. Also collection of the named values associated to the call will be cleared. Line number `LOG$.CALL;` statement is located at will be written into the `FIRST_TRACKED_LINE` field of the call stack top entry.
 
-```CALL``` will try to update as little of the call stack as possible. If PL-LOG thinks the base of the call stack is the same, it will update only the topmost entries.
+`CALL` will try to update as little of the call stack as possible. If PL-LOG thinks the base of the call stack is the same, it will update only the topmost entries.
 
-Each entry of the tracked call stack (a __"call"__) has a unique ID which PL-LOG assigns to it. There is an overloaded version of the ```CALL``` method which returns ID of the topmost tracked call:
+There is an overloaded version of the ```CALL``` method which returns height of the topmost tracked call:
 
 ```
 PROCEDURE call (
-    p_id OUT NUMBER,
+    p_height OUT NUMBER,
     p_service_depth IN NATURALN := 0
 );
 ```
 
-Please note that each subsequent call to ```CALL``` within the same calling subprogram will reset the top of the call stack and return different call ID:
+Please note that each subsequent call to `CALL` within the same calling subprogram will reset the top of the call stack and it's associated values:
 
 ```
 PROCEDURE my_proc IS
-    v_call_id NUMBER;
 BEGIN
-    log$.call(v_call_id); -- will return N
-    log$.call(v_call_id); -- will return N + 1
+    log$.call;
+    log$.call;
 END;
 ```
 
-Call ID can be later used to associate named (argument) values with the corresponding call stack entry by using one of the four overloaded ```VALUE``` methods:
+Call height can be later used to associate named (argument) values with the corresponding call stack entry by using one of the four overloaded `VALUE` methods:
 
 ```
 SUBTYPE NUMBERN IS
@@ -757,14 +744,14 @@ SUBTYPE STRINGN IS
         NOT NULL;
 
 PROCEDURE value (
-    p_call_id IN NUMBERN,
+    p_height_id IN NUMBERN,
     p_name IN STRINGN,
     p_value IN VARCHAR2 | NUMBER | BOOLEAN | DATE,
     p_service_depth IN NATURALN := 0
 );
 ```
 
-```VALUE``` does not raise any exceptions even if a non-existing call ID has been passed to it - the invalid ID will be ignored and a notification will be stored in the internal event log. Values with the same name will be overwritten.
+```VALUE``` does not raise any exceptions even if a non-existing call height has been passed to it - the invalid height will be ignored and a notification will be stored in the internal event log. Values with the same name will be overwritten.
 
 Below is an example of tracking calls and argument values of a procedure:
 
@@ -775,14 +762,14 @@ PROCEDURE register_person (
     p_birth_date IN DATE,
     p_married IN BOOLEAN
 ) IS
-    v_call_id NUMBER;
+    v_call_height NUMBER;
 BEGIN
 
-    log$.call(v_call_id);
-    log$.value(v_call_id, 'P_NAME', p_name);
-    log$.value(v_call_id, 'P_SURNAME', P_SURNAME);
-    log$.value(v_call_id, 'P_BIRTH_DATE', p_birth_date);
-    log$.value(v_call_id, 'P_MARRIED', p_married);
+    log$.call(v_call_height);
+    log$.value(v_call_height, 'P_NAME', p_name);
+    log$.value(v_call_height, 'P_SURNAME', P_SURNAME);
+    log$.value(v_call_height, 'P_BIRTH_DATE', p_birth_date);
+    log$.value(v_call_height, 'P_MARRIED', p_married);
 
     ...
 
@@ -803,7 +790,7 @@ at: JODUS.REGISTER_PERSON (line 16)
     __anonymous_block (line 3)
 ```
 
-Declaring and handing the call ID variable is a boilerplate, therefore PL-LOG offers a simplified method for tracking calls and argument values - the third ```CALL``` overload, which returns a ```T_CALL``` object, which encapsulates the call ID. ```T_CALL``` object has very similar four ```VALUE``` methods, each of which returns ```SELF``` as result, allowing method call chaining. Below is the same example with the ```REGISTER_PERSON``` procedure, refactored to use chained calls to ```VALUE```:
+Declaring and handing the call height variable is a boilerplate, therefore PL-LOG offers a simplified method for tracking calls and argument values - the third `CALL` overload, which returns a `T_CALL` object, which encapsulates the call height. `T_CALL` object has very similar four `VALUE` methods, each of which returns `SELF` as result, allowing method call chaining. Below is the same example with the `REGISTER_PERSON` procedure, refactored to use chained calls to `VALUE`:
 
 ```
 PROCEDURE register_person (
@@ -829,7 +816,7 @@ END;
 
 The second version is obviously shorter and more readable. Please note, however, that calling object methods is by __around 10% slower__ in PL/SQL than calling package subprograms.
 
-The ```VALUE``` methods can be used to log not only argument values, but also internal state of a subprogram (eg. loop variables):
+The `VALUE` methods can be used to log not only argument values, but also internal state of a subprogram (eg. loop variables):
 
 ```
 PROCEDURE process_payments IS
@@ -852,7 +839,7 @@ END;
 
 In the example above, if an error occurs and gets handled by PL-LOG while processing the payments, ID of the failing record will appear in the call stack details.
 
-There are another four overloaded versions of the ```VALUE``` method in the ```LOG$``` package:
+There are another four overloaded versions of the `VALUE` method in the `LOG$` package:
 
 ```
 PROCEDURE value (
@@ -862,9 +849,9 @@ PROCEDURE value (
 );
 ```
 
-Unlike the previous version, these methods do not require call ID to be specified - PL-LOG will try to update the call stack within the ```VALUE``` methods themselves. Because of the mentioned ```UTL_CALL_STACK``` drawbacks, this version of ```VALUE``` needs special care to be used and should be avoided. Some examples of undesirable ```VALUE``` behaviour are listed below.
+Unlike the previous version, these methods do not require call height to be specified - PL-LOG will try to update the call stack within the `VALUE` methods themselves. Because of the mentioned `UTL_CALL_STACK` drawbacks, this version of `VALUE` needs special care to be used and should be avoided. Some examples of undesirable `VALUE` behaviour are listed below.
 
-1. When placing multiple calls to ```VALUE``` on the same line, if it is the first line of the subprogram, each subsequent call to ```VALUE``` will reset the top of the stack and clear the list of associated values:
+1. When placing multiple calls to `VALUE` on the same line, if it is the first line of the subprogram, each subsequent call to `VALUE` will reset the top of the stack and clear the list of associated values:
 
     ```
     PROCEDURE register_person (
@@ -884,7 +871,7 @@ Unlike the previous version, these methods do not require call ID to be specifie
     END;
     ```
 
-    In this example only the last argument value (```P_BIRTH_DATE```) will appear in the call stack details:
+    In this example only the last argument value (`P_BIRTH_DATE`) will appear in the call stack details:
 
     ```
     16:05:32.604 [INFO   ] The person has been successfully registered!
@@ -893,34 +880,18 @@ Unlike the previous version, these methods do not require call ID to be specifie
         __anonymous_block (line 3)
     ```
 
-2. Subprogram without arguments which use ```VALUE``` to track loop variables, must anyway include ```LOG$.CALL``` as the first statement, especially if message handlers make use of call IDs, otherwise each loop iteration will be presented as a separate subprogram call:
+2. Some problems might also appear when multiple overloads of the same subprogram are called subsequently or are mutually calling each other.
 
-    ```
-    PROCEDURE process_payments IS
-    BEGIN
-
-        log$.call;
-
-        FOR v_payment IN (SELECT id, ...) LOOP
-
-            log$.value('Payment ID', v_payment.id);
-
-            -- Some processing code here
-            ...
-
-        END LOOP;
-
-    END;
-    ```
-
-3. Some problems might also appear when multiple overloads of the same subprogram are called subsequently or are mutually calling each other.
-
-Instrumentation API routines, such as ```MESSAGE``` or ```INFO``` will __always try to update the call stack__, so the same restrictions apply when using multiple instrumentation calls on one line or on the same line with ```LOG$.CALL```.
+Instrumentation API routines, such as `MESSAGE` or `INFO` will __always try to update the call stack__, so the same restrictions apply when using multiple instrumentation calls on one line or on the same line with `LOG$.CALL`.
 
 Basic recommendations of hassle free call stack tracking and named value logging are:
 
-1. Always try to include ```LOG$.CALL;``` as the first statement of a subrogram.
-2. Always put instrumentation API and unbounded ```VALUE``` calls on separate lines of code.
+1. Always include `LOG$.CALL;` as the first statement of a subrogram.
+2. Always put instrumentation API and unbounded `VALUE` calls on separate lines of code.
+
+#### Performance notice
+
+PL/SQL is a __very slow language__, especially when complex data structures, such as records and arrays of records are user. `UTL_CALL_STACK` is even more slower, so it is __a very bad idea__ to execute call stack tracking routines in each subprogram. Always try to keep tracked subprograms as closer to the outer "service" layer as possible.
 
 ### Obtaining and formatting call stack
 
