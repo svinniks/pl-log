@@ -67,6 +67,8 @@ CREATE OR REPLACE PACKAGE BODY dbms_output_handler IS
         p_message IN VARCHAR2
     ) IS
     
+        v_line log$.STRING;
+    
         v_calls log$.t_call_stack;
         v_values log$.t_call_values;
         
@@ -75,7 +77,7 @@ CREATE OR REPLACE PACKAGE BODY dbms_output_handler IS
         
     BEGIN
     
-        DBMS_OUTPUT.PUT_LINE(
+        v_line := 
             TO_CHAR(SYSTIMESTAMP, 'hh24:mi:ss.ff3') || ' [' ||
             RPAD(
                 CASE p_level
@@ -88,22 +90,24 @@ CREATE OR REPLACE PACKAGE BODY dbms_output_handler IS
                 END,
                 7
             ) || '] ' ||
-            p_message
-        );
+            p_message;
         
         IF p_level >= v_call_stack_level THEN
         
-            DBMS_OUTPUT.PUT_LINE(
+            v_line := 
+                v_line || CHR(10) ||
                 log$.format_call_stack(
                     p_options => v_call_stack_format_options
-                )
-            );
+                );
         
         END IF;
+        
+        DBMS_OUTPUT.PUT_LINE(v_line);
     
     END;
     
 BEGIN
+    log$.touch;
     v_call_stack_format_options.first_line_indent := 'at: ';
     v_call_stack_format_options.indent := '    ';
 END;

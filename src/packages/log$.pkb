@@ -123,6 +123,11 @@ CREATE OR REPLACE PACKAGE BODY log$ IS
     
     /* Initialization methods */
 
+    PROCEDURE touch IS
+    BEGIN
+        NULL;
+    END;
+
     PROCEDURE reset IS
     BEGIN
     

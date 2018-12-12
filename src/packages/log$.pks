@@ -99,6 +99,8 @@ CREATE OR REPLACE PACKAGE log$ IS
         
     /* Initilalization methods */
     
+    PROCEDURE touch;
+    
     PROCEDURE reset;
     
     PROCEDURE init;
