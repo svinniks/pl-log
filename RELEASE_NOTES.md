@@ -1,3 +1,6 @@
+# 1.1.1
+- When setting DBMS_OUTPUT_HANDLER log level before PL-LOG has been initialized, it is no longer ignored after the initialization.
+
 # 1.1.0
 - Improved performance of call stack and value tracking
 - EXECUT IMMEDIATE, which apperas on the call stack as SQL.SQL, will now report line 1 instead of NULL
